@@ -2,11 +2,13 @@ package com.unb.bucket;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
 @SpringBootApplication
-public class BucketListApplication {
+@EnableJpaAuditing
+public class BeforeIGoApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(BucketListApplication.class, args);
+		SpringApplication.run(BeforeIGoApplication.class, args);
 	}
 }

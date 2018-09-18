@@ -50,6 +50,8 @@ In the preferences window, you will also need to enable `Enable Annotation Proce
 This project relies on PostgreSQL, so you will need to ensure you have it installed. If you don't, here are some links to get you started:
 - [Download PostgreSQL](https://www.postgresql.org/download/)
 
+Using the PG Admin tool, you can create a new database named `before_i_go_dev`. You will also need to create a new user named `root` with password `password`.
+
 Although it isn't necessarily required, JetBrains DataGrip is a very useful tool for managing the database users and schemas. Once you have DataGrip installed, create a new connection with the following parameters:
 - Connection Name: swe-senior-design (note: this name is irrelevant)
 - Hostname: 127.0.0.1
@@ -58,8 +60,6 @@ Although it isn't necessarily required, JetBrains DataGrip is a very useful tool
 - Password: password
 
 Click the `Test Connection` to ensure you're able to connect to the PostgreSQL server.
-
-TODO
 
 ## Running the Server
 Run the following at the command line from the root of the project.
@@ -77,7 +77,7 @@ In your web browser, navigate to `http://localhost:8080`.
 
 ## Authors
 |[<img src="https://avatars3.githubusercontent.com/u/22732449?v=3&s=460" width="128">](https://github.com/brandon1024)|
-|:---:|:---:|:---:|:---:|
+|:---:|
 |[Brandon Richardson](https://github.com/brandon1024)|
 |<sup>Software Engineering</sup>|
 

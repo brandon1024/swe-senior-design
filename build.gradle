@@ -27,10 +27,11 @@ repositories {
 dependencies {
 	compile('org.springframework.boot:spring-boot-starter')
     compile("org.springframework.boot:spring-boot-starter-web")
-	compile('org.springframework.boot:spring-boot-starter-security')
-    compile('org.hibernate:hibernate-agroal:5.3.5.Final')
+	compile('org.springframework.boot:spring-boot-starter-data-jpa')
+	compile('javax.xml.bind:jaxb-api')
 	compileOnly('org.projectlombok:lombok')
-    testCompile('org.springframework.boot:spring-boot-starter-test')
+	runtime('org.postgresql:postgresql:42.2.5')
+	testCompile('org.springframework.boot:spring-boot-starter-test')
     testCompile("org.junit.jupiter:junit-jupiter-api:5.2.0")
     testRuntime("org.junit.jupiter:junit-jupiter-engine:5.2.0")
 }

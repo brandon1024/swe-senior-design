@@ -2,9 +2,9 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/bucket.iml" filepath="$PROJECT_DIR$/.idea/modules/bucket.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/bucket_main.iml" filepath="$PROJECT_DIR$/.idea/modules/bucket_main.iml" group="bucket" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/bucket_test.iml" filepath="$PROJECT_DIR$/.idea/modules/bucket_test.iml" group="bucket" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/before-i-go.iml" filepath="$PROJECT_DIR$/.idea/modules/before-i-go.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/before-i-go_main.iml" filepath="$PROJECT_DIR$/.idea/modules/before-i-go_main.iml" group="before-i-go" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/before-i-go_test.iml" filepath="$PROJECT_DIR$/.idea/modules/before-i-go_test.iml" group="before-i-go" />
     </modules>
   </component>
 </project>
