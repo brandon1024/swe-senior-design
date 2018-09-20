@@ -107,7 +107,7 @@ public class BucketController {
     public ResponseEntity<BucketSummaryResponse> findBucketById(@PathVariable(name = "ownerId") final Long ownerId,
                                                                 @PathVariable(name = "bucketId") final Long bucketId,
                                                                 @AuthenticationPrincipal final UserPrincipal currentUser) {
-        BucketSummaryResponse response = bucketService.findBucketById(ownerId, !Objects.equals(currentUser.getId(), ownerId));
+        BucketSummaryResponse response = bucketService.findBucketById(bucketId, !Objects.equals(currentUser.getId(), ownerId));
 
         return new ResponseEntity<>(response, HttpStatus.OK);
     }

@@ -18,6 +18,8 @@ import java.util.stream.Collectors;
 @Service
 public class BucketService {
 
+    @Autowired private ItemService itemService;
+
     @Autowired private UserDAO userDAO;
 
     @Autowired private BucketDAO bucketDAO;
@@ -55,31 +57,33 @@ public class BucketService {
      * matches the id of the childBucketOwnerId param. Conversely, if the childBucketOwnerId param matches the owner of
      * the bucket, the bucket may be duplicated regardless of whether it is private or public.
      *
-     * @param childBucketOwnerId the id of the new owner of the bucket
-     * @param parentBucketId the id of the bucket that is to be duplicated
+     * @param newBucketOwnerId the id of the new owner of the bucket
+     * @param bucketId the id of the bucket that is to be duplicated
      * @return a summary of the duplicated bucket once persisted in the database
      * @throws BadRequestException if a user with childBucketOwnerId does not exist
      * @throws BadRequestException if a bucket with parentBucketId does not exist
      * @throws UnauthorizedException if the bucket is private but owners do not match.
      * */
-    public BucketSummaryResponse duplicateBucket(final Long childBucketOwnerId, final Long parentBucketId) {
-        User childBucketOwner = userDAO.findById(childBucketOwnerId)
+    public BucketSummaryResponse duplicateBucket(final Long newBucketOwnerId, final Long bucketId) {
+        User childBucketOwner = userDAO.findById(newBucketOwnerId)
                 .orElseThrow(() ->
-                        new BadRequestException("Unable to find a record with id " + childBucketOwnerId));
+                        new BadRequestException("Unable to find a record with id " + newBucketOwnerId));
 
-        Bucket parentBucket = bucketDAO.findById(parentBucketId)
+        Bucket parentBucket = bucketDAO.findById(bucketId)
                 .orElseThrow(() ->
-                        new BadRequestException("Unable to find a record with id " + parentBucketId));
+                        new BadRequestException("Unable to find a record with id " + bucketId));
 
-        if(!parentBucket.getIsPublic() && !Objects.equals(parentBucket.getOwner().getId(), childBucketOwnerId)) {
+        if(!parentBucket.getIsPublic() && !Objects.equals(parentBucket.getOwner().getId(), newBucketOwnerId)) {
             throw new UnauthorizedException("Insufficient permissions.");
         }
 
         parentBucket.setOwner(childBucketOwner);
         parentBucket.setId(null);
 
-        Bucket childBucket = saveBucket(parentBucket);
-        return adaptBucketToBucketSummary(childBucket);
+        Bucket newBucket = saveBucket(parentBucket);
+        itemService.duplicateBucketItems(newBucketOwnerId, parentBucket.getId(), newBucket.getId());
+
+        return adaptBucketToBucketSummary(newBucket);
     }
 
     /**
