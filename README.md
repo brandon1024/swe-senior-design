@@ -71,9 +71,11 @@ In your web browser, navigate to `http://localhost:8080`.
 
 ## Useful Resources
 - [Spring Guides](https://spring.io/guides)
+- [Spring JPA Documentation](https://docs.spring.io/spring-data/jpa/docs/2.0.9.RELEASE/reference/html/)
 - [Lombok Project](https://projectlombok.org/features/all)
 - [PostgreSQL Documentation](https://www.postgresql.org/docs/)
 - [jUnit 5 User Guide](https://junit.org/junit5/docs/current/user-guide/)
+- [Microsoft REST API Guidelines](https://github.com/Microsoft/api-guidelines/blob/vNext/Guidelines.md)
 
 ## Authors
 |[<img src="https://avatars3.githubusercontent.com/u/22732449?v=3&s=460" width="128">](https://github.com/brandon1024)|

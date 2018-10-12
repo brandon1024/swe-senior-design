@@ -1,5 +1,14 @@
 image: openjdk:10-jdk
 
+services:
+  - postgres:10.5
+
+variables:
+  POSTGRES_DB: before_i_go_test
+  POSTGRES_USER: root
+  POSTGRES_PASSWORD: password
+  SPRING_PROFILES_ACTIVE: ci
+
 before_script:
 #  - echo `pwd` # debug
 #  - echo "$CI_BUILD_NAME, $CI_BUILD_REF_NAME $CI_BUILD_STAGE" # debug
@@ -16,7 +25,7 @@ stages:
 unit_tests:
   stage: test
   script:
-    - ./gradlew test
+    - ./gradlew -s test
 
 after_script:
   - echo "End CI"

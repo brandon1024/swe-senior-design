@@ -1,6 +1,6 @@
 buildscript {
 	ext {
-		springBootVersion = '2.0.4.RELEASE'
+		springBootVersion = '2.0.5.RELEASE'
 	}
 	repositories {
 		mavenCentral()
@@ -31,6 +31,7 @@ dependencies {
 	compile('javax.xml.bind:jaxb-api')
 	compileOnly('org.projectlombok:lombok')
 	runtime('org.postgresql:postgresql:42.2.5')
+	
 	testCompile('org.springframework.boot:spring-boot-starter-test')
     testCompile("org.junit.jupiter:junit-jupiter-api:5.2.0")
     testRuntime("org.junit.jupiter:junit-jupiter-engine:5.2.0")
@@ -38,4 +39,5 @@ dependencies {
 
 test {
 	useJUnitPlatform()
+	testLogging.showStandardStreams = true
 }
