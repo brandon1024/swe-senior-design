@@ -31,6 +31,21 @@ public interface UserDAO extends JpaRepository<User, Long> {
      * */
     Optional<User> findByUsername(final String username);
 
+    /**
+     * Test existence of user using their username.
+     *
+     * @param username the username to be used in the query.
+     * @return true if a user exists with the given username, false otherwise.
+     * */
+    boolean existsByUsername(final String username);
+
+    /**
+     * Test existence of user using their email address.
+     *
+     * @param email the email to be used in the query.
+     * @return true if a user exists with the given email address, false otherwise.
+     * */
+    boolean existsByEmail(final String email);
 
     /**
      * Find all users with a given {@link User.Role}.

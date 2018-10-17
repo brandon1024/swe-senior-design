@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
  * resource requested.
  * */
 @ResponseStatus(value = HttpStatus.CONFLICT)
-public class ConflictException extends RuntimeException {
+public class ConflictException extends ClientErrorException {
 
     public ConflictException(String message) {
         super(message);

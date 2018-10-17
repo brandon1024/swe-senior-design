@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.hibernate.HibernateException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
@@ -53,6 +54,14 @@ public class GlobalControllerExceptionHandler {
 
         final String message = "Unable to process request due to malformed request.";
         return new ResponseEntity<>(message, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(value = AuthenticationException.class)
+    public ResponseEntity<String> handleAuthenticationException(final AuthenticationException e) {
+        LOG.info("Exception intercepted by GlobalControllerExceptionHandler", e);
+
+        final String message = "Unable to process the request due to an unexpected authentication error.";
+        return new ResponseEntity<>(message, HttpStatus.UNAUTHORIZED);
     }
 
 

@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
  * is not implemented.
  * */
 @ResponseStatus(value = HttpStatus.NOT_IMPLEMENTED)
-public class NotImplementedException extends RuntimeException {
+public class NotImplementedException extends ServerErrorException {
 
     public NotImplementedException(String message) {
         super(message);

@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
  * unavailable.
  * */
 @ResponseStatus(value = HttpStatus.SERVICE_UNAVAILABLE)
-public class ServiceUnavailableException extends RuntimeException {
+public class ServiceUnavailableException extends ServerErrorException {
 
     public ServiceUnavailableException(String message) {
         super(message);
