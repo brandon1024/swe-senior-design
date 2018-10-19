@@ -223,12 +223,12 @@ public final class JSONWebTokenUtil {
         return new Date(createdDate.getTime() + expiration * 1000);
     }
 
-    @Value("${jwt.secret}")
+    @Value("${jwt.secret:secretkey}")
     public void setSecret(final String secret) {
         JSONWebTokenUtil.secret = Arrays.copyOf(secret.getBytes(), 32);
     }
 
-    @Value("${jwt.expiration}")
+    @Value("${jwt.expiration:86400}")
     public void setTokenExpiration(final long expiration) {
         JSONWebTokenUtil.expiration = expiration;
     }
