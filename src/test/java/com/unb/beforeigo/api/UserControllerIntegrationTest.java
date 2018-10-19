@@ -1,7 +1,11 @@
 package com.unb.beforeigo.api;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.unb.beforeigo.api.dto.request.AuthenticationRequest;
+import com.unb.beforeigo.api.dto.request.UserRegistrationRequest;
+import com.unb.beforeigo.api.dto.response.AuthenticationResponse;
 import com.unb.beforeigo.core.model.User;
+import com.unb.beforeigo.infrastructure.security.UserPrincipal;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,7 +25,11 @@ class UserControllerIntegrationTest extends APIIntegrationTestSuite {
 
     private User user;
 
-    @BeforeEach void testSetup() {
+    private UserPrincipal authenticatedUser;
+
+    private String authToken;
+
+    @BeforeEach void testSetup() throws JsonProcessingException {
         user = new User();
         user.setEmail("test" + id + "@test.ca");
         user.setUsername("username" + id);
@@ -29,6 +37,23 @@ class UserControllerIntegrationTest extends APIIntegrationTestSuite {
         user.setFirstName("first" + id);
         user.setLastName("last" + id);
         user.setBio("bio" + id);
+
+        UserRegistrationRequest registrationRequest = new UserRegistrationRequest(user.getUsername(),
+                user.getEmail(),
+                user.getPassword(),
+                user.getPassword(),
+                user.getFirstName(),
+                user.getMiddleName(),
+                user.getLastName());
+
+        var requestJSON = APITestUtils.marshallToJSONLiteral(registrationRequest);
+        var entity = APITestUtils.buildHTTPRequest(requestJSON);
+        var response = restTemplate.exchange("/auth/signup", HttpMethod.POST, entity, AuthenticationResponse.class);
+        Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
+        Assertions.assertNotNull(response.getBody());
+
+        authenticatedUser = response.getBody().getUser();
+        authToken = response.getBody().getToken();
     }
 
     @AfterEach void testTeardown() {
@@ -36,70 +61,12 @@ class UserControllerIntegrationTest extends APIIntegrationTestSuite {
     }
 
     @Nested
-    class CreateUserTest {
-        @Test void createUserWithMissingFieldsTest() throws JsonProcessingException {
-            user.setUsername(null);
-
-            var requestJSON = APITestUtils.marshallToJSONLiteral(user);
-            var entity = APITestUtils.buildHTTPRequest(requestJSON);
-            var response = restTemplate.exchange("/users", HttpMethod.POST, entity, Void.class);
-            Assertions.assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-        }
-
-        @Test void createUserWithInvalidEmailTest() throws JsonProcessingException {
-            user.setEmail("invalidEmail.test");
-
-            var requestJSON = APITestUtils.marshallToJSONLiteral(user);
-            var entity = APITestUtils.buildHTTPRequest(requestJSON);
-            var response = restTemplate.exchange("/users", HttpMethod.POST, entity, Void.class);
-            Assertions.assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-        }
-
-        @Test void createUserWithInvalidUsernameTest() throws JsonProcessingException {
-            user.setUsername("user");
-
-            var requestJSON = APITestUtils.marshallToJSONLiteral(user);
-            var entity = APITestUtils.buildHTTPRequest(requestJSON);
-            var response = restTemplate.exchange("/users", HttpMethod.POST, entity, Void.class);
-            Assertions.assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-        }
-
-        @Test void createUserWithBlankFirstLastNameTest() throws JsonProcessingException {
-            user.setFirstName("");
-
-            var requestJSON = APITestUtils.marshallToJSONLiteral(user);
-            var entity = APITestUtils.buildHTTPRequest(requestJSON);
-            var response = restTemplate.exchange("/users", HttpMethod.POST, entity, Void.class);
-            Assertions.assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-        }
-
-        @Test void createUserSuccessTest() throws JsonProcessingException {
-            var requestJSON = APITestUtils.marshallToJSONLiteral(user);
-            var entity = APITestUtils.buildHTTPRequest(requestJSON);
-            var response = restTemplate.exchange("/users", HttpMethod.POST, entity, User.class);
-            Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
-            Assertions.assertNotNull(response.getBody());
-            Assertions.assertNotNull(response.getBody().getId());
-        }
-    }
-
-    @Nested
     class RetrieveUserTest {
-        @BeforeEach void setup() throws JsonProcessingException {
-            //Create user using the create API
-            var requestJSON = APITestUtils.marshallToJSONLiteral(user);
-            var entity = APITestUtils.buildHTTPRequest(requestJSON);
-            var createResponse = restTemplate.exchange("/users", HttpMethod.POST, entity, User.class);
-            Assertions.assertEquals(HttpStatus.OK, createResponse.getStatusCode());
-            Assertions.assertNotNull(createResponse.getBody());
-            Assertions.assertNotNull(createResponse.getBody().getId());
-
-            user = createResponse.getBody();
-        }
 
         @Test void retrieveUserByIdTest() {
             //Retrieve user by id using the retrieve API
-            var retrieveResponse = restTemplate.exchange("/users?id={id}", HttpMethod.GET, HttpEntity.EMPTY, User[].class, Map.of("id", user.getId()));
+            var entity = APITestUtils.buildAuthenticatedHTTPRequest(authToken);
+            var retrieveResponse = restTemplate.exchange("/users?id={id}", HttpMethod.GET, entity, User[].class, Map.of("id", user.getId()));
             Assertions.assertEquals(HttpStatus.OK, retrieveResponse.getStatusCode());
             Assertions.assertNotNull(retrieveResponse.getBody());
             Assertions.assertEquals(1, retrieveResponse.getBody().length);

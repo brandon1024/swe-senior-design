@@ -13,7 +13,7 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
 /**
- * DTO representing a bucket.
+ * Hibernate entity representing a bucket.
  *
  * @author Brandon Richardson
  * */

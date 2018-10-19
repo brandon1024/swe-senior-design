@@ -12,10 +12,16 @@ import java.io.IOException;
 @Slf4j
 public class AuthenticationEntryPoint implements org.springframework.security.web.AuthenticationEntryPoint {
 
+    /**
+     * Invoked when user tries to access a secured REST resource without supplying any credentials. Responds with a
+     * 401 Unauthorized response.
+     *
+     * @param request that resulted in an <code>AuthenticationException</code>
+     * @param response so that the user agent can begin authentication
+     * @param authException that caused the invocation
+     */
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException {
-        // This is invoked when user tries to access a secured REST resource without supplying any credentials
-        // We should just send a 401 Unauthorized response because there is no 'login page' to redirect to
         LOG.error("User attempted to access secured REST resource without supplying credentials.", authException);
         response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
     }

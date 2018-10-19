@@ -1,10 +1,12 @@
 package com.unb.beforeigo.api;
 
 import com.unb.beforeigo.api.exception.client.BadRequestException;
+import com.unb.beforeigo.api.exception.client.UnauthorizedException;
 import com.unb.beforeigo.application.dao.UserDAO;
 import com.unb.beforeigo.application.dao.UserRelationshipDAO;
 import com.unb.beforeigo.core.model.User;
 import com.unb.beforeigo.core.model.UserRelationship;
+import com.unb.beforeigo.infrastructure.security.UserPrincipal;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Example;
@@ -30,17 +32,23 @@ public class UserRelationshipController {
      * Create a new {@link UserRelationship}.
      *
      * Usage example:
-     * {@code http://api.before-i-go.com/users/12/followers?id=26 }
-     * will result in user with id 26 following user with id 12
+     * {@code POST /users/12/following?id=26 }
+     * will result in user with id 12 following user with id 26
      *
-     * @param subjectId the id of the user that is to be followed by the initiator
      * @param initiatorId the id of the user that wishes to follow the subject
+     * @param subjectId the id of the user that is to be followed by the initiator
      * @return a new user relationship once persisted in the database
+     * @throws UnauthorizedException if the id of the currently authenticated user does not match the path variable id
      * @throws BadRequestException if the subjectId or initiatorId do not map to valid users.
      * */
-    @RequestMapping(value = "/{id}/followers", method = RequestMethod.POST)
-    public UserRelationship createUserRelationship(@PathVariable(name = "id") final Long subjectId,
-                                                   @RequestParam(name = "id") final Long initiatorId) {
+    @RequestMapping(value = "/{id}/following", method = RequestMethod.POST)
+    public UserRelationship createUserRelationship(@PathVariable(name = "id") final Long initiatorId,
+                                                   @RequestParam(name = "id") final Long subjectId,
+                                                   final UserPrincipal currentUser) {
+        if(!currentUser.getId().equals(initiatorId)) {
+            throw new UnauthorizedException("Insufficient permissions.");
+        }
+
         UserRelationship relationship = new UserRelationship();
         User follower = userDAO.findById(initiatorId)
                 .orElseThrow(() -> new BadRequestException("Unable to find user with id " + initiatorId));
@@ -92,20 +100,26 @@ public class UserRelationshipController {
     }
 
     /**
-     * Delete a user relationship. The user with the id provided as a path variable will no longer have the
-     * follower with the id specified as a request parameter.
+     * Delete a user relationship. The user with the id provided as a path variable will no longer be following the
+     * user with id specified as a request parameter.
      *
      * Example usage:
-     * {@code DELETE /users/12/followers?id=26 }
-     * will result in user with id 26 unfollow user with id 12.
+     * {@code DELETE /users/12/following?id=26 }
+     * will result in user with id 12 unfollow user with id 26.
      *
      * @param subjectId the id of the user
      * @param initiatorId the id of the user
+     * @throws UnauthorizedException if the id of the currently authenticated user does not match the path variable id
      * @throws BadRequestException if the relationship does not exist
      * */
-    @RequestMapping(value = "/{id}/followers", method = RequestMethod.DELETE)
-    public void deleteUserRelationship(@PathVariable(value = "id") final Long subjectId,
-                                       @RequestParam(value = "id") final Long initiatorId) {
+    @RequestMapping(value = "/{id}/following", method = RequestMethod.DELETE)
+    public void deleteUserRelationship(@PathVariable(value = "id") final Long initiatorId,
+                                       @RequestParam(value = "id") final Long subjectId,
+                                       final UserPrincipal currentUser) {
+        if(!currentUser.getId().equals(initiatorId)) {
+            throw new UnauthorizedException("Insufficient permissions.");
+        }
+
         User follower = new User();
         follower.setId(initiatorId);
         User following = new User();

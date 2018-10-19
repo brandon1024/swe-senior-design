@@ -11,7 +11,7 @@ import javax.persistence.UniqueConstraint;
 import javax.validation.constraints.NotNull;
 
 /**
- * User friendship DTO. An instance of this class represents a persistent friendship record in the database.
+ * User friendship Hibernate entity. An instance of this class represents a persistent friendship record in the database.
  *
  * @author Brandon Richardson
  * */

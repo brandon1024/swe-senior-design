@@ -56,4 +56,45 @@ final class APITestUtils {
 
         return new HttpEntity<>(requestJSON, headers);
     }
+
+    /**
+     * Build an HTTP request entity for testing purposes, with a request body that is a JSON literal.
+     *
+     * The bearer token is added to the request Authentication header.
+     *
+     * Adds the following headers:
+     * Content-Type: application/json
+     * Accept: application/json
+     * Authorization: Bearer token
+     *
+     * @param requestJSON a JSON literal
+     * @param bearerToken the JSON Web Token
+     * @return an HTTP Entity
+     * */
+    static HttpEntity<String> buildAuthenticatedHTTPRequest(String requestJSON, String bearerToken) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
+        headers.set(HttpHeaders.AUTHORIZATION, "Bearer " + bearerToken);
+
+        return new HttpEntity<>(requestJSON, headers);
+    }
+
+    /**
+     * Build an HTTP request entity for testing purposes, with a request body that is a JSON literal.
+     *
+     * The bearer token is added to the request Authentication header.
+     *
+     * Adds the following headers:
+     * Authorization: Bearer token
+     *
+     * @param bearerToken the JSON Web Token
+     * @return an HTTP Entity
+     * */
+    static HttpEntity<String> buildAuthenticatedHTTPRequest(String bearerToken) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set(HttpHeaders.AUTHORIZATION, "Bearer " + bearerToken);
+
+        return new HttpEntity<>(headers);
+    }
 }

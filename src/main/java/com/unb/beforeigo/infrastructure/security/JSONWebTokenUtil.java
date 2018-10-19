@@ -20,6 +20,7 @@ import java.text.ParseException;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.UUID;
+import java.util.function.Supplier;
 
 @Component
 public final class JSONWebTokenUtil {
@@ -54,7 +55,7 @@ public final class JSONWebTokenUtil {
         try {
             return cs.getLongClaim(UID_CLAIM_NAME);
         } catch(ParseException e) {
-            throw new MalformedAuthTokenException("unable to parse Long from 'uid' claim value", e);
+            throw new MalformedAuthTokenException("Unable to parse Long from 'uid' claim value", e);
         }
     }
 
@@ -86,7 +87,7 @@ public final class JSONWebTokenUtil {
         try {
             return JWTParser.parse(token).getJWTClaimsSet();
         } catch(ParseException e) {
-            throw new MalformedAuthTokenException("unable to parse token", e);
+            throw new MalformedAuthTokenException("Unable to parse token", e);
         }
     }
 
@@ -161,7 +162,7 @@ public final class JSONWebTokenUtil {
      * @param user the user to verify the token against
      * @return whether the token is valid.
      * */
-    public static boolean validateToken(String token, UserPrincipal user) {
+    public static boolean validateToken(final String token, final UserPrincipal user) {
         try {
             SignedJWT signedJWT = SignedJWT.parse(token);
             JWSVerifier verifier = new MACVerifier(secret);
@@ -191,7 +192,32 @@ public final class JSONWebTokenUtil {
     }
 
     /**
+     * Verify that a token is valid, returning the token if so, otherwise throw an exception produced by the exception
+     * supplying function.
      *
+     * @param <T> Type of the exception to be thrown
+     * @param token the serialized SignedJWT token
+     * @param user the user to verify the token against
+     * @param exceptionSupplier the supplying function that produces an exception to be thrown
+     * @throws T if the token is invalid.
+     * @return the token, if valid.
+     * */
+    public static <T extends Throwable> String validateToken(final String token,
+                                                             final UserPrincipal user,
+                                                             Supplier<? extends T> exceptionSupplier) throws T {
+        if(validateToken(token, user)) {
+            return token;
+        }
+
+        throw exceptionSupplier.get();
+    }
+
+    /**
+     * Generate expiration date from a given date. The expiration date will be determined based on the
+     * <pre>jwt.expiration</pre> property value.
+     *
+     * @param createdDate basis date
+     * @return a new date that is <pre>jwt.expiration</pre> seconds later than the basis date.
      * */
     private static Date generateExpirationDate(final Date createdDate) {
         return new Date(createdDate.getTime() + expiration * 1000);

@@ -1,6 +1,5 @@
 package com.unb.beforeigo.api.exception.server;
 
-import com.unb.beforeigo.api.exception.HttpException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
 

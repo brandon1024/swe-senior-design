@@ -9,7 +9,7 @@ import javax.persistence.Table;
 import javax.validation.constraints.Size;
 
 /**
- * DTO that is used to represent a physical/mailing address.
+ * Hibernate entity that is used to represent a physical/mailing address.
  *
  * @author Brandon Richardson
  * */

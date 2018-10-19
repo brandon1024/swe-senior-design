@@ -1,10 +1,15 @@
 package com.unb.beforeigo.api;
 
 import com.unb.beforeigo.api.dto.request.AuthenticationRequest;
+import com.unb.beforeigo.api.dto.request.UserRegistrationRequest;
 import com.unb.beforeigo.api.dto.response.AuthenticationResponse;
 import com.unb.beforeigo.api.dto.response.IdentityAvailabilityResponse;
 import com.unb.beforeigo.api.exception.client.BadRequestException;
+import com.unb.beforeigo.api.exception.client.UnauthorizedException;
+import com.unb.beforeigo.application.dao.PhysicalAddressDAO;
 import com.unb.beforeigo.application.dao.UserDAO;
+import com.unb.beforeigo.core.model.User;
+import com.unb.beforeigo.core.svc.UserService;
 import com.unb.beforeigo.infrastructure.security.JSONWebTokenUtil;
 import com.unb.beforeigo.infrastructure.security.UserPrincipal;
 import com.unb.beforeigo.infrastructure.security.UserPrincipalService;
@@ -15,6 +20,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -28,43 +34,84 @@ import javax.validation.Valid;
 @Slf4j
 public class UserAuthenticationController {
 
-    @Autowired UserPrincipalService userPrincipalService;
+    @Autowired private UserPrincipalService userPrincipalService;
 
-    @Autowired AuthenticationManager authenticationManager;
+    @Autowired private AuthenticationManager authenticationManager;
 
-    @Autowired UserDAO userDAO;
+    @Autowired private UserDAO userDAO;
+
+    @Autowired private UserService userService;
 
     /**
-     * todo
+     * Issue token to user.
+     *
+     * @param request a valid authentication request
+     * @return 200 OK if the authentication succeeded, with the token in the response body.
+     * @throws AuthenticationException if authentication fails
+     * @throws com.unb.beforeigo.infrastructure.security.exception.UserNotFoundException if a user with the username
+     * in the request body does not exist.
      * */
     @RequestMapping(value = "/signin", method = RequestMethod.POST)
-    public ResponseEntity<?> authenticateUser(@Valid @RequestBody final AuthenticationRequest request) throws AuthenticationException {
-        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
+    public ResponseEntity<AuthenticationResponse> issueToken(@Valid @RequestBody final AuthenticationRequest request) throws AuthenticationException {
+        final UserPrincipal userPrincipal;
+        if(request.getUsername() != null) {
+            userPrincipal = userPrincipalService.loadUserByUsername(request.getUsername());
+        } else {
+            userPrincipal = userPrincipalService.loadByEmailAddress(request.getEmailAddress());
+        }
 
-        final UserPrincipal userDetails = userPrincipalService.loadUserByUsername(request.getUsername());
-        final String token = JSONWebTokenUtil.generateToken(userDetails);
+        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(userPrincipal.getUsername(), request.getPassword()));
+        final String token = JSONWebTokenUtil.generateToken(userPrincipal);
 
-        return new ResponseEntity<>(new AuthenticationResponse(token), HttpStatus.OK);
+        return new ResponseEntity<>(new AuthenticationResponse(token, userPrincipal), HttpStatus.OK);
     }
 
     /**
-     * todo
+     * Register a new user and issue a new token.
+     *
+     * @param registrationRequest a valid authentication request
+     * @return 200 OK if the registration and authentication succeeded, with the token in the response body.
+     * @throws AuthenticationException if authentication fails
+     * @throws BadRequestException if the new user does not meet validation constraints
      * */
     @RequestMapping(value = "/signup", method = RequestMethod.POST)
-    public ResponseEntity<?> registerUser() {
-        return null;
+    public ResponseEntity<AuthenticationResponse> registerAndIssueToken(@Valid @RequestBody final UserRegistrationRequest registrationRequest) {
+        if(!registrationRequest.getPassword().equals(registrationRequest.getPasswordConfirm())) {
+            throw new BadRequestException("Password mismatch.");
+        }
+
+        User user = userService.buildUserFromRegistrationRequest(registrationRequest);
+        userService.validateUser(user, () -> new BadRequestException("new user does not meet validation constraints"));
+        userService.saveUser(user);
+
+        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(registrationRequest.getUsername(), registrationRequest.getPassword()));
+        final UserPrincipal userPrincipal = userPrincipalService.loadUserByUsername(registrationRequest.getUsername());
+        final String token = JSONWebTokenUtil.generateToken(userPrincipal);
+
+        return new ResponseEntity<>(new AuthenticationResponse(token, userPrincipal), HttpStatus.OK);
     }
 
     /**
-     * todo
+     * Refresh token.
+     *
+     * @return 200 OK if the authentication succeeded, with the token in the response body.
      * */
-    @RequestMapping(value = "/logout", method = RequestMethod.POST)
-    public ResponseEntity<?> logoutUser() {
-        return null;
+    @RequestMapping(value = "/token_refresh", method = RequestMethod.POST)
+    public ResponseEntity<AuthenticationResponse> refreshToken(@AuthenticationPrincipal final UserPrincipal userPrincipal) {
+        if(userPrincipal == null) {
+            throw new UnauthorizedException("User is not authenticated, and therefore cannot be granted a new token.");
+        }
+
+        final String newToken = JSONWebTokenUtil.generateToken(userPrincipal);
+        return new ResponseEntity<>(new AuthenticationResponse(newToken, userPrincipal), HttpStatus.OK);
     }
 
     /**
-     * todo
+     * Check if a given identity is available.
+     *
+     * @param username optional request parameter for the email address
+     * @param email optional request parameter for the username
+     * @return IdentityAvailabilityResponse
      * */
     @RequestMapping(value = "/identity_available", method = RequestMethod.GET)
     public ResponseEntity<IdentityAvailabilityResponse> checkIdentityAvailability(@RequestParam(name = "username", required = false) final String username,
@@ -73,16 +120,8 @@ public class UserAuthenticationController {
             throw new BadRequestException("username or email request parameter must be specified");
         }
 
-        Boolean usernameAvailable = null;
-        Boolean emailAddressAvailable = null;
-
-        if(username != null) {
-            usernameAvailable = userDAO.existsByUsername(username);
-        }
-
-        if(email != null) {
-            emailAddressAvailable = userDAO.existsByEmail(email);
-        }
+        Boolean usernameAvailable = username != null ? !userDAO.existsByUsername(username) : null;
+        Boolean emailAddressAvailable = email != null ? !userDAO.existsByEmail(email) : null;
 
         return new ResponseEntity<>(new IdentityAvailabilityResponse(usernameAvailable, emailAddressAvailable), HttpStatus.OK);
     }

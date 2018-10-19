@@ -1,5 +1,6 @@
 package com.unb.beforeigo.core.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.unb.beforeigo.core.model.validation.Username;
 import lombok.Data;
@@ -17,7 +18,7 @@ import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
 
 /**
- * User DTO. An instance of this class represents a persistent user record in the database.
+ * User Hibernate entity. An instance of this class represents a persistent user record in the database.
  *
  * @author Brandon Richardson
  * */
@@ -62,7 +63,7 @@ public class User extends PersistentObject {
 
     @NotBlank
     @Size(max = 255)
-    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    @JsonIgnore
     private String password;
 
     @Enumerated(EnumType.STRING)
