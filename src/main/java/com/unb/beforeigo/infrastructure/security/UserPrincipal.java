@@ -23,7 +23,8 @@ public class UserPrincipal extends org.springframework.security.core.userdetails
     }
 
     private UserPrincipal(final User user) {
-        super(user.getUsername(), user.getPassword(), Collections.singletonList(new SimpleGrantedAuthority(user.getRole().name())));
+        super(user.getUsername(), user.getPassword(),
+                Collections.singletonList(new SimpleGrantedAuthority(user.getRole().name())));
         this.id = user.getId();
         this.email = user.getEmail();
     }

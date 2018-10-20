@@ -16,6 +16,7 @@ import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.ValidatorFactory;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -53,8 +54,8 @@ public class UserService {
     /**
      * Patch a user.
      *
-     * Applies only non-null fields present in the partialUser to the persistent user, and then attempts to save
-     * the user to the database.
+     * Applies only non-null fields present in the partialUser to the persistent user, and then attempts to save the
+     * user to the database.
      *
      * @param partialUser a partial user
      * @param persistentUser the user that exists in the database that will be patched
@@ -62,64 +63,64 @@ public class UserService {
      * @throws BadRequestException if the user cannot be saved because it does not meet validation constraints
      * */
     public User patchUser(final User partialUser, final User persistentUser) {
-        if(partialUser.getEmail() != null) {
+        if(Objects.nonNull(partialUser.getEmail())) {
             persistentUser.setEmail(partialUser.getEmail());
         }
 
-        if(partialUser.getUsername() != null) {
+        if(Objects.nonNull(partialUser.getUsername())) {
             persistentUser.setUsername(partialUser.getUsername());
         }
 
-        if(partialUser.getFirstName() != null) {
+        if(Objects.nonNull(partialUser.getFirstName())) {
             persistentUser.setFirstName(partialUser.getFirstName());
         }
 
-        if(partialUser.getMiddleName() != null) {
+        if(Objects.nonNull(partialUser.getMiddleName())) {
             persistentUser.setMiddleName(partialUser.getMiddleName());
         }
 
-        if(partialUser.getLastName() != null) {
+        if(Objects.nonNull(partialUser.getLastName())) {
             persistentUser.setLastName(partialUser.getLastName());
         }
 
-        if(partialUser.getBio() != null) {
+        if(Objects.nonNull(partialUser.getBio())) {
             persistentUser.setBio(partialUser.getBio());
         }
 
-        if(partialUser.getPassword() != null) {
+        if(Objects.nonNull(partialUser.getPassword())) {
             persistentUser.setPassword(partialUser.getPassword());
         }
 
-        if(partialUser.getUserAddress() != null) {
+        if(Objects.nonNull(partialUser.getUserAddress())) {
             PhysicalAddress userAddress = partialUser.getUserAddress();
             PhysicalAddress persistentUserAddress = persistentUser.getUserAddress();
 
-            if(persistentUserAddress == null) {
+            if(Objects.isNull(persistentUserAddress)) {
                 persistentUserAddress = new PhysicalAddress();
                 persistentUser.setUserAddress(persistentUserAddress);
             }
 
-            if(userAddress.getPrimaryStreetAddress() != null) {
+            if(Objects.nonNull(userAddress.getPrimaryStreetAddress())) {
                 persistentUserAddress.setPrimaryStreetAddress(userAddress.getPrimaryStreetAddress());
             }
 
-            if(userAddress.getSecondaryStreetAddress() != null) {
+            if(Objects.nonNull(userAddress.getSecondaryStreetAddress())) {
                 persistentUserAddress.setSecondaryStreetAddress(userAddress.getSecondaryStreetAddress());
             }
 
-            if(userAddress.getCity() != null) {
+            if(Objects.nonNull(userAddress.getCity())) {
                 persistentUserAddress.setCity(userAddress.getCity());
             }
 
-            if(userAddress.getProvince() != null) {
+            if(Objects.nonNull(userAddress.getProvince())) {
                 persistentUserAddress.setProvince(userAddress.getProvince());
             }
 
-            if(userAddress.getCountry() != null) {
+            if(Objects.nonNull(userAddress.getCountry())) {
                 persistentUserAddress.setCountry(userAddress.getCountry());
             }
 
-            if(userAddress.getPostalCode() != null) {
+            if(Objects.nonNull(userAddress.getPostalCode())) {
                 persistentUserAddress.setPostalCode(userAddress.getPostalCode());
             }
         }
@@ -130,8 +131,8 @@ public class UserService {
     /**
      * Update (overwrite) a user.
      *
-     * Applies all fields present in the partialUser to the persistent user, and then attempts to save
-     * the user to the database.
+     * Applies all fields present in the partialUser to the persistent user, and then attempts to save the user to the
+     * database.
      *
      * @param partialUser a user
      * @param persistentUser the user that exists in the database that will be updated

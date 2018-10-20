@@ -21,7 +21,8 @@ public class AuthenticationEntryPoint implements org.springframework.security.we
      * @param authException that caused the invocation
      */
     @Override
-    public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException {
+    public void commence(final HttpServletRequest request, final HttpServletResponse response,
+                         final AuthenticationException authException) throws IOException {
         LOG.error("User attempted to access secured REST resource without supplying credentials.", authException);
         response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
     }

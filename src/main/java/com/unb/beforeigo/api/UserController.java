@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
 import java.util.List;
+import java.util.Objects;
 
 @RestController
 @RequestMapping("/")
@@ -85,22 +86,23 @@ public class UserController {
     }
 
     /**
-     * Update fields in a {@link User} that is currently persisted in the database. Only non-null user fields are updated.
+     * Update fields in a {@link User} that is currently persisted in the database.
      *
-     * The id of the currently authenticated user must match the path variable id.
+     * Only non-null user fields are updated. The id of the currently authenticated user must match the path variable id.
      *
      * @param userId the id of the user to update
      * @param user the user to update
      * @param currentUser the currently authenticated user
      * @return the updated user
      * @throws UnauthorizedException if the id of the currently authenticated user does not match the path variable id
-     * @throws BadRequestException if a user cannot be found with the provided id, or the new user does not meet User validation constraints.
+     * @throws BadRequestException if a user cannot be found with the provided id, or the new user does not meet User
+     * validation constraints.
      * */
     @RequestMapping(value = "/users/{id}", method = RequestMethod.PATCH, consumes = "application/json")
     public User patchUser(@PathVariable(name = "id") final Long userId,
                           @RequestBody final User user,
                           @AuthenticationPrincipal final UserPrincipal currentUser) {
-        if(!currentUser.getId().equals(userId)) {
+        if(!Objects.equals(currentUser.getId(), userId)) {
             throw new UnauthorizedException("Insufficient permissions.");
         }
 
@@ -120,13 +122,14 @@ public class UserController {
      * @param currentUser the currently authenticated user
      * @return the updated user
      * @throws UnauthorizedException if the id of the currently authenticated user does not match the path variable id
-     * @throws BadRequestException if a user cannot be found with the provided id, or the new user does not meet User validation constraints.
+     * @throws BadRequestException if a user cannot be found with the provided id, or the new user does not meet User
+     * validation constraints.
      * */
     @RequestMapping(value = "/users/{id}", method = RequestMethod.PUT, consumes = "application/json")
     public User updateUser(@PathVariable(name = "id") final Long userId,
                            @Valid @RequestBody final User user,
                            @AuthenticationPrincipal final UserPrincipal currentUser) {
-        if(!currentUser.getId().equals(userId)) {
+        if(!Objects.equals(currentUser.getId(), userId)) {
             throw new UnauthorizedException("Insufficient permissions.");
         }
 
@@ -149,7 +152,7 @@ public class UserController {
     @RequestMapping(value = "/users/{id}", method = RequestMethod.DELETE)
     public void deleteUser(@PathVariable(name = "id") final Long userId,
                            @AuthenticationPrincipal final UserPrincipal currentUser) {
-        if(!currentUser.getId().equals(userId)) {
+        if(!Objects.equals(currentUser.getId(), userId)) {
             throw new UnauthorizedException("Insufficient permissions.");
         }
 

@@ -31,6 +31,7 @@ public class Bucket extends PersistentObject {
     @NotNull
     private User owner;
 
+    @NotNull
     private Boolean isPublic;
 
     @Column(columnDefinition = "TEXT")

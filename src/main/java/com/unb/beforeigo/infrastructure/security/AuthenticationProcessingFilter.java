@@ -15,6 +15,8 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Objects;
+import java.util.Optional;
 
 @Component
 @Slf4j
@@ -40,36 +42,20 @@ class AuthenticationProcessingFilter extends OncePerRequestFilter {
      * Requests without the Authorization header are processed normally.
      * */
     @Override
-    protected void doFilterInternal(final HttpServletRequest request, final HttpServletResponse response, final FilterChain chain)
-            throws ServletException, IOException {
+    protected void doFilterInternal(final HttpServletRequest request, final HttpServletResponse response,
+                                    final FilterChain chain) throws ServletException, IOException {
         LOG.debug("processing authentication for '{}'", request.getRequestURL());
 
-        final String authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+        final Optional<String> authToken = getTokenFromAuthorizationHeader(request.getHeader(HttpHeaders.AUTHORIZATION));
+        if(authToken.isPresent()) {
+            final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        if(isTokenPresent(authorizationHeader)) {
-            final String authToken = authorizationHeader.substring(AUTHENTICATION_SCHEME.length()).trim();
-            final Long userId = JSONWebTokenUtil.parseUserIdFromToken(authToken);
-
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-            //If principal is authenticated, verify token validity
-            if(authentication != null) {
-                UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
-
-                JSONWebTokenUtil.validateToken(authToken, userPrincipal, () ->
-                    new MalformedAuthTokenException("Invalid token; either token is not formatted correctly or token-principal mismatch."));
+            if(Objects.nonNull(authentication)) {
+                //If principal is authenticated, verify token validity
+                validateTokenAgainstAuthentication(authToken.get(), authentication);
             } else {
-                UserPrincipal userPrincipal = this.userPrincipalService.loadUserById(userId);
-
-                JSONWebTokenUtil.validateToken(authToken, userPrincipal, () ->
-                        new MalformedAuthTokenException("Invalid token; either token is not formatted correctly or token-principal mismatch."));
-
                 //if token is valid, add principal to security context
-                UsernamePasswordAuthenticationToken newAuthentication =
-                        new UsernamePasswordAuthenticationToken(userPrincipal, null, userPrincipal.getAuthorities());
-                newAuthentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
-                SecurityContextHolder.getContext().setAuthentication(newAuthentication);
+                authenticateTokenHolder(authToken.get(), request);
             }
         }
 
@@ -77,12 +63,58 @@ class AuthenticationProcessingFilter extends OncePerRequestFilter {
     }
 
     /**
-     * Determine whether the authorization header contains a bearer type token.
+     * Extract, if present, the bearer token from the authorization header value.
      *
      * @param authorizationHeader the authorization header value
-     * @return true if the authorization header value is not null and begins with "bearer ", returns false otherwise.
+     * @return An Optional holding a String if the token is present, and returns empty optional otherwise.
      * */
-    private static boolean isTokenPresent(final String authorizationHeader) {
-        return authorizationHeader != null && authorizationHeader.toLowerCase().startsWith(AUTHENTICATION_SCHEME.toLowerCase() + " ");
+    private static Optional<String> getTokenFromAuthorizationHeader(final String authorizationHeader) {
+        if(Objects.isNull(authorizationHeader)) {
+            return Optional.empty();
+        }
+
+        if(!authorizationHeader.toLowerCase().startsWith(AUTHENTICATION_SCHEME.toLowerCase() + " ")) {
+            return Optional.empty();
+        }
+
+        final String token = authorizationHeader.substring(AUTHENTICATION_SCHEME.length()).trim();
+        return Optional.of(token);
+    }
+
+    /**
+     * Extract the UserPrincipal from the authentication, and validate the given auth token against it.
+     *
+     * @param token the signed JWT token
+     * @param authentication the current authentication
+     * @throws MalformedAuthTokenException if the token is malformed (does not meet validation)
+     * */
+    private void validateTokenAgainstAuthentication(final String token, final Authentication authentication) {
+        final UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
+
+        JSONWebTokenUtil.validateToken(token, userPrincipal, () ->
+                new MalformedAuthTokenException("Invalid token; either token is not formatted correctly or token-principal mismatch."));
+    }
+
+    /**
+     * Authenticate the token holder by extracting the user ID from the token, loading the user details and
+     * authenticating the user.
+     *
+     * @param token the signed JWT token
+     * @param request the request
+     * @throws MalformedAuthTokenException if the token is malformed (does not meet validation)
+     * */
+    private void authenticateTokenHolder(final String token, HttpServletRequest request) {
+        final Long userId = JSONWebTokenUtil.parseUserIdFromToken(token);
+        final UserPrincipal userPrincipal = this.userPrincipalService.loadUserById(userId);
+
+        JSONWebTokenUtil.validateToken(token, userPrincipal, () ->
+                new MalformedAuthTokenException("Invalid token; either token is not formatted correctly or token-principal mismatch."));
+
+        //if token is valid, add principal to security context
+        final UsernamePasswordAuthenticationToken newAuthentication =
+                new UsernamePasswordAuthenticationToken(userPrincipal, null, userPrincipal.getAuthorities());
+        newAuthentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+        SecurityContextHolder.getContext().setAuthentication(newAuthentication);
     }
 }

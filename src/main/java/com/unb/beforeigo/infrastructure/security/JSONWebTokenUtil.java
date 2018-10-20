@@ -19,6 +19,7 @@ import org.springframework.stereotype.Component;
 import java.text.ParseException;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Supplier;
 
@@ -26,6 +27,8 @@ import java.util.function.Supplier;
 public final class JSONWebTokenUtil {
 
     private static final String UID_CLAIM_NAME = "uid";
+
+    private static final String EMAIL_ADDR_CLAIM_NAME = "ead";
 
     private static byte[] secret;
 
@@ -41,6 +44,22 @@ public final class JSONWebTokenUtil {
         JWTClaimsSet cs = JSONWebTokenUtil.parseTokenClaimSet(token);
 
         return cs.getSubject();
+    }
+
+    /**
+     * Attempt to extract an email address from the JWT token.
+     *
+     * @param token The JWT token
+     * @return the email address of the user that made the request
+     */
+    public static String parseEmailAddressFromToken(String token) throws MalformedAuthTokenException {
+        JWTClaimsSet cs = JSONWebTokenUtil.parseTokenClaimSet(token);
+
+        try {
+            return cs.getStringClaim(EMAIL_ADDR_CLAIM_NAME);
+        } catch(ParseException e) {
+            throw new MalformedAuthTokenException("Unable to parse Long from 'uid' claim value", e);
+        }
     }
 
     /**
@@ -104,6 +123,7 @@ public final class JSONWebTokenUtil {
         JWTClaimsSet claims = new JWTClaimsSet.Builder()
                 .subject(user.getUsername())
                 .claim(UID_CLAIM_NAME, user.getId())
+                .claim(EMAIL_ADDR_CLAIM_NAME, user.getEmail())
                 .expirationTime(expirationTime)
                 .issueTime(currentTime)
                 .build();
@@ -136,6 +156,7 @@ public final class JSONWebTokenUtil {
         JWTClaimsSet claims = new JWTClaimsSet.Builder()
                 .subject(cs.getSubject())
                 .claim(UID_CLAIM_NAME, cs.getClaim(UID_CLAIM_NAME))
+                .claim(EMAIL_ADDR_CLAIM_NAME, cs.getClaim(EMAIL_ADDR_CLAIM_NAME))
                 .expirationTime(expirationTime)
                 .issueTime(currentTime)
                 .notBeforeTime(currentTime)
@@ -156,6 +177,7 @@ public final class JSONWebTokenUtil {
      *  <li>the token is not expired</li>
      *  <li>the token subject matches the user provided</li>
      *  <li>the token UID_CLAIM_NAME claim matches the user id provided</li>
+     *  <li>the token EMAIL_ADDR_CLAIM_NAME claim matches the user email address provided/li>
      * </ul>
      *
      * @param token the serialized SignedJWT token
@@ -177,11 +199,15 @@ public final class JSONWebTokenUtil {
                 return false;
             }
 
-            if(!user.getId().equals(cs.getClaim(UID_CLAIM_NAME))) {
+            if(!Objects.equals(user.getId(), cs.getClaim(UID_CLAIM_NAME))) {
                 return false;
             }
 
-            if(!user.getUsername().equals(cs.getSubject())) {
+            if(!Objects.equals(user.getEmail(), cs.getClaim(EMAIL_ADDR_CLAIM_NAME))) {
+                return false;
+            }
+
+            if(!Objects.equals(user.getUsername(), cs.getSubject())) {
                 return false;
             }
         } catch (JOSEException | ParseException e) {
@@ -204,7 +230,7 @@ public final class JSONWebTokenUtil {
      * */
     public static <T extends Throwable> String validateToken(final String token,
                                                              final UserPrincipal user,
-                                                             Supplier<? extends T> exceptionSupplier) throws T {
+                                                             final Supplier<? extends T> exceptionSupplier) throws T {
         if(validateToken(token, user)) {
             return token;
         }

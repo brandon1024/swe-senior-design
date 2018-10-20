@@ -7,7 +7,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 @Component
-public class AuthenticationSuccessHandler implements org.springframework.security.web.authentication.AuthenticationSuccessHandler {
+public class AuthenticationSuccessHandler
+        implements org.springframework.security.web.authentication.AuthenticationSuccessHandler {
 
     /**
      * Called when a user has been successfully authenticated.
@@ -18,5 +19,6 @@ public class AuthenticationSuccessHandler implements org.springframework.securit
      * the authentication process.
      */
     @Override
-    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {}
+    public void onAuthenticationSuccess(final HttpServletRequest request, final HttpServletResponse response,
+                                        final Authentication authentication) {}
 }

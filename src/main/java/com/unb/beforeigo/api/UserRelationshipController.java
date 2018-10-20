@@ -10,6 +10,7 @@ import com.unb.beforeigo.infrastructure.security.UserPrincipal;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Example;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @RestController
@@ -45,7 +47,7 @@ public class UserRelationshipController {
     public UserRelationship createUserRelationship(@PathVariable(name = "id") final Long initiatorId,
                                                    @RequestParam(name = "id") final Long subjectId,
                                                    final UserPrincipal currentUser) {
-        if(!currentUser.getId().equals(initiatorId)) {
+        if(!Objects.equals(currentUser.getId(), initiatorId)) {
             throw new UnauthorizedException("Insufficient permissions.");
         }
 
@@ -115,8 +117,8 @@ public class UserRelationshipController {
     @RequestMapping(value = "/{id}/following", method = RequestMethod.DELETE)
     public void deleteUserRelationship(@PathVariable(value = "id") final Long initiatorId,
                                        @RequestParam(value = "id") final Long subjectId,
-                                       final UserPrincipal currentUser) {
-        if(!currentUser.getId().equals(initiatorId)) {
+                                       @AuthenticationPrincipal final UserPrincipal currentUser) {
+        if(!Objects.equals(currentUser.getId(), initiatorId)) {
             throw new UnauthorizedException("Insufficient permissions.");
         }
 
