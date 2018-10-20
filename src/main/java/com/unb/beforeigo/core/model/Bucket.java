@@ -36,5 +36,4 @@ public class Bucket extends PersistentObject {
 
     @Column(columnDefinition = "TEXT")
     private String description;
-
 }

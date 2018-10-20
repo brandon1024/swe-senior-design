@@ -37,7 +37,7 @@ public class UserPrincipal extends org.springframework.security.core.userdetails
         return this.email;
     }
 
-    static UserPrincipal adapt(final User user) {
+    public static UserPrincipal adapt(final User user) {
         return new UserPrincipal(user);
     }
 }

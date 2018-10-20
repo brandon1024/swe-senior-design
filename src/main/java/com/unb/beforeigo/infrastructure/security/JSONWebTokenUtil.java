@@ -39,8 +39,9 @@ public final class JSONWebTokenUtil {
      *
      * @param token The JWT token
      * @return the username of the user that made the request
+     * @throws MalformedAuthTokenException if the token cannot be parsed
      */
-    public static String parseUsernameFromToken(String token) throws MalformedAuthTokenException {
+    public static String parseUsernameFromToken(String token) {
         JWTClaimsSet cs = JSONWebTokenUtil.parseTokenClaimSet(token);
 
         return cs.getSubject();
@@ -51,8 +52,9 @@ public final class JSONWebTokenUtil {
      *
      * @param token The JWT token
      * @return the email address of the user that made the request
+     * @throws MalformedAuthTokenException if the token cannot be parsed
      */
-    public static String parseEmailAddressFromToken(String token) throws MalformedAuthTokenException {
+    public static String parseEmailAddressFromToken(String token) {
         JWTClaimsSet cs = JSONWebTokenUtil.parseTokenClaimSet(token);
 
         try {
@@ -67,8 +69,9 @@ public final class JSONWebTokenUtil {
      *
      * @param token The JWT token
      * @return the id of the user that made the request
+     * @throws MalformedAuthTokenException if the token cannot be parsed
      */
-    public static Long parseUserIdFromToken(String token) throws MalformedAuthTokenException {
+    public static Long parseUserIdFromToken(String token) {
         JWTClaimsSet cs = JSONWebTokenUtil.parseTokenClaimSet(token);
 
         try {
@@ -83,8 +86,9 @@ public final class JSONWebTokenUtil {
      *
      * @param token The JWT token
      * @return the date representing when this token was issued
+     * @throws MalformedAuthTokenException if the token cannot be parsed
      */
-    public static Date parseIssueTimeFromToken(String token) throws MalformedAuthTokenException {
+    public static Date parseIssueTimeFromToken(String token) {
         JWTClaimsSet cs = JSONWebTokenUtil.parseTokenClaimSet(token);
 
         return cs.getIssueTime();
@@ -95,8 +99,9 @@ public final class JSONWebTokenUtil {
      *
      * @param token The JWT token
      * @return the date representing when this token will expire
+     * @throws MalformedAuthTokenException if the token cannot be parsed
      */
-    public static Date parseExpirationTimeFromToken(String token) throws MalformedAuthTokenException {
+    public static Date parseExpirationTimeFromToken(String token) {
         JWTClaimsSet cs = JSONWebTokenUtil.parseTokenClaimSet(token);
 
         return cs.getExpirationTime();
@@ -115,6 +120,7 @@ public final class JSONWebTokenUtil {
      *
      * @param user the user for which the token will be generated
      * @return the JWT token
+     * @throws SignatureGenerationException if the new token cannot be signed due to an unexpected exception
      */
     public static String generateToken(UserPrincipal user) {
         Date currentTime = new Date();
@@ -126,6 +132,8 @@ public final class JSONWebTokenUtil {
                 .claim(EMAIL_ADDR_CLAIM_NAME, user.getEmail())
                 .expirationTime(expirationTime)
                 .issueTime(currentTime)
+                .notBeforeTime(currentTime)
+                .jwtID(UUID.randomUUID().toString())
                 .build();
 
         SignedJWT token = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claims);
@@ -144,15 +152,23 @@ public final class JSONWebTokenUtil {
      * Refresh a token by updating the expirationTime claim and issueTime claim.
      *
      * @param token the serialized SignedJWT token
-     * @return a serialized refreshed SignedJWT token
+     * @return a serialized refreshed SignedJWT toke
+     * @throws MalformedAuthTokenException if the token cannot be parsed
+     * @throws SignatureGenerationException if the new token cannot be signed due to an unexpected exception
      * */
-    public static String refreshToken(String token) throws ParseException, JOSEException {
-        SignedJWT oldToken = SignedJWT.parse(token);
+    public static String refreshToken(String token) {
+        SignedJWT oldToken;
+        JWTClaimsSet cs;
+
+        try {
+            oldToken = SignedJWT.parse(token);
+            cs = oldToken.getJWTClaimsSet();
+        } catch(ParseException e) {
+            throw new MalformedAuthTokenException("Unable to parse token", e);
+        }
 
         Date currentTime = new Date();
         Date expirationTime = JSONWebTokenUtil.generateExpirationDate(currentTime);
-
-        JWTClaimsSet cs = oldToken.getJWTClaimsSet();
         JWTClaimsSet claims = new JWTClaimsSet.Builder()
                 .subject(cs.getSubject())
                 .claim(UID_CLAIM_NAME, cs.getClaim(UID_CLAIM_NAME))
@@ -164,8 +180,12 @@ public final class JSONWebTokenUtil {
                 .build();
 
         SignedJWT newToken = new SignedJWT(oldToken.getHeader(), claims);
-        JWSSigner signer = new MACSigner(secret);
-        newToken.sign(signer);
+        try {
+            JWSSigner signer = new MACSigner(secret);
+            newToken.sign(signer);
+        } catch(JOSEException e) {
+            throw new SignatureGenerationException("Unable to sign token due to unexpected JOSEException.", e);
+        }
 
         return newToken.serialize();
     }

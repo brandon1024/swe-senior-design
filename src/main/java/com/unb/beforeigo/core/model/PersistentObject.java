@@ -38,5 +38,4 @@ abstract class PersistentObject implements Serializable {
     @Temporal(TemporalType.TIMESTAMP)
     @LastModifiedDate
     private Date updatedAt;
-
 }

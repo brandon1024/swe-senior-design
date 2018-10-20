@@ -1,8 +1,10 @@
 # Spring Security and Authentication with JSON Web Tokens
 ## Introduction to JWT
-JSON Web Token (JWT) is an open standard for creating tokens that assert some number of claims. It is typically used to provide a secure method for communicating JSON securely between a client and server. Requests made to the server are digitally signed with a secret key on the server side using the HMAC algorithm. This digital signature is used to verify the integrity of the request made against the server. JWTs may also be encrypted, but this project relies only on signed JWTs.
+JSON Web Token (JWT) is an open standard for creating tokens that assert some number of claims. It is used to provide a secure method for communicating JSON securely between a client and server, and allows for stateless user session management. Requests made to the server are digitally signed with a secret key on the server side using the HMAC algorithm, which can be later used to verify the integrity of the request made against the server. JWTs may also be encrypted, but this project relies only on signed JWTs.
 
-For example, a server could generate a token that has the claim "logged in as admin" and provide that to a client. The client could then use that token to prove to the server that they are logged in as admin. The tokens are signed by the server's secret key, so the server is able to verify that the token is legitimate.
+As an example, consider that a server could generate a token that has the claim "logged in as admin" and provide that to a client. The client could use that token to prove to the server that they are logged in as admin. Because the tokens are signed by the server's secret key, the server is able to verify that the token is legitimate.
+
+Now, consider the situation in which a user attempts to forge a token to make them appear to have admin privileges. They modify the payload to assert the claim that they are an administrator. After making a request, the server verifies the integrity of the message using the token signature. Because they do not match, the server can reject the request. The user would have to forge the token signature as well, but this is not possible without the sever's secret key, because the signature is generated with a one-way hash function (HMAC, in this case).
 
 The signed JWT has three parts, and takes the form `xxxxx.yyyyy.zzzzz`. The first part is the header, which contains the type of token (JWT) and the algorithm used (in our case, HMAC using SHA-256 hash algorithm). The second part is the payload, which contains various statements about the token, known as claims, such as subject (username), expiration time of the token, and other custom fields. The last part is the signature, which is calculated using the HMACSHA256 algorithm, as described below:
 ```
@@ -168,7 +170,7 @@ X-Frame-Options: DENY
 X-XSS-Protection: 1; mode=block
 
 {
-    "token": "eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjE1NDAwNzA2OTIsImlhdCI6MTUzOTk4NDI5Mn0.9xaYrVuWI9Y7VI9xnU1TNqdEkB22rS3xct73l5dzs4M",
+    "token": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJUZXN0VXNlcjEiLCJ1aWQiOjIsImV4cCI6MTU0MDA3MDUwMSwiaWF0IjoxNTM5OTg0MTAxfQ.aWes_OybvSVZ9o6AVGvs3XAAT9y8gLkEJBoJrFavTgg",
     "user": {
         "id": 2,
         "username": "TestUser1",
