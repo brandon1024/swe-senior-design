@@ -1,6 +1,7 @@
 package com.unb.beforeigo.core.svc;
 
 import com.unb.beforeigo.api.dto.request.UserRegistrationRequest;
+import com.unb.beforeigo.api.dto.response.UserSummaryResponse;
 import com.unb.beforeigo.api.exception.client.BadRequestException;
 import com.unb.beforeigo.application.dao.PhysicalAddressDAO;
 import com.unb.beforeigo.application.dao.UserDAO;
@@ -8,17 +9,17 @@ import com.unb.beforeigo.application.dao.UserRelationshipDAO;
 import com.unb.beforeigo.core.model.PhysicalAddress;
 import com.unb.beforeigo.core.model.User;
 import com.unb.beforeigo.core.model.UserRelationship;
+import com.unb.beforeigo.core.model.validation.EntityValidator;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Example;
+import org.springframework.data.domain.ExampleMatcher;
+import org.springframework.lang.Nullable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.Validation;
-import javax.validation.ValidatorFactory;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
-import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 @Service
 public class UserService {
@@ -32,7 +33,53 @@ public class UserService {
     @Autowired private PasswordEncoder passwordEncoder;
 
     /**
-     * Save a user.
+     * Retrieve a list of {@link User}'s that match any of the given id, username or email address, first, middle or
+     * last name.
+     *
+     * Only non-null parameters are used in the query.
+     *
+     * @param username an optional username to use in the query
+     * @param email an optional email to use in the query
+     * @param firstName an optional first name to use in the query
+     * @param middleName an optional middle name to use in the query
+     * @param lastName an optional last name to use in the query
+     * @return a list of users found matching any of the request parameters.
+     * */
+    public List<UserSummaryResponse> findUsers(@Nullable final Long userId,
+                                               @Nullable final String username,
+                                               @Nullable final String email,
+                                               @Nullable final String firstName,
+                                               @Nullable final String middleName,
+                                               @Nullable final String lastName) {
+        User queryUser = new User();
+        queryUser.setId(userId);
+        queryUser.setUsername(username);
+        queryUser.setEmail(email);
+        queryUser.setFirstName(firstName);
+        queryUser.setMiddleName(middleName);
+        queryUser.setLastName(lastName);
+
+        List<User> queriedUsers = userDAO.findAll(Example.of(queryUser, ExampleMatcher.matchingAny()));
+
+        return queriedUsers.stream().map(this::adaptUserToUserSummary).collect(Collectors.toList());
+    }
+
+    /**
+     * Retrieve a specific {@link User} by id.
+     *
+     * @param userId the id of the user
+     * @return the user with the given id.
+     * @throws BadRequestException if a user with the given id cannot be found.
+     * */
+    public UserSummaryResponse findUserById(final Long userId) {
+        User user = userDAO.findById(userId)
+                .orElseThrow(() -> new BadRequestException("Unable to find user with id " + userId));
+
+        return adaptUserToUserSummary(user);
+    }
+
+    /**
+     * Save a {@link User}.
      *
      * Encrypts the user's password, sets the user's role to USER, performs validation, and saves the user to the
      * database. The user's physically address is also saved.
@@ -41,28 +88,33 @@ public class UserService {
      * @return the persisted user
      * @throws BadRequestException if the user cannot be saved because it does not meet validation constraints
      * */
-    public User saveUser(final User user) {
+    public UserSummaryResponse saveUser(final User user) {
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         user.setRole(User.Role.USER);
 
-        validateUser(user, () -> new BadRequestException("cannot save user that does not meet validation constraints"));
+        EntityValidator.validateEntity(user, () -> new BadRequestException("cannot save user that does not meet validation constraints"));
 
         physicalAddressDAO.save(user.getUserAddress());
-        return userDAO.save(user);
+        User savedUser = userDAO.save(user);
+        return adaptUserToUserSummary(savedUser);
     }
 
     /**
-     * Patch a user.
+     * Patch a {@link User}.
      *
      * Applies only non-null fields present in the partialUser to the persistent user, and then attempts to save the
      * user to the database.
      *
      * @param partialUser a partial user
-     * @param persistentUser the user that exists in the database that will be patched
+     * @param userId the id of the user that exists in the database that will be patched
      * @return the persisted user
+     * @throws BadRequestException if a user with the given id cannot be found
      * @throws BadRequestException if the user cannot be saved because it does not meet validation constraints
      * */
-    public User patchUser(final User partialUser, final User persistentUser) {
+    public UserSummaryResponse patchUser(final User partialUser, final Long userId) {
+        User persistentUser = userDAO.findById(userId)
+                .orElseThrow(() -> new BadRequestException("Unable to find user with id " + userId));
+
         if(Objects.nonNull(partialUser.getEmail())) {
             persistentUser.setEmail(partialUser.getEmail());
         }
@@ -129,28 +181,30 @@ public class UserService {
     }
 
     /**
-     * Update (overwrite) a user.
+     * Update (overwrite) a {@link User}.
      *
      * Applies all fields present in the partialUser to the persistent user, and then attempts to save the user to the
      * database.
      *
      * @param partialUser a user
-     * @param persistentUser the user that exists in the database that will be updated
+     * @param userId the id of the user that exists in the database that will be updated
      * @return the persisted user
-     * @throws BadRequestException if the user cannot be saved because it does not meet validation constraints
      * */
-    public User updateUser(final User partialUser, final User persistentUser) {
-        partialUser.setId(persistentUser.getId());
+    public UserSummaryResponse updateUser(final User partialUser, final Long userId) {
+        partialUser.setId(userId);
 
         return saveUser(partialUser);
     }
 
     /**
-     * Delete a user, along with its user relationships.
+     * Delete a {@link User}, along with its user relationships.
      *
-     * @param persistentUser the persisted user that is to be deleted.
+     * @param userId the id of the persisted user that is to be deleted.
      * */
-    public void deleteUser(final User persistentUser) {
+    public void deleteUser(final Long userId) {
+        User persistentUser = userDAO.findById(userId)
+                .orElseThrow(() -> new BadRequestException("Unable to find user with id " + userId));
+
         List<UserRelationship> relationships = userRelationshipDAO.findByFollower(persistentUser);
 
         userRelationshipDAO.deleteAll(relationships);
@@ -158,7 +212,7 @@ public class UserService {
     }
 
     /**
-     * Adapt a registration request DTO to a user entity. Fields in the registration request are copied to the user
+     * Adapt a registration request DTO to a {@link User}. Fields in the registration request are copied to the user
      * object and returned.
      *
      * @param registrationRequest the registration request DTO
@@ -188,42 +242,13 @@ public class UserService {
     }
 
     /**
-     * Validate a user.
+     * Build a UserSummaryResponse DTO of a {@link User}.
      *
-     * @param user the user to be validated
-     * @return true if the the user is valid, false otherwise.
+     * @param user the user to be used to build a UserSummaryResponse
+     * @return a summary of the user
      * */
-    public boolean validateUser(final User user) {
-        return getUserConstraintViolations(user).isEmpty();
-    }
-
-    /**
-     * Verify that a user is valid, returning the user if so, otherwise throw an exception produced by the exception
-     * supplying function.
-     *
-     * @param <T> Type of the exception to be thrown
-     * @param user the user to verify
-     * @param exceptionSupplier the supplying function that produces an exception to be thrown
-     * @throws T if the user is invalid.
-     * @return the supplied user, if valid.
-     * */
-    public <T extends Throwable> User validateUser(final User user, Supplier<? extends T> exceptionSupplier) throws T {
-        if(validateUser(user)) {
-            return user;
-        }
-
-        throw exceptionSupplier.get();
-    }
-
-    /**
-     * Get a set of validation constraint violations for a user.
-     *
-     * @param user the user to be validated
-     * @return the set of constraint violations for a given user.
-     * */
-    public Set<ConstraintViolation<User>> getUserConstraintViolations(final User user) {
-        ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
-
-        return factory.getValidator().validate(user);
+    private UserSummaryResponse adaptUserToUserSummary(final User user) {
+        return new UserSummaryResponse(user.getId(), user.getUsername(), user.getEmail(),
+                user.getFirstName(), user.getMiddleName(), user.getLastName());
     }
 }

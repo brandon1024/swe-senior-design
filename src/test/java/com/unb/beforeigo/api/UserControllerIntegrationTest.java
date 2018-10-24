@@ -1,9 +1,8 @@
 package com.unb.beforeigo.api;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.unb.beforeigo.api.dto.request.AuthenticationRequest;
 import com.unb.beforeigo.api.dto.request.UserRegistrationRequest;
-import com.unb.beforeigo.api.dto.response.AuthenticationResponse;
+import com.unb.beforeigo.api.dto.response.UserAuthenticationResponse;
 import com.unb.beforeigo.core.model.User;
 import com.unb.beforeigo.infrastructure.security.UserPrincipal;
 import org.junit.jupiter.api.AfterEach;
@@ -48,7 +47,7 @@ class UserControllerIntegrationTest extends APIIntegrationTestSuite {
 
         var requestJSON = APITestUtils.marshallToJSONLiteral(registrationRequest);
         var entity = APITestUtils.buildHTTPRequest(requestJSON);
-        var response = restTemplate.exchange("/auth/signup", HttpMethod.POST, entity, AuthenticationResponse.class);
+        var response = restTemplate.exchange("/auth/signup", HttpMethod.POST, entity, UserAuthenticationResponse.class);
         Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
         Assertions.assertNotNull(response.getBody());
 

@@ -1,6 +1,8 @@
 package com.unb.beforeigo.core.model;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import javax.persistence.Entity;
@@ -21,7 +23,13 @@ import javax.validation.constraints.NotNull;
         uniqueConstraints = {@UniqueConstraint(columnNames = {"follower_id", "following_id"})})
 @EntityListeners(AuditingEntityListener.class)
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class UserRelationship extends PersistentObject {
+
+    public UserRelationship(final Long id) {
+        this.setId(id);
+    }
 
     @NotNull
     @ManyToOne

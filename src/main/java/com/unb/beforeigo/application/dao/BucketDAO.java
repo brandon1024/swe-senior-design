@@ -39,4 +39,12 @@ public interface BucketDAO extends JpaRepository<Bucket, Long> {
      * {@code Optional.empty()} if not found.
      * */
     Optional<Bucket> findFirstByNameAndOwner(final String name, final User owner);
+
+    /**
+     * Find all {@link Bucket} objects with a given owner that are public.
+     *
+     * @param owner the creator and owner of the buckets to be found
+     * @return a list of public buckets created by a given user
+     * */
+    List<Bucket> findAllByOwnerAndIsPublicTrue(final User owner);
 }

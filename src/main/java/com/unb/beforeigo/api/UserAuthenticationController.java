@@ -1,13 +1,14 @@
 package com.unb.beforeigo.api;
 
-import com.unb.beforeigo.api.dto.request.AuthenticationRequest;
+import com.unb.beforeigo.api.dto.request.UserAuthenticationRequest;
 import com.unb.beforeigo.api.dto.request.UserRegistrationRequest;
-import com.unb.beforeigo.api.dto.response.AuthenticationResponse;
-import com.unb.beforeigo.api.dto.response.IdentityAvailabilityResponse;
+import com.unb.beforeigo.api.dto.response.UserAuthenticationResponse;
+import com.unb.beforeigo.api.dto.response.UserIdentityAvailabilityResponse;
 import com.unb.beforeigo.api.exception.client.BadRequestException;
 import com.unb.beforeigo.api.exception.client.UnauthorizedException;
 import com.unb.beforeigo.application.dao.UserDAO;
 import com.unb.beforeigo.core.model.User;
+import com.unb.beforeigo.core.model.validation.EntityValidator;
 import com.unb.beforeigo.core.svc.UserService;
 import com.unb.beforeigo.infrastructure.security.JSONWebTokenUtil;
 import com.unb.beforeigo.infrastructure.security.UserPrincipal;
@@ -53,7 +54,7 @@ public class UserAuthenticationController {
      * in the request body does not exist.
      * */
     @RequestMapping(value = "/signin", method = RequestMethod.POST)
-    public ResponseEntity<AuthenticationResponse> issueToken(@Valid @RequestBody final AuthenticationRequest request)
+    public ResponseEntity<UserAuthenticationResponse> issueToken(@Valid @RequestBody final UserAuthenticationRequest request)
             throws AuthenticationException {
         final UserPrincipal userPrincipal;
         if(Objects.isNull(request.getUsername())) {
@@ -69,8 +70,9 @@ public class UserAuthenticationController {
 
         //Generate JWT token
         final String token = JSONWebTokenUtil.generateToken(userPrincipal);
+        userPrincipal.eraseCredentials();
 
-        return new ResponseEntity<>(new AuthenticationResponse(token, userPrincipal), HttpStatus.OK);
+        return new ResponseEntity<>(new UserAuthenticationResponse(token, userPrincipal), HttpStatus.CREATED);
     }
 
     /**
@@ -82,14 +84,14 @@ public class UserAuthenticationController {
      * @throws BadRequestException if the new user does not meet validation constraints
      * */
     @RequestMapping(value = "/signup", method = RequestMethod.POST)
-    public ResponseEntity<AuthenticationResponse> registerAndIssueToken(
+    public ResponseEntity<UserAuthenticationResponse> registerAndIssueToken(
             @Valid @RequestBody final UserRegistrationRequest registrationRequest) {
         if(!Objects.equals(registrationRequest.getPassword(), registrationRequest.getPasswordConfirm())) {
             throw new BadRequestException("Password mismatch.");
         }
 
         final User user = userService.buildUserFromRegistrationRequest(registrationRequest);
-        userService.validateUser(user, () -> new BadRequestException("new user does not meet validation constraints"));
+        EntityValidator.validateEntity(user, () -> new BadRequestException("new user does not meet validation constraints"));
         userService.saveUser(user);
 
         //Attempt to authenticate the user
@@ -100,8 +102,9 @@ public class UserAuthenticationController {
         //Load user and generate JWT token
         final UserPrincipal userPrincipal = userPrincipalService.loadUserByUsername(registrationRequest.getUsername());
         final String token = JSONWebTokenUtil.generateToken(userPrincipal);
+        userPrincipal.eraseCredentials();
 
-        return new ResponseEntity<>(new AuthenticationResponse(token, userPrincipal), HttpStatus.OK);
+        return new ResponseEntity<>(new UserAuthenticationResponse(token, userPrincipal), HttpStatus.OK);
     }
 
     /**
@@ -110,7 +113,7 @@ public class UserAuthenticationController {
      * @return 200 OK if the authentication succeeded, with the token in the response body.
      * */
     @RequestMapping(value = "/token_refresh", method = RequestMethod.POST)
-    public ResponseEntity<AuthenticationResponse> refreshToken(
+    public ResponseEntity<UserAuthenticationResponse> refreshToken(
             @AuthenticationPrincipal final UserPrincipal userPrincipal) {
         if(Objects.isNull(userPrincipal)) {
             throw new UnauthorizedException("User is not authenticated, and therefore cannot be granted a new token.");
@@ -118,8 +121,9 @@ public class UserAuthenticationController {
 
         //Generate new token
         final String newToken = JSONWebTokenUtil.generateToken(userPrincipal);
+        userPrincipal.eraseCredentials();
 
-        return new ResponseEntity<>(new AuthenticationResponse(newToken, userPrincipal), HttpStatus.OK);
+        return new ResponseEntity<>(new UserAuthenticationResponse(newToken, userPrincipal), HttpStatus.OK);
     }
 
     /**
@@ -127,10 +131,10 @@ public class UserAuthenticationController {
      *
      * @param username optional request parameter for the email address
      * @param email optional request parameter for the username
-     * @return IdentityAvailabilityResponse
+     * @return UserIdentityAvailabilityResponse
      * */
     @RequestMapping(value = "/identity_available", method = RequestMethod.GET)
-    public ResponseEntity<IdentityAvailabilityResponse> checkIdentityAvailability(
+    public ResponseEntity<UserIdentityAvailabilityResponse> checkIdentityAvailability(
             @RequestParam(name = "username", required = false) final String username,
             @RequestParam(name = "email", required = false) final String email) {
         if(Objects.isNull(username) && Objects.isNull(email)) {
@@ -140,8 +144,8 @@ public class UserAuthenticationController {
         final Boolean usernameAvailable = username != null ? !userDAO.existsByUsername(username) : null;
         final Boolean emailAddressAvailable = email != null ? !userDAO.existsByEmail(email) : null;
 
-        final IdentityAvailabilityResponse response =
-                new IdentityAvailabilityResponse(usernameAvailable, emailAddressAvailable);
+        final UserIdentityAvailabilityResponse response =
+                new UserIdentityAvailabilityResponse(usernameAvailable, emailAddressAvailable);
 
         return new ResponseEntity<>(response, HttpStatus.OK);
     }

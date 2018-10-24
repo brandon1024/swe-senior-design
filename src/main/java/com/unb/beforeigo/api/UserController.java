@@ -1,15 +1,15 @@
 package com.unb.beforeigo.api;
 
+import com.unb.beforeigo.api.dto.response.UserSummaryResponse;
 import com.unb.beforeigo.api.exception.client.BadRequestException;
 import com.unb.beforeigo.api.exception.client.UnauthorizedException;
-import com.unb.beforeigo.application.dao.UserDAO;
 import com.unb.beforeigo.core.model.User;
 import com.unb.beforeigo.core.svc.UserService;
 import com.unb.beforeigo.infrastructure.security.UserPrincipal;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Example;
-import org.springframework.data.domain.ExampleMatcher;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -26,8 +26,6 @@ import java.util.Objects;
 @RequestMapping("/")
 @Slf4j
 public class UserController {
-
-    @Autowired private UserDAO userDAO;
 
     @Autowired private UserService userService;
 
@@ -55,21 +53,14 @@ public class UserController {
      * @return a list of users found matching any of the request parameters.
      * */
     @RequestMapping(value = "/users", method = RequestMethod.GET)
-    public List<User> findUsers(@RequestParam(name = "id", required = false) final Long userId,
-                                @RequestParam(name = "username", required = false) final String username,
-                                @RequestParam(name = "email", required = false) final String email,
-                                @RequestParam(name = "firstname", required = false) final String firstName,
-                                @RequestParam(name = "middlename", required = false) final String middleName,
-                                @RequestParam(name = "lastname", required = false) final String lastName) {
-        User queryUser = new User();
-        queryUser.setId(userId);
-        queryUser.setUsername(username);
-        queryUser.setEmail(email);
-        queryUser.setFirstName(firstName);
-        queryUser.setMiddleName(middleName);
-        queryUser.setLastName(lastName);
-
-        return userDAO.findAll(Example.of(queryUser, ExampleMatcher.matchingAny()));
+    public ResponseEntity<List<UserSummaryResponse>> findUsers(@RequestParam(name = "id", required = false) final Long userId,
+                                                               @RequestParam(name = "username", required = false) final String username,
+                                                               @RequestParam(name = "email", required = false) final String email,
+                                                               @RequestParam(name = "firstname", required = false) final String firstName,
+                                                               @RequestParam(name = "middlename", required = false) final String middleName,
+                                                               @RequestParam(name = "lastname", required = false) final String lastName) {
+        List<UserSummaryResponse> users = userService.findUsers(userId, username, email, firstName, middleName, lastName);
+        return new ResponseEntity<>(users, HttpStatus.OK);
     }
 
     /**
@@ -80,9 +71,9 @@ public class UserController {
      * @throws BadRequestException if a user with the given id cannot be found.
      * */
     @RequestMapping(value = "/users/{id}", method = RequestMethod.GET)
-    public User findUserById(@PathVariable(name = "id") final Long userId) {
-        return userDAO.findById(userId)
-                .orElseThrow(() -> new BadRequestException("Unable to find user with id " + userId));
+    public ResponseEntity<UserSummaryResponse> findUserById(@PathVariable(name = "id") final Long userId) {
+        UserSummaryResponse user = userService.findUserById(userId);
+        return new ResponseEntity<>(user, HttpStatus.OK);
     }
 
     /**
@@ -99,17 +90,15 @@ public class UserController {
      * validation constraints.
      * */
     @RequestMapping(value = "/users/{id}", method = RequestMethod.PATCH, consumes = "application/json")
-    public User patchUser(@PathVariable(name = "id") final Long userId,
-                          @RequestBody final User user,
-                          @AuthenticationPrincipal final UserPrincipal currentUser) {
+    public ResponseEntity<UserSummaryResponse> patchUser(@PathVariable(name = "id") final Long userId,
+                                                         @RequestBody final User user,
+                                                         @AuthenticationPrincipal final UserPrincipal currentUser) {
         if(!Objects.equals(currentUser.getId(), userId)) {
             throw new UnauthorizedException("Insufficient permissions.");
         }
 
-        User persistentUser = userDAO.findById(userId)
-                .orElseThrow(() -> new BadRequestException("Unable to find user with id " + userId));
-
-        return userService.patchUser(user, persistentUser);
+        UserSummaryResponse patchedUser = userService.patchUser(user, userId);
+        return new ResponseEntity<>(patchedUser, HttpStatus.OK);
     }
 
     /**
@@ -126,17 +115,15 @@ public class UserController {
      * validation constraints.
      * */
     @RequestMapping(value = "/users/{id}", method = RequestMethod.PUT, consumes = "application/json")
-    public User updateUser(@PathVariable(name = "id") final Long userId,
-                           @Valid @RequestBody final User user,
-                           @AuthenticationPrincipal final UserPrincipal currentUser) {
+    public ResponseEntity<UserSummaryResponse> updateUser(@PathVariable(name = "id") final Long userId,
+                                                          @Valid @RequestBody final User user,
+                                                          @AuthenticationPrincipal final UserPrincipal currentUser) {
         if(!Objects.equals(currentUser.getId(), userId)) {
             throw new UnauthorizedException("Insufficient permissions.");
         }
 
-        User persistentUser = userDAO.findById(userId)
-                .orElseThrow(() -> new BadRequestException("Unable to find user with id " + userId));
-
-        return userService.updateUser(user, persistentUser);
+        UserSummaryResponse updatedUser = userService.updateUser(user, userId);
+        return new ResponseEntity<>(updatedUser, HttpStatus.OK);
     }
 
     /**
@@ -150,15 +137,13 @@ public class UserController {
      * @throws BadRequestException if a user cannot be found with the provided id
      * */
     @RequestMapping(value = "/users/{id}", method = RequestMethod.DELETE)
-    public void deleteUser(@PathVariable(name = "id") final Long userId,
-                           @AuthenticationPrincipal final UserPrincipal currentUser) {
+    public ResponseEntity<?> deleteUser(@PathVariable(name = "id") final Long userId,
+                                        @AuthenticationPrincipal final UserPrincipal currentUser) {
         if(!Objects.equals(currentUser.getId(), userId)) {
             throw new UnauthorizedException("Insufficient permissions.");
         }
 
-        User user = userDAO.findById(userId)
-                .orElseThrow(() -> new BadRequestException("Unable to find user with id " + userId));
-
-        userService.deleteUser(user);
+        userService.deleteUser(userId);
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 }

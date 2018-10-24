@@ -3,7 +3,9 @@ package com.unb.beforeigo.core.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.unb.beforeigo.core.model.validation.Username;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import javax.persistence.Column;
@@ -26,6 +28,8 @@ import javax.validation.constraints.Size;
 @Table(name = "users")
 @EntityListeners(AuditingEntityListener.class)
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class User extends PersistentObject {
 
     public enum Role {
@@ -33,6 +37,10 @@ public class User extends PersistentObject {
         DEV,
         USER,
         VISITOR
+    }
+
+    public User(final Long id) {
+        this.setId(id);
     }
 
     @Email(message = "Email must be valid")

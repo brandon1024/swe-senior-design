@@ -5,7 +5,7 @@ import lombok.Data;
 import java.io.Serializable;
 
 @Data
-public class IdentityAvailabilityResponse implements Serializable {
+public class UserIdentityAvailabilityResponse implements Serializable {
 
     private final Boolean usernameAvailable;
 

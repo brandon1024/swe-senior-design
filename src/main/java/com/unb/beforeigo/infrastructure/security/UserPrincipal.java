@@ -1,6 +1,5 @@
 package com.unb.beforeigo.infrastructure.security;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.unb.beforeigo.core.model.User;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -8,7 +7,6 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import java.util.Collection;
 import java.util.Collections;
 
-@JsonIgnoreProperties(value = { "password" })
 public class UserPrincipal extends org.springframework.security.core.userdetails.User {
 
     private final Long id;

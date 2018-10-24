@@ -1,6 +1,8 @@
 package com.unb.beforeigo.core.model;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import javax.persistence.Entity;
@@ -17,7 +19,13 @@ import javax.validation.constraints.Size;
 @Table(name = "physical_addresses")
 @EntityListeners(AuditingEntityListener.class)
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class PhysicalAddress extends PersistentObject {
+
+    public PhysicalAddress(final Long id) {
+        this.setId(id);
+    }
 
     @Size(max = 255)
     private String primaryStreetAddress;

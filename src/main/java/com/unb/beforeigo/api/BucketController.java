@@ -1,34 +1,32 @@
 package com.unb.beforeigo.api;
 
-import com.unb.beforeigo.api.exception.client.BadRequestException;
+import com.unb.beforeigo.api.dto.response.BucketSummaryResponse;
 import com.unb.beforeigo.api.exception.client.UnauthorizedException;
-import com.unb.beforeigo.application.dao.BucketDAO;
-import com.unb.beforeigo.application.dao.UserDAO;
 import com.unb.beforeigo.core.model.Bucket;
 import com.unb.beforeigo.core.model.User;
+import com.unb.beforeigo.core.svc.BucketService;
 import com.unb.beforeigo.infrastructure.security.UserPrincipal;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Example;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/")
 @Slf4j
 public class BucketController {
 
-    @Autowired private BucketDAO bucketDAO;
-
-    @Autowired private UserDAO userDAO;
+    @Autowired private BucketService bucketService;
 
     /**
      * Create a new {@link Bucket}.
@@ -37,28 +35,39 @@ public class BucketController {
      * @param bucket A valid bucket with all necessary fields
      * @return a new bucket once persisted in the database
      * @throws UnauthorizedException if the id of the currently authenticated user does not match the path variable id
-     * @throws BadRequestException if a the bucket provided has a non-null id field
-     * @throws BadRequestException if a user with the given owner id cannot be found
+     * @see BucketService#createBucket(Long, Bucket)
      * */
     @RequestMapping(value = "/users/{id}/buckets", method = RequestMethod.POST, consumes = "application/json")
-    public Bucket createBucket(@PathVariable(name = "id") final Long ownerId,
-                               @RequestBody Bucket bucket,
-                               @AuthenticationPrincipal final UserPrincipal currentUser) {
+    public ResponseEntity<BucketSummaryResponse> createBucket(@PathVariable(name = "id") final Long ownerId,
+                                                              @RequestBody final Bucket bucket,
+                                                              @AuthenticationPrincipal final UserPrincipal currentUser) {
         if(!Objects.equals(currentUser.getId(), ownerId)) {
             throw new UnauthorizedException("Insufficient permissions.");
         }
 
-        if(Objects.nonNull(bucket.getId())) {
-            throw new BadRequestException("Cannot create a bucket with a specific bucket id " + bucket.getId());
+        BucketSummaryResponse response = bucketService.createBucket(ownerId, bucket);
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
+    }
+
+    /**
+     * Create a new {@link Bucket} from an existing bucket.
+     *
+     * @param ownerId The id of the user that owns the bucket
+     * @param parentBucketId The id of the bucket that is to be duplicated
+     * @return a new bucket once persisted in the database
+     * @throws UnauthorizedException if the id of the currently authenticated user does not match the path variable id
+     * @see BucketService#duplicateBucket(Long, Long)
+     * */
+    @RequestMapping(value = "/users/{id}/buckets", method = RequestMethod.POST, consumes = "application/json")
+    public ResponseEntity<BucketSummaryResponse> duplicateBucket(@PathVariable(name = "id") final Long ownerId,
+                                                                 @RequestParam(name = "from") final Long parentBucketId,
+                                                                 @AuthenticationPrincipal final UserPrincipal currentUser) {
+        if(!Objects.equals(currentUser.getId(), ownerId)) {
+            throw new UnauthorizedException("Insufficient permissions.");
         }
 
-        User bucketOwner = userDAO.findById(ownerId)
-                .orElseThrow(() ->
-                        new BadRequestException("Unable to find a record with id " + ownerId));
-
-        bucket.setOwner(bucketOwner);
-
-        return bucketDAO.save(bucket);
+        BucketSummaryResponse response = bucketService.duplicateBucket(ownerId, parentBucketId);
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
     /**
@@ -67,161 +76,121 @@ public class BucketController {
      * If the owner id does not match the id of the principal user, only public buckets are returned.
      *
      * @param ownerId id of the user that owns the buckets.
-     * @return a list of all buckets associated to a given user if the user and principal have matching ids,
-     * otherwise only returns public buckets
-     * @throws BadRequestException if a user with the given owner id cannot be found
+     * @return a list of all buckets associated to a given user. If the user and principal have matching ids, public and
+     * private buckets are returned, otherwise only returns public buckets
+     * @see BucketService#findBuckets(Long, boolean)
      * */
     @RequestMapping(value = "/users/{id}/buckets", method = RequestMethod.GET)
-    public List<Bucket> findBuckets(@PathVariable(name = "id") final Long ownerId,
-                                    @AuthenticationPrincipal final UserPrincipal currentUser) {
-        User bucketOwner = userDAO.findById(ownerId)
-                .orElseThrow(() ->
-                        new BadRequestException("Unable to find a record with id " + ownerId));
+    public ResponseEntity<List<BucketSummaryResponse>> findBuckets(@PathVariable(name = "id") final Long ownerId,
+                                                                   @AuthenticationPrincipal final UserPrincipal currentUser) {
+        List<BucketSummaryResponse> response = bucketService.findBuckets(ownerId, !Objects.equals(currentUser.getId(), ownerId));
 
-        List<Bucket> ownerBuckets = bucketDAO.findAllByOwner(bucketOwner);
-        if(Objects.equals(currentUser.getId(), ownerId)) {
-            return ownerBuckets;
-        }
-
-        return ownerBuckets.stream().filter(Bucket::getIsPublic).collect(Collectors.toList());
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     /**
-     * Retrieve a specific {@link Bucket}'s associated to a specific user.
+     * Retrieve a specific {@link Bucket} associated to a specific user.
      *
      * If the owner id does not match the id of the principal user, the bucket is only returned if public.
      *
      * @param ownerId id of the user that owns the buckets.
      * @param bucketId id of the bucket
-     * @return a bucket found using the user id and bucket id
-     * @throws BadRequestException if a user with the given owner id cannot be found
-     * @throws UnauthorizedException if the bucket is private and the id of the current user is not the bucket owner.
+     * @return bucket associated to a given user. If the user and principal have matching ids, public or private bucket
+     * may be returned, otherwise only returns a public bucket
+     * @see BucketService#findBucketById(Long, boolean)
      * */
     @RequestMapping(value = "/users/{ownerId}/buckets/{bucketId}", method = RequestMethod.GET)
-    public Bucket findBucketById(@PathVariable(name = "ownerId") final Long ownerId,
-                                 @PathVariable(name = "bucketId") final Long bucketId,
-                                 @AuthenticationPrincipal final UserPrincipal currentUser) {
-        userDAO.findById(ownerId)
-                .orElseThrow(() -> new BadRequestException("Unable to find a record with id " + ownerId));
+    public ResponseEntity<BucketSummaryResponse> findBucketById(@PathVariable(name = "ownerId") final Long ownerId,
+                                                                @PathVariable(name = "bucketId") final Long bucketId,
+                                                                @AuthenticationPrincipal final UserPrincipal currentUser) {
+        BucketSummaryResponse response = bucketService.findBucketById(ownerId, !Objects.equals(currentUser.getId(), ownerId));
 
-        Bucket bucket = bucketDAO.findById(bucketId)
-                .orElseThrow(() -> new BadRequestException("Unable to find bucket with id " + bucketId));
-        if(!Objects.equals(currentUser.getId(), ownerId) && !bucket.getIsPublic()) {
-            throw new UnauthorizedException("User is not permitted to access this resource.");
-        }
-
-        return bucket;
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     /**
      * Update fields in a {@link Bucket} that is currently persisted in the database. Only non-null bucket fields are
      * updated.
      *
-     * The id of the authenticated principal must match the path variable ownerId.
+     * The id of the authenticated principal must match the path variable ownerId. The id of the owner of the bucket
+     * must also match the path variable ownerId.
      *
      * @param ownerId id of the user that owns the bucket
      * @param bucketId id of the bucket that will be patched
-     * @param bucket A bucket to patch
+     * @param bucket A partial bucket used to patch a persisted bucket
      * @return the patched bucket
      * @throws UnauthorizedException if the id of the currently authenticated user does not match the path variable id
-     * @throws BadRequestException if the owner of the bucket with the given id does not match the owner in the url
-     * path variable.
+     * @see BucketService#patchBucket(Bucket, Long)
      * */
     @RequestMapping(value = "/users/{ownerId}/buckets/{bucketId}", method = RequestMethod.PATCH,
             consumes = "application/json")
-    public Bucket patchBucket(@PathVariable(value = "ownerId") final Long ownerId,
-                              @PathVariable(value = "bucketId") final Long bucketId,
-                              @RequestBody final Bucket bucket,
-                              @AuthenticationPrincipal final UserPrincipal currentUser) {
+    public ResponseEntity<BucketSummaryResponse> patchBucket(@PathVariable(value = "ownerId") final Long ownerId,
+                                                             @PathVariable(value = "bucketId") final Long bucketId,
+                                                             @RequestBody final Bucket bucket,
+                                                             @AuthenticationPrincipal final UserPrincipal currentUser) {
         if(!Objects.equals(currentUser.getId(), ownerId)) {
             throw new UnauthorizedException("Insufficient permissions.");
         }
 
-        Bucket persistedBucket = bucketDAO.findById(bucketId)
-                .orElseThrow(() -> new BadRequestException("Unable to find bucket with id " + bucketId));
+        bucket.setOwner(new User(ownerId));
 
-        if(!Objects.equals(persistedBucket.getOwner().getId(), ownerId)) {
-            throw new BadRequestException("Owner of bucket with id " + bucketId +
-                    " does not match url path variable for user id " + ownerId + ".");
-        }
-
-        if(Objects.nonNull(bucket.getName())) {
-            persistedBucket.setName(bucket.getName());
-        }
-
-        if(Objects.nonNull(bucket.getIsPublic())) {
-            persistedBucket.setIsPublic(bucket.getIsPublic());
-        }
-
-        if(Objects.nonNull(bucket.getDescription())) {
-            persistedBucket.setDescription(bucket.getDescription());
-        }
-
-        return bucketDAO.save(persistedBucket);
+        BucketSummaryResponse response = bucketService.patchBucket(bucket, bucketId);
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     /**
      * Completely update a {@link Bucket} that is currently persisted in the database. All bucket fields are updated.
      *
-     * The id of the authenticated principal must match the path variable ownerId.
+     * The id of the authenticated principal must match the path variable ownerId. The id of the owner of the bucket
+     * must also match the path variable ownerId.
      *
      * @param ownerId id of the user that owns the bucket
      * @param bucketId id of the bucket that will be updated
      * @param bucket A bucket to update
      * @return the updated bucket
      * @throws UnauthorizedException if the id of the currently authenticated user does not match the path variable id
-     * @throws BadRequestException if the owner of the bucket with the given id does not match the owner in the url
-     * path variable.
+     * @see BucketService#updateBucket(Bucket, Long)
      * */
     @RequestMapping(value = "/users/{ownerId}/buckets/{bucketId}", method = RequestMethod.PUT,
             consumes = "application/json")
-    public Bucket updateBucket(@PathVariable(value = "ownerId") final Long ownerId,
-                               @PathVariable(value = "bucketId") final Long bucketId,
-                               @RequestBody final Bucket bucket,
-                               @AuthenticationPrincipal final UserPrincipal currentUser) {
+    public ResponseEntity<BucketSummaryResponse> updateBucket(@PathVariable(value = "ownerId") final Long ownerId,
+                                                              @PathVariable(value = "bucketId") final Long bucketId,
+                                                              @RequestBody final Bucket bucket,
+                                                              @AuthenticationPrincipal final UserPrincipal currentUser) {
         if(!Objects.equals(currentUser.getId(), ownerId)) {
             throw new UnauthorizedException("Insufficient permissions.");
         }
 
-        Bucket persistedBucket = bucketDAO.findById(bucketId)
-                .orElseThrow(() -> new BadRequestException("Unable to find bucket with id " + bucketId));
-        if(!Objects.equals(persistedBucket.getOwner().getId(), ownerId)) {
-            throw new BadRequestException("Owner of bucket with id " + bucketId +
-                    " does not match url path variable for user id " + ownerId + ".");
-        }
+        bucket.setOwner(new User(ownerId));
 
-        bucket.setId(persistedBucket.getId());
-        bucket.setOwner(persistedBucket.getOwner());
-
-        return bucketDAO.save(bucket);
+        BucketSummaryResponse response = bucketService.updateBucket(bucket, bucketId);
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     /**
      * Delete a bucket.
      *
-     * The id of the authenticated principal must match the path variable ownerId.
+     * The id of the authenticated principal must match the path variable ownerId. The id of the owner of the bucket
+     * must also match the path variable ownerId.
      *
      * @param ownerId id of the user that owns the bucket
      * @param bucketId id of the bucket that will be patched
      * @throws UnauthorizedException if the id of the currently authenticated user does not match the path variable id
-     * @throws BadRequestException if the owner of the bucket with the given id does not match the owner in the url
-     * path variable.
+     * @see BucketService#deleteBucket(Bucket)
      * */
     @RequestMapping(value = "/users/{ownerId}/buckets/{bucketId}", method = RequestMethod.DELETE)
-    public void deleteBucket(@PathVariable(value = "ownerId") final Long ownerId,
-                             @PathVariable(value = "bucketId") final Long bucketId,
-                             @AuthenticationPrincipal final UserPrincipal currentUser) {
+    public ResponseEntity<?> deleteBucket(@PathVariable(value = "ownerId") final Long ownerId,
+                                          @PathVariable(value = "bucketId") final Long bucketId,
+                                          @AuthenticationPrincipal final UserPrincipal currentUser) {
         if(!Objects.equals(currentUser.getId(), ownerId)) {
             throw new UnauthorizedException("Insufficient permissions.");
         }
 
-        Bucket persistedBucket = bucketDAO.findById(bucketId)
-                .orElseThrow(() -> new BadRequestException("Unable to find bucket with id " + bucketId));
-        if(!Objects.equals(persistedBucket.getOwner().getId(), ownerId)) {
-            throw new BadRequestException("Owner of bucket with id " + bucketId +
-                    " does not match url path variable for user id " + ownerId + ".");
-        }
+        Bucket bucket = new Bucket();
+        bucket.setId(bucketId);
+        bucket.setOwner(new User(ownerId));
 
-        bucketDAO.delete(persistedBucket);
+        bucketService.deleteBucket(bucket);
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 }

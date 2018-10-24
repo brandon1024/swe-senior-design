@@ -5,7 +5,7 @@ import lombok.Data;
 import java.io.Serializable;
 
 @Data
-public class AuthenticationRequest implements Serializable {
+public class UserAuthenticationRequest implements Serializable {
 
     private final String username;
 
