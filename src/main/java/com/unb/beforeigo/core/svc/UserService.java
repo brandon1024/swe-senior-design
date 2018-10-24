@@ -33,6 +33,23 @@ public class UserService {
     @Autowired private PasswordEncoder passwordEncoder;
 
     /**
+     * Create a new {@link User}.
+     *
+     * The user provided must be valid. The {@link User#role} field will be overwritten with the default role
+     * {@link User.Role#USER}. The {@link User#id} field is set to null to prevent this method from being used to
+     * overwrite a user already persisted.
+     *
+     * @param user The user to create
+     * @return a summary of the user once persisted in the database
+     * */
+    public UserSummaryResponse createUser(final User user) {
+        user.setId(null);
+
+        User response = saveUser(user);
+        return adaptUserToUserSummary(response);
+    }
+
+    /**
      * Retrieve a list of {@link User}'s that match any of the given id, username or email address, first, middle or
      * last name.
      *
@@ -76,27 +93,6 @@ public class UserService {
                 .orElseThrow(() -> new BadRequestException("Unable to find user with id " + userId));
 
         return adaptUserToUserSummary(user);
-    }
-
-    /**
-     * Save a {@link User}.
-     *
-     * Encrypts the user's password, sets the user's role to USER, performs validation, and saves the user to the
-     * database. The user's physically address is also saved.
-     *
-     * @param user the user to save
-     * @return the persisted user
-     * @throws BadRequestException if the user cannot be saved because it does not meet validation constraints
-     * */
-    public UserSummaryResponse saveUser(final User user) {
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-        user.setRole(User.Role.USER);
-
-        EntityValidator.validateEntity(user, () -> new BadRequestException("cannot save user that does not meet validation constraints"));
-
-        physicalAddressDAO.save(user.getUserAddress());
-        User savedUser = userDAO.save(user);
-        return adaptUserToUserSummary(savedUser);
     }
 
     /**
@@ -177,7 +173,8 @@ public class UserService {
             }
         }
 
-        return saveUser(partialUser);
+        User response = saveUser(partialUser);
+        return adaptUserToUserSummary(response);
     }
 
     /**
@@ -193,7 +190,8 @@ public class UserService {
     public UserSummaryResponse updateUser(final User partialUser, final Long userId) {
         partialUser.setId(userId);
 
-        return saveUser(partialUser);
+        User response = saveUser(partialUser);
+        return adaptUserToUserSummary(response);
     }
 
     /**
@@ -209,6 +207,28 @@ public class UserService {
 
         userRelationshipDAO.deleteAll(relationships);
         userDAO.delete(persistentUser);
+    }
+
+    /**
+     * Save a {@link User}.
+     *
+     * Encrypts the user's password, sets the user's role to USER, performs validation, and saves the user to the
+     * database. The user's physically address is also saved.
+     *
+     * @param user the user to save
+     * @return the persisted user
+     * @throws BadRequestException if the user cannot be saved because it does not meet validation constraints
+     * @see org.springframework.data.jpa.repository.JpaRepository#save(Object)
+     * */
+    private User saveUser(final User user) {
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        user.setRole(User.Role.USER);
+
+        EntityValidator.validateEntity(user, () ->
+                new BadRequestException("cannot save user that does not meet validation constraints"));
+
+        physicalAddressDAO.save(user.getUserAddress());
+        return userDAO.save(user);
     }
 
     /**

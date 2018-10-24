@@ -92,7 +92,7 @@ public class UserAuthenticationController {
 
         final User user = userService.buildUserFromRegistrationRequest(registrationRequest);
         EntityValidator.validateEntity(user, () -> new BadRequestException("new user does not meet validation constraints"));
-        userService.saveUser(user);
+        userService.createUser(user);
 
         //Attempt to authenticate the user
         final Authentication auth = new UsernamePasswordAuthenticationToken(registrationRequest.getUsername(),
