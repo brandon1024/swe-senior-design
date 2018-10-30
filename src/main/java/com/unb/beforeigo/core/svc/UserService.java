@@ -1,6 +1,7 @@
 package com.unb.beforeigo.core.svc;
 
 import com.unb.beforeigo.api.dto.request.UserRegistrationRequest;
+import com.unb.beforeigo.api.dto.response.UserRelationshipSummaryResponse;
 import com.unb.beforeigo.api.dto.response.UserSummaryResponse;
 import com.unb.beforeigo.api.exception.client.BadRequestException;
 import com.unb.beforeigo.application.dao.PhysicalAddressDAO;
@@ -46,7 +47,23 @@ public class UserService {
         user.setId(null);
 
         User response = saveUser(user);
-        return adaptUserToUserSummary(response);
+        return adaptUserToSummary(response);
+    }
+
+    /**
+     * Create a {@link UserRelationship}.
+     *
+     * @return a summary of the user relationship, once persisted in the database.
+     * @throws BadRequestException if a user with id initiatorId or subjectId cannot be found
+     * */
+    public UserRelationshipSummaryResponse createUserRelationship(final Long initiatorId, final Long subjectId) {
+        User follower = userDAO.findById(initiatorId)
+                .orElseThrow(() -> new BadRequestException("Unable to find user with id " + initiatorId));
+        User following = userDAO.findById(subjectId)
+                .orElseThrow(() -> new BadRequestException("Unable to find user with id " + subjectId));
+
+        UserRelationship response = userRelationshipDAO.save(new UserRelationship(follower, following));
+        return adaptUserRelationshipToSummary(response);
     }
 
     /**
@@ -78,7 +95,7 @@ public class UserService {
 
         List<User> queriedUsers = userDAO.findAll(Example.of(queryUser, ExampleMatcher.matchingAny()));
 
-        return queriedUsers.stream().map(this::adaptUserToUserSummary).collect(Collectors.toList());
+        return queriedUsers.stream().map(UserService::adaptUserToSummary).collect(Collectors.toList());
     }
 
     /**
@@ -92,7 +109,41 @@ public class UserService {
         User user = userDAO.findById(userId)
                 .orElseThrow(() -> new BadRequestException("Unable to find user with id " + userId));
 
-        return adaptUserToUserSummary(user);
+        return adaptUserToSummary(user);
+    }
+
+    /**
+     * Retrieve a summary of users that are following the user with the given subject id.
+     *
+     * @param subjectId the id of the user to use in the query
+     * @return a list of user summaries for users that are following a given user
+     * */
+    public List<UserSummaryResponse> findFollowers(final Long subjectId) {
+        UserRelationship relationship = new UserRelationship(null, new User(subjectId));
+
+        List<UserRelationship> relationships = userRelationshipDAO.findAll(Example.of(relationship));
+
+        return relationships.stream()
+                .map(UserRelationship::getFollower)
+                .map(UserService::adaptUserToSummary)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Retrieve a summary of users that are followed by the user with the given subject id.
+     *
+     * @param subjectId the id of the user to use in the query
+     * @return a list of user summaries for users that are followed by a given user
+     * */
+    public List<UserSummaryResponse> findFollowing(final Long subjectId) {
+        UserRelationship relationship = new UserRelationship(new User(subjectId), null);
+
+        List<UserRelationship> relationships = userRelationshipDAO.findAll(Example.of(relationship));
+
+        return relationships.stream()
+                .map(UserRelationship::getFollowing)
+                .map(UserService::adaptUserToSummary)
+                .collect(Collectors.toList());
     }
 
     /**
@@ -174,7 +225,7 @@ public class UserService {
         }
 
         User response = saveUser(partialUser);
-        return adaptUserToUserSummary(response);
+        return adaptUserToSummary(response);
     }
 
     /**
@@ -191,7 +242,7 @@ public class UserService {
         partialUser.setId(userId);
 
         User response = saveUser(partialUser);
-        return adaptUserToUserSummary(response);
+        return adaptUserToSummary(response);
     }
 
     /**
@@ -207,6 +258,16 @@ public class UserService {
 
         userRelationshipDAO.deleteAll(relationships);
         userDAO.delete(persistentUser);
+    }
+
+    /**
+     *
+     * */
+    public void deleteUserRelationship(final Long initiatorId, final long subjectId) {
+        UserRelationship relationship = userRelationshipDAO.findOne(Example.of(new UserRelationship(new User(initiatorId), new User(subjectId)))).
+                orElseThrow(() -> new BadRequestException("Unable to find relationship"));
+
+        userRelationshipDAO.delete(relationship);
     }
 
     /**
@@ -238,7 +299,7 @@ public class UserService {
      * @param registrationRequest the registration request DTO
      * @return the new user object.
      * */
-    public User buildUserFromRegistrationRequest(final UserRegistrationRequest registrationRequest) {
+    public static User buildUserFromRegistrationRequest(final UserRegistrationRequest registrationRequest) {
         User user = new User();
         user.setUsername(registrationRequest.getUsername());
         user.setEmail(registrationRequest.getEmail());
@@ -267,8 +328,18 @@ public class UserService {
      * @param user the user to be used to build a UserSummaryResponse
      * @return a summary of the user
      * */
-    private UserSummaryResponse adaptUserToUserSummary(final User user) {
+    private static UserSummaryResponse adaptUserToSummary(final User user) {
         return new UserSummaryResponse(user.getId(), user.getUsername(), user.getEmail(),
                 user.getFirstName(), user.getMiddleName(), user.getLastName());
+    }
+
+    /**
+     * Build a UserRelationshipSummaryResponse DTO of a {@link UserRelationship}.
+     *
+     * @param relationship the relationship to be used to build a UserRelationshipSummaryResponse
+     * @return a summary of the user relationship
+     * */
+    private static UserRelationshipSummaryResponse adaptUserRelationshipToSummary(final UserRelationship relationship) {
+        return new UserRelationshipSummaryResponse(relationship.getFollower().getId(), relationship.getFollowing().getId());
     }
 }

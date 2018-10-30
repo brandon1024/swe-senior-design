@@ -1,5 +1,6 @@
 package com.unb.beforeigo.infrastructure.security;
 
+import com.unb.beforeigo.api.dto.response.UserSummaryResponse;
 import com.unb.beforeigo.application.dao.UserDAO;
 import com.unb.beforeigo.core.model.User;
 import com.unb.beforeigo.infrastructure.security.exception.UserNotFoundException;
@@ -36,5 +37,15 @@ public class UserPrincipalService implements UserDetailsService {
                 .orElseThrow(() -> new UserNotFoundException("User not found with id: " + userId));
 
         return UserPrincipal.adapt(user);
+    }
+
+    /**
+     * Build a UserSummaryResponse DTO of a {@link UserPrincipal}.
+     *
+     * @param user the principal to be used to build a UserSummaryResponse
+     * @return a summary of the principal
+     * */
+    public static UserSummaryResponse adaptPrincipalToSummary(final UserPrincipal user) {
+        return new UserSummaryResponse(user.getId(), user.getUsername(), user.getEmail(), null, null, null);
     }
 }

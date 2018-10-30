@@ -58,7 +58,7 @@ public class BucketController {
      * @throws UnauthorizedException if the id of the currently authenticated user does not match the path variable id
      * @see BucketService#duplicateBucket(Long, Long)
      * */
-    @RequestMapping(value = "/users/{id}/buckets", method = RequestMethod.POST, consumes = "application/json")
+    @RequestMapping(value = "/users/{id}/buckets", method = RequestMethod.POST, consumes = "application/json", params = {"from"})
     public ResponseEntity<BucketSummaryResponse> duplicateBucket(@PathVariable(name = "id") final Long ownerId,
                                                                  @RequestParam(name = "from") final Long parentBucketId,
                                                                  @AuthenticationPrincipal final UserPrincipal currentUser) {

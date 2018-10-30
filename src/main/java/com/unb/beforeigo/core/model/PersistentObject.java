@@ -1,6 +1,7 @@
 package com.unb.beforeigo.core.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
@@ -23,8 +24,9 @@ import java.util.Date;
  * */
 @MappedSuperclass
 @JsonIgnoreProperties(value = {"createdAt", "updatedAt"}, allowGetters = true)
-@Data
 @NoArgsConstructor
+@AllArgsConstructor
+@Data
 abstract class PersistentObject implements Serializable {
 
     @Id

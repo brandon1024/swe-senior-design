@@ -22,9 +22,9 @@ import javax.validation.constraints.NotNull;
 @Table(name = "users_relationships",
         uniqueConstraints = {@UniqueConstraint(columnNames = {"follower_id", "following_id"})})
 @EntityListeners(AuditingEntityListener.class)
-@Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Data
 public class UserRelationship extends PersistentObject {
 
     public UserRelationship(final Long id) {

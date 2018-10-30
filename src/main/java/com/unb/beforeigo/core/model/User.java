@@ -27,9 +27,9 @@ import javax.validation.constraints.Size;
 @Entity
 @Table(name = "users")
 @EntityListeners(AuditingEntityListener.class)
-@Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Data
 public class User extends PersistentObject {
 
     public enum Role {

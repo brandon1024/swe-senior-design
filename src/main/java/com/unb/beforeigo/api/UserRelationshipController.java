@@ -1,15 +1,17 @@
 package com.unb.beforeigo.api;
 
+import com.unb.beforeigo.api.dto.response.UserRelationshipSummaryResponse;
+import com.unb.beforeigo.api.dto.response.UserSummaryResponse;
 import com.unb.beforeigo.api.exception.client.BadRequestException;
 import com.unb.beforeigo.api.exception.client.UnauthorizedException;
-import com.unb.beforeigo.application.dao.UserDAO;
-import com.unb.beforeigo.application.dao.UserRelationshipDAO;
 import com.unb.beforeigo.core.model.User;
 import com.unb.beforeigo.core.model.UserRelationship;
+import com.unb.beforeigo.core.svc.UserService;
 import com.unb.beforeigo.infrastructure.security.UserPrincipal;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Example;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,16 +21,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/users")
 @Slf4j
 public class UserRelationshipController {
 
-    @Autowired private UserRelationshipDAO userRelationshipDAO;
-
-    @Autowired private UserDAO userDAO;
+    @Autowired private UserService userService;
 
     /**
      * Create a new {@link UserRelationship}.
@@ -39,28 +38,24 @@ public class UserRelationshipController {
      *
      * @param initiatorId the id of the user that wishes to follow the subject
      * @param subjectId the id of the user that is to be followed by the initiator
-     * @return a new user relationship once persisted in the database
+     * @return a user relationship summary once persisted in the database
      * @throws UnauthorizedException if the id of the currently authenticated user does not match the path variable id
-     * @throws BadRequestException if the subjectId or initiatorId do not map to valid users.
+     * @throws BadRequestException if the subjectId and initiatorId are equal.
      * */
     @RequestMapping(value = "/{id}/following", method = RequestMethod.POST)
-    public UserRelationship createUserRelationship(@PathVariable(name = "id") final Long initiatorId,
-                                                   @RequestParam(name = "id") final Long subjectId,
-                                                   final UserPrincipal currentUser) {
+    public ResponseEntity<UserRelationshipSummaryResponse> createUserRelationship(@PathVariable(name = "id") final Long initiatorId,
+                                                                                  @RequestParam(name = "id") final Long subjectId,
+                                                                                  final UserPrincipal currentUser) {
         if(!Objects.equals(currentUser.getId(), initiatorId)) {
             throw new UnauthorizedException("Insufficient permissions.");
         }
 
-        UserRelationship relationship = new UserRelationship();
-        User follower = userDAO.findById(initiatorId)
-                .orElseThrow(() -> new BadRequestException("Unable to find user with id " + initiatorId));
-        User following = userDAO.findById(subjectId)
-                .orElseThrow(() -> new BadRequestException("Unable to find user with id " + subjectId));
+        if(Objects.equals(subjectId, initiatorId)) {
+            throw new BadRequestException("Initiator cannot follow themselves.");
+        }
 
-        relationship.setFollower(follower);
-        relationship.setFollowing(following);
-
-        return userRelationshipDAO.save(relationship);
+        UserRelationshipSummaryResponse response = userService.createUserRelationship(initiatorId, subjectId);
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
     /**
@@ -70,16 +65,9 @@ public class UserRelationshipController {
      * @return a list of users that are following the user with the given id
      * */
     @RequestMapping(value = "/{id}/followers", method = RequestMethod.GET)
-    public List<User> findFollowers(@PathVariable(name = "id") final Long subjectId) {
-        User following = new User();
-        following.setId(subjectId);
-
-        UserRelationship relationship = new UserRelationship();
-        relationship.setFollowing(following);
-
-        List<UserRelationship> relationships = userRelationshipDAO.findAll(Example.of(relationship));
-
-        return relationships.stream().map(UserRelationship::getFollower).collect(Collectors.toList());
+    public ResponseEntity<List<UserSummaryResponse>> findFollowers(@PathVariable(name = "id") final Long subjectId) {
+        List<UserSummaryResponse> response = userService.findFollowers(subjectId);
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     /**
@@ -89,20 +77,13 @@ public class UserRelationshipController {
      * @return a list of users that are followed by the user with the given id
      * */
     @RequestMapping(value = "/{id}/following", method = RequestMethod.GET)
-    public List<User> findFollowing(@PathVariable(name = "id") final Long subjectId) {
-        User follower = new User();
-        follower.setId(subjectId);
-
-        UserRelationship relationship = new UserRelationship();
-        relationship.setFollower(follower);
-
-        List<UserRelationship> relationships = userRelationshipDAO.findAll(Example.of(relationship));
-
-        return relationships.stream().map(UserRelationship::getFollowing).collect(Collectors.toList());
+    public ResponseEntity<List<UserSummaryResponse>> findFollowing(@PathVariable(name = "id") final Long subjectId) {
+        List<UserSummaryResponse> response = userService.findFollowing(subjectId);
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     /**
-     * Delete a user relationship. The user with the id provided as a path variable will no longer be following the
+     * Delete a {@link UserRelationship} The user with the id provided as a path variable will no longer be following the
      * user with id specified as a request parameter.
      *
      * Example usage:
@@ -112,28 +93,16 @@ public class UserRelationshipController {
      * @param subjectId the id of the user
      * @param initiatorId the id of the user
      * @throws UnauthorizedException if the id of the currently authenticated user does not match the path variable id
-     * @throws BadRequestException if the relationship does not exist
      * */
     @RequestMapping(value = "/{id}/following", method = RequestMethod.DELETE)
-    public void deleteUserRelationship(@PathVariable(value = "id") final Long initiatorId,
-                                       @RequestParam(value = "id") final Long subjectId,
-                                       @AuthenticationPrincipal final UserPrincipal currentUser) {
+    public ResponseEntity<?> deleteUserRelationship(@PathVariable(value = "id") final Long initiatorId,
+                                                    @RequestParam(value = "id") final Long subjectId,
+                                                    @AuthenticationPrincipal final UserPrincipal currentUser) {
         if(!Objects.equals(currentUser.getId(), initiatorId)) {
             throw new UnauthorizedException("Insufficient permissions.");
         }
 
-        User follower = new User();
-        follower.setId(initiatorId);
-        User following = new User();
-        following.setId(subjectId);
-
-        UserRelationship relationship = new UserRelationship();
-        relationship.setFollower(follower);
-        relationship.setFollowing(following);
-
-        relationship = userRelationshipDAO.findOne(Example.of(relationship)).
-                orElseThrow(() -> new BadRequestException("Unable to find relationship"));
-
-        userRelationshipDAO.delete(relationship);
+        userService.deleteUserRelationship(initiatorId, subjectId);
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 }

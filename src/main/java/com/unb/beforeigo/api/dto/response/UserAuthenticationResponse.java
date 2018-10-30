@@ -1,6 +1,5 @@
 package com.unb.beforeigo.api.dto.response;
 
-import com.unb.beforeigo.infrastructure.security.UserPrincipal;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -10,5 +9,5 @@ public class UserAuthenticationResponse implements Serializable {
 
     private final String token;
 
-    private final UserPrincipal user;
+    private final UserSummaryResponse user;
 }

@@ -4,6 +4,7 @@ import com.unb.beforeigo.api.dto.request.UserAuthenticationRequest;
 import com.unb.beforeigo.api.dto.request.UserRegistrationRequest;
 import com.unb.beforeigo.api.dto.response.UserAuthenticationResponse;
 import com.unb.beforeigo.api.dto.response.UserIdentityAvailabilityResponse;
+import com.unb.beforeigo.api.dto.response.UserSummaryResponse;
 import com.unb.beforeigo.api.exception.client.BadRequestException;
 import com.unb.beforeigo.api.exception.client.UnauthorizedException;
 import com.unb.beforeigo.application.dao.UserDAO;
@@ -72,7 +73,8 @@ public class UserAuthenticationController {
         final String token = JSONWebTokenUtil.generateToken(userPrincipal);
         userPrincipal.eraseCredentials();
 
-        return new ResponseEntity<>(new UserAuthenticationResponse(token, userPrincipal), HttpStatus.CREATED);
+        UserSummaryResponse response = UserPrincipalService.adaptPrincipalToSummary(userPrincipal);
+        return new ResponseEntity<>(new UserAuthenticationResponse(token, response), HttpStatus.CREATED);
     }
 
     /**
@@ -90,7 +92,7 @@ public class UserAuthenticationController {
             throw new BadRequestException("Password mismatch.");
         }
 
-        final User user = userService.buildUserFromRegistrationRequest(registrationRequest);
+        final User user = UserService.buildUserFromRegistrationRequest(registrationRequest);
         EntityValidator.validateEntity(user, () -> new BadRequestException("new user does not meet validation constraints"));
         userService.createUser(user);
 
@@ -104,7 +106,8 @@ public class UserAuthenticationController {
         final String token = JSONWebTokenUtil.generateToken(userPrincipal);
         userPrincipal.eraseCredentials();
 
-        return new ResponseEntity<>(new UserAuthenticationResponse(token, userPrincipal), HttpStatus.OK);
+        UserSummaryResponse response = UserPrincipalService.adaptPrincipalToSummary(userPrincipal);
+        return new ResponseEntity<>(new UserAuthenticationResponse(token, response), HttpStatus.OK);
     }
 
     /**
@@ -123,7 +126,8 @@ public class UserAuthenticationController {
         final String newToken = JSONWebTokenUtil.generateToken(userPrincipal);
         userPrincipal.eraseCredentials();
 
-        return new ResponseEntity<>(new UserAuthenticationResponse(newToken, userPrincipal), HttpStatus.OK);
+        UserSummaryResponse response = UserPrincipalService.adaptPrincipalToSummary(userPrincipal);
+        return new ResponseEntity<>(new UserAuthenticationResponse(newToken, response), HttpStatus.OK);
     }
 
     /**

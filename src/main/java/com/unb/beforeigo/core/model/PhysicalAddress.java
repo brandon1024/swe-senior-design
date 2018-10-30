@@ -18,9 +18,9 @@ import javax.validation.constraints.Size;
 @Entity
 @Table(name = "physical_addresses")
 @EntityListeners(AuditingEntityListener.class)
-@Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Data
 public class PhysicalAddress extends PersistentObject {
 
     public PhysicalAddress(final Long id) {

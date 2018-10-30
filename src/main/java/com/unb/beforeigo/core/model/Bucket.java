@@ -22,9 +22,9 @@ import javax.validation.constraints.Size;
 @Entity
 @Table(name = "buckets")
 @EntityListeners(AuditingEntityListener.class)
-@Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Data
 public class Bucket extends PersistentObject {
 
     public Bucket(final Long id) {
