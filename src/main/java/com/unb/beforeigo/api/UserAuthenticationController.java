@@ -58,7 +58,7 @@ public class UserAuthenticationController {
     public ResponseEntity<UserAuthenticationResponse> issueToken(@Valid @RequestBody final UserAuthenticationRequest request)
             throws AuthenticationException {
         final UserPrincipal userPrincipal;
-        if(Objects.isNull(request.getUsername())) {
+        if(Objects.isNull(request.getEmailAddress())) {
             userPrincipal = userPrincipalService.loadUserByUsername(request.getUsername());
         } else {
             userPrincipal = userPrincipalService.loadByEmailAddress(request.getEmailAddress());
