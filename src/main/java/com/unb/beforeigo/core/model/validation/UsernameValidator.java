@@ -6,18 +6,13 @@ import java.nio.charset.Charset;
 
 /**
  * Validator for usernames. Ensures username satisfy the following constraints:
- * <ul>
- *     <li>cannot be null</li>
- *     <li>must have a length no less than 6 and no greater than 64</li>
- *     <li>contains only the following ASCII characters:</li>
- *     <ul>
- *         <li>Usernames can contain letters (a-z), numbers (0-9), dashes (-), underscores (_), apostrophes ('), and
- *              periods (.).</li>
- *         <li>Usernames can't contain an ampersand (&), equal sign (=), brackets (<,>), plus sign (+), comma (,), or
- *              more than one period (.) in a row.</li>
- *         <li>Usernames can't begin with non-alphanumeric characters, with a maximum of 64 characters.</li>
- *     </ul>
- * </ul>
+ * - cannot be null
+ * - must have a length no less than 6 and no greater than 64
+ * - contains only the following ASCII characters:
+ *  - Usernames can contain letters (a-z), numbers (0-9), dashes (-), underscores (_), apostrophes ('), and periods (.).
+ *  - Usernames can't contain an ampersand (&amp;), equal sign (=), brackets (&lt;,&gt;), plus sign (+), comma (,), or
+ *  more than one period (.) in a row.
+ *  - Usernames can't begin with non-alphanumeric characters, with a maximum of 64 characters.
  *
  * @author Brandon Richardson
  * */

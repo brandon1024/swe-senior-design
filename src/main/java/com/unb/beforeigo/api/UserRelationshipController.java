@@ -38,6 +38,7 @@ public class UserRelationshipController {
      *
      * @param initiatorId the id of the user that wishes to follow the subject
      * @param subjectId the id of the user that is to be followed by the initiator
+     * @param currentUser The principal user.
      * @return a user relationship summary once persisted in the database
      * @throws UnauthorizedException if the id of the currently authenticated user does not match the path variable id
      * @throws BadRequestException if the subjectId and initiatorId are equal.
@@ -45,7 +46,7 @@ public class UserRelationshipController {
     @RequestMapping(value = "/{id}/following", method = RequestMethod.POST)
     public ResponseEntity<UserRelationshipSummaryResponse> createUserRelationship(@PathVariable(name = "id") final Long initiatorId,
                                                                                   @RequestParam(name = "id") final Long subjectId,
-                                                                                  final UserPrincipal currentUser) {
+                                                                                  @AuthenticationPrincipal final UserPrincipal currentUser) {
         if(!Objects.equals(currentUser.getId(), initiatorId)) {
             throw new UnauthorizedException("Insufficient permissions.");
         }
@@ -92,6 +93,8 @@ public class UserRelationshipController {
      *
      * @param subjectId the id of the user
      * @param initiatorId the id of the user
+     * @param currentUser The principal user.
+     * @return Http OK
      * @throws UnauthorizedException if the id of the currently authenticated user does not match the path variable id
      * */
     @RequestMapping(value = "/{id}/following", method = RequestMethod.DELETE)

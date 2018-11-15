@@ -197,7 +197,7 @@ public final class JSONWebTokenUtil {
      *  <li>the token is not expired</li>
      *  <li>the token subject matches the user provided</li>
      *  <li>the token UID_CLAIM_NAME claim matches the user id provided</li>
-     *  <li>the token EMAIL_ADDR_CLAIM_NAME claim matches the user email address provided/li>
+     *  <li>the token EMAIL_ADDR_CLAIM_NAME claim matches the user email address provided</li>
      * </ul>
      *
      * @param token the serialized SignedJWT token

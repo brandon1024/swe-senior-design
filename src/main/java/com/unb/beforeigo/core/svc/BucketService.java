@@ -135,7 +135,7 @@ public class BucketService {
      *
      * Partial bucket owner field is ignored, because the bucket ownership cannot be transferred to a new user.
      *
-     * @apiNote The partial bucket provided must have the owner field specified. Although it is not used to update
+     * The partial bucket provided must have the owner field specified. Although it is not used to update
      * the persisted bucket, it is used to verify the user that owns the partial bucket matches the user that owns the
      * bucket with the given id. Specifically, this is used by the {@link com.unb.beforeigo.api.BucketController} to
      * verify that the user id provided as a path variable matches the owner of the bucket with the id provided as a path
@@ -179,7 +179,7 @@ public class BucketService {
      * All fields in the bucket parameter are used to overwrite the fields in the bucket currently persisted
      * in the database.
      *
-     * @apiNote The bucket provided must have the owner field specified, and it must match the bucket with the provided
+     * API Note: he bucket provided must have the owner field specified, and it must match the bucket with the provided
      * bucketId. This is used to prevent the transfer of ownership of a bucket.
      *
      * @param bucket the bucket used to update the persisted bucket
@@ -207,7 +207,7 @@ public class BucketService {
     /**
      * Delete a given bucket. The {@link Bucket#id} field must be non-null.
      *
-     * @apiNote The bucket provided must have the owner field specified. It is used to verify the user that owns the
+     * The bucket provided must have the owner field specified. It is used to verify the user that owns the
      * bucket provided matches the user that owns the bucket with the given id. Specifically, this is used by the
      * {@link com.unb.beforeigo.api.BucketController} to verify that the user id provided as a path variable matches the
      * owner of the bucket with the id provided as a path variable.

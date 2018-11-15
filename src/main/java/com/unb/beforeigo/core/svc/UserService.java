@@ -53,6 +53,8 @@ public class UserService {
     /**
      * Create a {@link UserRelationship}.
      *
+     * @param initiatorId The id of the user that is the 'follower'.
+     * @param subjectId The id of the user that is being 'followed'.
      * @return a summary of the user relationship, once persisted in the database.
      * @throws BadRequestException if a user with id initiatorId or subjectId cannot be found
      * */
@@ -72,6 +74,7 @@ public class UserService {
      *
      * Only non-null parameters are used in the query.
      *
+     * @param userId the id of the user to use in the query
      * @param username an optional username to use in the query
      * @param email an optional email to use in the query
      * @param firstName an optional first name to use in the query
@@ -261,7 +264,10 @@ public class UserService {
     }
 
     /**
+     * Delete a user relationship.
      *
+     * @param initiatorId the user being followed
+     * @param subjectId the user that is following a user
      * */
     public void deleteUserRelationship(final Long initiatorId, final long subjectId) {
         UserRelationship relationship = userRelationshipDAO.findOne(Example.of(new UserRelationship(new User(initiatorId), new User(subjectId)))).

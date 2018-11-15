@@ -35,7 +35,7 @@ public interface BucketDAO extends JpaRepository<Bucket, Long> {
      *
      * @param name the name of the bucket
      * @param owner the owner of the bucket
-     * @return an {@link Optional<User>} containing the first bucket record found, or
+     * @return an {@link Optional} containing the first bucket record found, or
      * {@code Optional.empty()} if not found.
      * */
     Optional<Bucket> findFirstByNameAndOwner(final String name, final User owner);

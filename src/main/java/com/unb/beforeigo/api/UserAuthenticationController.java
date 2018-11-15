@@ -113,6 +113,7 @@ public class UserAuthenticationController {
     /**
      * Refresh token.
      *
+     * @param userPrincipal The principal user.
      * @return 200 OK if the authentication succeeded, with the token in the response body.
      * */
     @RequestMapping(value = "/token_refresh", method = RequestMethod.POST)

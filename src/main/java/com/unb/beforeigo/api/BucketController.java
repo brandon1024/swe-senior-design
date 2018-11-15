@@ -33,6 +33,7 @@ public class BucketController {
      *
      * @param ownerId The id of the user that owns the bucket
      * @param bucket A valid bucket with all necessary fields
+     * @param currentUser The principal user
      * @return a new bucket once persisted in the database
      * @throws UnauthorizedException if the id of the currently authenticated user does not match the path variable id
      * @see BucketService#createBucket(Long, Bucket)
@@ -54,6 +55,7 @@ public class BucketController {
      *
      * @param ownerId The id of the user that owns the bucket
      * @param parentBucketId The id of the bucket that is to be duplicated
+     * @param currentUser The principal user
      * @return a new bucket once persisted in the database
      * @throws UnauthorizedException if the id of the currently authenticated user does not match the path variable id
      * @see BucketService#duplicateBucket(Long, Long)
@@ -76,6 +78,7 @@ public class BucketController {
      * If the owner id does not match the id of the principal user, only public buckets are returned.
      *
      * @param ownerId id of the user that owns the buckets.
+     * @param currentUser The principal user.
      * @return a list of all buckets associated to a given user. If the user and principal have matching ids, public and
      * private buckets are returned, otherwise only returns public buckets
      * @see BucketService#findBuckets(Long, boolean)
@@ -95,6 +98,7 @@ public class BucketController {
      *
      * @param ownerId id of the user that owns the buckets.
      * @param bucketId id of the bucket
+     * @param currentUser The principal user.
      * @return bucket associated to a given user. If the user and principal have matching ids, public or private bucket
      * may be returned, otherwise only returns a public bucket
      * @see BucketService#findBucketById(Long, boolean)
@@ -118,6 +122,7 @@ public class BucketController {
      * @param ownerId id of the user that owns the bucket
      * @param bucketId id of the bucket that will be patched
      * @param bucket A partial bucket used to patch a persisted bucket
+     * @param currentUser The principal user.
      * @return the patched bucket
      * @throws UnauthorizedException if the id of the currently authenticated user does not match the path variable id
      * @see BucketService#patchBucket(Bucket, Long)
@@ -147,6 +152,7 @@ public class BucketController {
      * @param ownerId id of the user that owns the bucket
      * @param bucketId id of the bucket that will be updated
      * @param bucket A bucket to update
+     * @param currentUser The principal user.
      * @return the updated bucket
      * @throws UnauthorizedException if the id of the currently authenticated user does not match the path variable id
      * @see BucketService#updateBucket(Bucket, Long)
@@ -175,6 +181,8 @@ public class BucketController {
      *
      * @param ownerId id of the user that owns the bucket
      * @param bucketId id of the bucket that will be patched
+     * @param currentUser The principal user.
+     * @return Http response
      * @throws UnauthorizedException if the id of the currently authenticated user does not match the path variable id
      * @see BucketService#deleteBucket(Bucket)
      * */

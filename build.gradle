@@ -23,7 +23,6 @@ repositories {
 	mavenCentral()
 }
 
-
 dependencies {
 	compile('org.springframework.boot:spring-boot-starter')
     compile("org.springframework.boot:spring-boot-starter-web")
@@ -43,4 +42,15 @@ dependencies {
 test {
 	useJUnitPlatform()
 	testLogging.showStandardStreams = true
+}
+
+task delombok(type: Exec) {
+	def lombokJarPath = configurations.compileOnly.find { it.name.startsWith("lombok") }
+	commandLine 'java', '-jar', lombokJarPath, 'delombok', 'src/main/java', '-d', 'build/src-delomboked', '--classpath', configurations.compile.asPath
+}
+
+task docs(type: Javadoc, dependsOn: delombok) {
+	source = 'build/src-delomboked'
+	classpath = configurations.compile
+    exclude '**/placeholder'
 }

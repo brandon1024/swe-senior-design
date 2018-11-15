@@ -133,6 +133,7 @@ public class UserController {
      *
      * @param userId the id of the user to be deleted
      * @param currentUser the currently authenticated user
+     * @return Http OK
      * @throws UnauthorizedException if the id of the currently authenticated user does not match the path variable id
      * @throws BadRequestException if a user cannot be found with the provided id
      * */

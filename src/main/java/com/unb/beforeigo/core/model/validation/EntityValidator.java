@@ -50,6 +50,7 @@ public final class EntityValidator {
      * Get a set of validation constraint violations for an entity.
      *
      * @param entity the bucket to be validated
+     * @param <E> The type of the entity
      * @return the set of constraint violations for a given bucket.
      * */
     public static <E> Set<ConstraintViolation<E>> getBucketConstraintViolations(final E entity) {
