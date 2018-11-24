@@ -40,11 +40,15 @@ class AuthenticationProcessingFilter extends OncePerRequestFilter {
      * load the user details and sets the user as the security context authenticated principal.
      *
      * Requests without the Authorization header are processed normally.
+     *
+     * @param request The request.
+     * @param response The response.
+     * @param chain The filter chain.
      * */
     @Override
     protected void doFilterInternal(final HttpServletRequest request, final HttpServletResponse response,
                                     final FilterChain chain) throws ServletException, IOException {
-        LOG.debug("processing authentication for '{}'", request.getRequestURL());
+        LOG.debug("Processing authentication for '{}'", request.getRequestURL());
 
         final Optional<String> authToken = getTokenFromAuthorizationHeader(request.getHeader(HttpHeaders.AUTHORIZATION));
         if(authToken.isPresent()) {
@@ -65,7 +69,7 @@ class AuthenticationProcessingFilter extends OncePerRequestFilter {
     /**
      * Extract, if present, the bearer token from the authorization header value.
      *
-     * @param authorizationHeader the authorization header value
+     * @param authorizationHeader The authorization header value.
      * @return An Optional holding a String if the token is present, and returns empty optional otherwise.
      * */
     private static Optional<String> getTokenFromAuthorizationHeader(final String authorizationHeader) {
@@ -84,9 +88,9 @@ class AuthenticationProcessingFilter extends OncePerRequestFilter {
     /**
      * Extract the UserPrincipal from the authentication, and validate the given auth token against it.
      *
-     * @param token the signed JWT token
-     * @param authentication the current authentication
-     * @throws MalformedAuthTokenException if the token is malformed (does not meet validation)
+     * @param token The signed JWT token.
+     * @param authentication The current authentication.
+     * @throws MalformedAuthTokenException If the token is malformed (does not meet validation).
      * */
     private void validateTokenAgainstAuthentication(final String token, final Authentication authentication) {
         final UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
@@ -99,9 +103,9 @@ class AuthenticationProcessingFilter extends OncePerRequestFilter {
      * Authenticate the token holder by extracting the user ID from the token, loading the user details and
      * authenticating the user.
      *
-     * @param token the signed JWT token
-     * @param request the request
-     * @throws MalformedAuthTokenException if the token is malformed (does not meet validation)
+     * @param token The signed JWT token.
+     * @param request The request.
+     * @throws MalformedAuthTokenException If the token is malformed (does not meet validation).
      * */
     private void authenticateTokenHolder(final String token, HttpServletRequest request) {
         final Long userId = JSONWebTokenUtil.parseUserIdFromToken(token);

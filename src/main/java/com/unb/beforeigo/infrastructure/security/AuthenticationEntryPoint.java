@@ -16,9 +16,9 @@ public class AuthenticationEntryPoint implements org.springframework.security.we
      * Invoked when user tries to access a secured REST resource without supplying any credentials. Responds with a
      * 401 Unauthorized response.
      *
-     * @param request that resulted in an <code>AuthenticationException</code>
-     * @param response so that the user agent can begin authentication
-     * @param authException that caused the invocation
+     * @param request That resulted in an <code>AuthenticationException</code>.
+     * @param response So that the user agent can begin authentication.
+     * @param authException That caused the invocation.
      */
     @Override
     public void commence(final HttpServletRequest request, final HttpServletResponse response,

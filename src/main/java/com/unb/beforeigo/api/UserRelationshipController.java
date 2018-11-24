@@ -37,12 +37,12 @@ public class UserRelationshipController {
      * {@code POST /users/12/following?id=26 }
      * will result in user with id 12 following user with id 26
      *
-     * @param initiatorId the id of the user that wishes to follow the subject
-     * @param subjectId the id of the user that is to be followed by the initiator
+     * @param initiatorId The id of the user that wishes to follow the subject.
+     * @param subjectId The id of the user that is to be followed by the initiator.
      * @param currentUser The principal user.
-     * @return a user relationship summary once persisted in the database
-     * @throws UnauthorizedException if the id of the currently authenticated user does not match the path variable id
-     * @throws BadRequestException if the subjectId and initiatorId are equal.
+     * @return A user relationship summary once persisted in the database. HTTP CREATED.
+     * @throws UnauthorizedException If the id of the currently authenticated user does not match the path variable id.
+     * @throws BadRequestException If the subjectId and initiatorId are equal.
      * */
     @ApiOperation(value = "Create a new user relationship.", response = UserRelationshipSummaryResponse.class)
     @RequestMapping(value = "/{id}/following", method = RequestMethod.POST)
@@ -64,8 +64,8 @@ public class UserRelationshipController {
     /**
      * Retrieve a list of {@link User}'s that are following a given user.
      *
-     * @param subjectId the id of the user to be used in the query
-     * @return a list of users that are following the user with the given id
+     * @param subjectId The id of the user to be used in the query.
+     * @return A list of users that are following the user with the given id. HTTP OK.
      * */
     @ApiOperation(value = "Retrieve a list of users that are following a given user.", response = UserSummaryResponse.class, responseContainer = "List")
     @RequestMapping(value = "/{id}/followers", method = RequestMethod.GET)
@@ -77,8 +77,8 @@ public class UserRelationshipController {
     /**
      * Retrieve a list of {@link User}'s that are followed by a given user.
      *
-     * @param subjectId the id of the user to be used in the query
-     * @return a list of users that are followed by the user with the given id
+     * @param subjectId The id of the user to be used in the query.
+     * @return A list of users that are followed by the user with the given id. HTTP OK.
      * */
     @ApiOperation(value = "Retrieve a list of users that are followed by a given user.", response = UserSummaryResponse.class, responseContainer = "List")
     @RequestMapping(value = "/{id}/following", method = RequestMethod.GET)
@@ -95,11 +95,11 @@ public class UserRelationshipController {
      * {@code DELETE /users/12/following?id=26 }
      * will result in user with id 12 unfollow user with id 26.
      *
-     * @param subjectId the id of the user
-     * @param initiatorId the id of the user
+     * @param subjectId The id of the user.
+     * @param initiatorId The id of the user.
      * @param currentUser The principal user.
-     * @return Http OK
-     * @throws UnauthorizedException if the id of the currently authenticated user does not match the path variable id
+     * @return HTTP OK.
+     * @throws UnauthorizedException If the id of the currently authenticated user does not match the path variable id.
      * */
     @ApiOperation(value = "Delete a user relationship.")
     @RequestMapping(value = "/{id}/following", method = RequestMethod.DELETE)

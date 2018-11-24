@@ -55,4 +55,5 @@ task docs(type: Javadoc, dependsOn: delombok) {
 	source = 'build/src-delomboked'
 	classpath = configurations.compile
     exclude '**/placeholder'
+	options.addBooleanOption('html5', true)
 }

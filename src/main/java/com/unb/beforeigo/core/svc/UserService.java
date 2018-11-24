@@ -40,8 +40,8 @@ public class UserService {
      * {@link User.Role#USER}. The {@link User#id} field is set to null to prevent this method from being used to
      * overwrite a user already persisted.
      *
-     * @param user The user to create
-     * @return a summary of the user once persisted in the database
+     * @param user The user to create.
+     * @return A summary of the user once persisted in the database.
      * */
     public UserSummaryResponse createUser(final User user) {
         user.setId(null);
@@ -55,8 +55,8 @@ public class UserService {
      *
      * @param initiatorId The id of the user that is the 'follower'.
      * @param subjectId The id of the user that is being 'followed'.
-     * @return a summary of the user relationship, once persisted in the database.
-     * @throws BadRequestException if a user with id initiatorId or subjectId cannot be found
+     * @return A summary of the user relationship, once persisted in the database.
+     * @throws BadRequestException If a user with id initiatorId or subjectId cannot be found.
      * */
     public UserRelationshipSummaryResponse createUserRelationship(final Long initiatorId, final Long subjectId) {
         User follower = userDAO.findById(initiatorId)
@@ -74,13 +74,13 @@ public class UserService {
      *
      * Only non-null parameters are used in the query.
      *
-     * @param userId the id of the user to use in the query
-     * @param username an optional username to use in the query
-     * @param email an optional email to use in the query
-     * @param firstName an optional first name to use in the query
-     * @param middleName an optional middle name to use in the query
-     * @param lastName an optional last name to use in the query
-     * @return a list of users found matching any of the request parameters.
+     * @param userId The id of the user to use in the query.
+     * @param username An optional username to use in the query.
+     * @param email An optional email to use in the query.
+     * @param firstName An optional first name to use in the query.
+     * @param middleName An optional middle name to use in the query.
+     * @param lastName An optional last name to use in the query.
+     * @return A list of users found matching any of the request parameters.
      * */
     public List<UserSummaryResponse> findUsers(@Nullable final Long userId,
                                                @Nullable final String username,
@@ -104,9 +104,9 @@ public class UserService {
     /**
      * Retrieve a specific {@link User} by id.
      *
-     * @param userId the id of the user
-     * @return the user with the given id.
-     * @throws BadRequestException if a user with the given id cannot be found.
+     * @param userId The id of the user.
+     * @return The user with the given id.
+     * @throws BadRequestException If a user with the given id cannot be found.
      * */
     public UserSummaryResponse findUserById(final Long userId) {
         User user = userDAO.findById(userId)
@@ -118,8 +118,8 @@ public class UserService {
     /**
      * Retrieve a summary of users that are following the user with the given subject id.
      *
-     * @param subjectId the id of the user to use in the query
-     * @return a list of user summaries for users that are following a given user
+     * @param subjectId The id of the user to use in the query.
+     * @return A list of user summaries for users that are following a given user.
      * */
     public List<UserSummaryResponse> findFollowers(final Long subjectId) {
         UserRelationship relationship = new UserRelationship(null, new User(subjectId));
@@ -135,8 +135,8 @@ public class UserService {
     /**
      * Retrieve a summary of users that are followed by the user with the given subject id.
      *
-     * @param subjectId the id of the user to use in the query
-     * @return a list of user summaries for users that are followed by a given user
+     * @param subjectId The id of the user to use in the query.
+     * @return A list of user summaries for users that are followed by a given user.
      * */
     public List<UserSummaryResponse> findFollowing(final Long subjectId) {
         UserRelationship relationship = new UserRelationship(new User(subjectId), null);
@@ -155,11 +155,11 @@ public class UserService {
      * Applies only non-null fields present in the partialUser to the persistent user, and then attempts to save the
      * user to the database.
      *
-     * @param partialUser a partial user
-     * @param userId the id of the user that exists in the database that will be patched
-     * @return the persisted user
-     * @throws BadRequestException if a user with the given id cannot be found
-     * @throws BadRequestException if the user cannot be saved because it does not meet validation constraints
+     * @param partialUser A partial user.
+     * @param userId The id of the user that exists in the database that will be patched.
+     * @return The persisted user.
+     * @throws BadRequestException If a user with the given id cannot be found.
+     * @throws BadRequestException If the user cannot be saved because it does not meet validation constraints.
      * */
     public UserSummaryResponse patchUser(final User partialUser, final Long userId) {
         User persistentUser = userDAO.findById(userId)
@@ -237,9 +237,9 @@ public class UserService {
      * Applies all fields present in the partialUser to the persistent user, and then attempts to save the user to the
      * database.
      *
-     * @param partialUser a user
-     * @param userId the id of the user that exists in the database that will be updated
-     * @return the persisted user
+     * @param partialUser A user.
+     * @param userId The id of the user that exists in the database that will be updated.
+     * @return The persisted user.
      * */
     public UserSummaryResponse updateUser(final User partialUser, final Long userId) {
         partialUser.setId(userId);
@@ -251,7 +251,7 @@ public class UserService {
     /**
      * Delete a {@link User}, along with its user relationships.
      *
-     * @param userId the id of the persisted user that is to be deleted.
+     * @param userId The id of the persisted user that is to be deleted.
      * */
     public void deleteUser(final Long userId) {
         User persistentUser = userDAO.findById(userId)
@@ -266,8 +266,8 @@ public class UserService {
     /**
      * Delete a user relationship.
      *
-     * @param initiatorId the user being followed
-     * @param subjectId the user that is following a user
+     * @param initiatorId The user being followed.
+     * @param subjectId The user that is following a user.
      * */
     public void deleteUserRelationship(final Long initiatorId, final long subjectId) {
         UserRelationship relationship = userRelationshipDAO.findOne(Example.of(new UserRelationship(new User(initiatorId), new User(subjectId)))).
@@ -282,10 +282,9 @@ public class UserService {
      * Encrypts the user's password, sets the user's role to USER, performs validation, and saves the user to the
      * database. The user's physically address is also saved.
      *
-     * @param user the user to save
-     * @return the persisted user
-     * @throws BadRequestException if the user cannot be saved because it does not meet validation constraints
-     * @see org.springframework.data.jpa.repository.JpaRepository#save(Object)
+     * @param user the user to save.
+     * @return The persisted user.
+     * @throws BadRequestException If the user cannot be saved because it does not meet validation constraints.
      * */
     private User saveUser(final User user) {
         user.setPassword(passwordEncoder.encode(user.getPassword()));
@@ -302,8 +301,8 @@ public class UserService {
      * Adapt a registration request DTO to a {@link User}. Fields in the registration request are copied to the user
      * object and returned.
      *
-     * @param registrationRequest the registration request DTO
-     * @return the new user object.
+     * @param registrationRequest The registration request DTO.
+     * @return The new user object.
      * */
     public static User buildUserFromRegistrationRequest(final UserRegistrationRequest registrationRequest) {
         User user = new User();
@@ -331,10 +330,10 @@ public class UserService {
     /**
      * Build a UserSummaryResponse DTO of a {@link User}.
      *
-     * @param user the user to be used to build a UserSummaryResponse
-     * @return a summary of the user
+     * @param user The user to be used to build a UserSummaryResponse.
+     * @return A summary of the user.
      * */
-    private static UserSummaryResponse adaptUserToSummary(final User user) {
+    public static UserSummaryResponse adaptUserToSummary(final User user) {
         return new UserSummaryResponse(user.getId(), user.getUsername(), user.getEmail(),
                 user.getFirstName(), user.getMiddleName(), user.getLastName());
     }
@@ -342,10 +341,10 @@ public class UserService {
     /**
      * Build a UserRelationshipSummaryResponse DTO of a {@link UserRelationship}.
      *
-     * @param relationship the relationship to be used to build a UserRelationshipSummaryResponse
-     * @return a summary of the user relationship
+     * @param relationship The relationship to be used to build a UserRelationshipSummaryResponse.
+     * @return A summary of the user relationship.
      * */
-    private static UserRelationshipSummaryResponse adaptUserRelationshipToSummary(final UserRelationship relationship) {
+    public static UserRelationshipSummaryResponse adaptUserRelationshipToSummary(final UserRelationship relationship) {
         return new UserRelationshipSummaryResponse(relationship.getFollower().getId(), relationship.getFollowing().getId());
     }
 }

@@ -12,12 +12,13 @@ import java.util.Optional;
  * @author Brandon Richardson
  * */
 public interface UserDAO extends JpaRepository<User, Long> {
+
     /**
      * Find a user using their email address. If multiple users exist with the same email address, the first record
      * found is returned.
      *
-     * @param emailAddress the email address to be used in the query.
-     * @return an optional user with the given email address. If a user cannot be found with the given email address,
+     * @param emailAddress The email address to be used in the query.
+     * @return An {@link Optional} user with the given email address. If a user cannot be found with the given email address,
      * an empty optional is returned.
      * */
     Optional<User> findByEmail(final String emailAddress);
@@ -25,8 +26,8 @@ public interface UserDAO extends JpaRepository<User, Long> {
     /**
      * Find a user using their username.
      *
-     * @param username the username to be used in the query.
-     * @return an optional user with the given username. If a user cannot be found with the given username, an empty
+     * @param username The username to be used in the query.
+     * @return An {@link Optional} user with the given username. If a user cannot be found with the given username, an empty
      * optional is returned.
      * */
     Optional<User> findByUsername(final String username);
@@ -34,24 +35,24 @@ public interface UserDAO extends JpaRepository<User, Long> {
     /**
      * Test existence of user using their username.
      *
-     * @param username the username to be used in the query.
-     * @return true if a user exists with the given username, false otherwise.
+     * @param username The username to be used in the query.
+     * @return True if a user exists with the given username, false otherwise.
      * */
     boolean existsByUsername(final String username);
 
     /**
      * Test existence of user using their email address.
      *
-     * @param email the email to be used in the query.
-     * @return true if a user exists with the given email address, false otherwise.
+     * @param email The email to be used in the query.
+     * @return True if a user exists with the given email address, false otherwise.
      * */
     boolean existsByEmail(final String email);
 
     /**
      * Find all users with a given {@link User.Role}.
      *
-     * @param role a role
-     * @return users with a given role
+     * @param role A role.
+     * @return Users with a given role.
      * */
     List<User> findAllByRole(final User.Role role);
 }

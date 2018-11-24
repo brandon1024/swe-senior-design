@@ -16,8 +16,8 @@ public interface ItemDAO extends JpaRepository<Item, Long> {
     /**
      * Find all {@link Item} objects with a given parent that are public.
      *
-     * @param parent the creator and owner of the items to be found
-     * @return a list of public items created by a given bucket
+     * @param parent The creator and owner of the items to be found.
+     * @return A {@link List} of public items created by a given bucket.
      * */
     List<Item> findAllByParent(final Bucket parent);
 }

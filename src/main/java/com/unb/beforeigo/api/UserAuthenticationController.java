@@ -50,11 +50,9 @@ public class UserAuthenticationController {
     /**
      * Issue token to user.
      *
-     * @param request a valid authentication request
-     * @return 200 OK if the authentication succeeded, with the token in the response body.
-     * @throws AuthenticationException if authentication fails
-     * @throws com.unb.beforeigo.infrastructure.security.exception.UserNotFoundException if a user with the username
-     * in the request body does not exist.
+     * @param request A valid authentication request.
+     * @return The token. HTTP CREATED.
+     * @throws AuthenticationException If authentication fails.
      * */
     @ApiOperation(value = "Issue a new token to a user.", response = UserAuthenticationResponse.class)
     @RequestMapping(value = "/signin", method = RequestMethod.POST)
@@ -83,10 +81,10 @@ public class UserAuthenticationController {
     /**
      * Register a new user and issue a new token.
      *
-     * @param registrationRequest a valid authentication request
-     * @return 200 OK if the registration and authentication succeeded, with the token in the response body.
-     * @throws AuthenticationException if authentication fails
-     * @throws BadRequestException if the new user does not meet validation constraints
+     * @param registrationRequest A valid authentication request.
+     * @return The token. HTTP OK.
+     * @throws AuthenticationException If authentication fails.
+     * @throws BadRequestException If the new user does not meet validation constraints.
      * */
     @ApiOperation(value = "Register a new user and issue a new token.", response = UserAuthenticationResponse.class)
     @RequestMapping(value = "/signup", method = RequestMethod.POST)
@@ -118,7 +116,8 @@ public class UserAuthenticationController {
      * Refresh token.
      *
      * @param userPrincipal The principal user.
-     * @return 200 OK if the authentication succeeded, with the token in the response body.
+     * @return The token. HTTP OK.
+     * @throws UnauthorizedException If the user is not authenticated.
      * */
     @ApiOperation(value = "Refresh a token.", response = UserAuthenticationResponse.class)
     @RequestMapping(value = "/token_refresh", method = RequestMethod.POST)
@@ -139,9 +138,9 @@ public class UserAuthenticationController {
     /**
      * Check if a given identity is available.
      *
-     * @param username optional request parameter for the email address
-     * @param email optional request parameter for the username
-     * @return UserIdentityAvailabilityResponse
+     * @param username Optional request parameter for the email address.
+     * @param email Optional request parameter for the username.
+     * @return UserIdentityAvailabilityResponse. HTTP OK.
      * */
     @ApiOperation(value = "Check if a given identity is available.", response = UserAuthenticationResponse.class)
     @RequestMapping(value = "/identity_available", method = RequestMethod.GET)

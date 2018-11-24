@@ -17,7 +17,7 @@ public class BeforeIGoController {
     /**
      * Endpoint used to test that the server is live.
      *
-     * @return the string "Success"
+     * @return The String "Success".
      * */
     @ApiOperation(value = "Endpoint used to test that the server is live.", response = String.class)
     @RequestMapping(value = "/", method = RequestMethod.GET)

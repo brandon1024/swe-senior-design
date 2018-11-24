@@ -42,8 +42,8 @@ public class UserPrincipalService implements UserDetailsService {
     /**
      * Build a UserSummaryResponse DTO of a {@link UserPrincipal}.
      *
-     * @param user the principal to be used to build a UserSummaryResponse
-     * @return a summary of the principal
+     * @param user The principal to be used to build a UserSummaryResponse.
+     * @return A summary of the principal.
      * */
     public static UserSummaryResponse adaptPrincipalToSummary(final UserPrincipal user) {
         return new UserSummaryResponse(user.getId(), user.getUsername(), user.getEmail(), null, null, null);

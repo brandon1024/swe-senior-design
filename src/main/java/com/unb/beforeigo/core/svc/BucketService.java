@@ -1,12 +1,15 @@
 package com.unb.beforeigo.core.svc;
 
 import com.unb.beforeigo.api.dto.response.BucketSummaryResponse;
+import com.unb.beforeigo.api.dto.response.UserSummaryResponse;
 import com.unb.beforeigo.api.exception.client.BadRequestException;
 import com.unb.beforeigo.api.exception.client.UnauthorizedException;
 import com.unb.beforeigo.application.dao.BucketDAO;
+import com.unb.beforeigo.application.dao.UserBucketRelationshipDAO;
 import com.unb.beforeigo.application.dao.UserDAO;
 import com.unb.beforeigo.core.model.Bucket;
 import com.unb.beforeigo.core.model.User;
+import com.unb.beforeigo.core.model.UserBucketRelationship;
 import com.unb.beforeigo.core.model.validation.EntityValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -24,6 +27,8 @@ public class BucketService {
 
     @Autowired private BucketDAO bucketDAO;
 
+    @Autowired private UserBucketRelationshipDAO userBucketRelationshipDAO;
+
     /**
      * Create a new {@link Bucket} that is associated to a given user.
      *
@@ -31,10 +36,10 @@ public class BucketService {
      * ownerId parameter. The {@link Bucket#id} field is set to null to prevent this method from being used to
      * overwrite a bucket already persisted.
      *
-     * @param ownerId the id of the user that will own the bucket
-     * @param bucket the bucket to create
-     * @return a summary of the bucket once persisted in the database
-     * @throws BadRequestException if a user with the provided id cannot be found
+     * @param ownerId The id of the user that will own the bucket.
+     * @param bucket The bucket to create.
+     * @return A summary of the bucket once persisted in the database.
+     * @throws BadRequestException If a user with the provided id cannot be found.
      * */
     public BucketSummaryResponse createBucket(final Long ownerId, final Bucket bucket) {
         User bucketOwner = userDAO.findById(ownerId)
@@ -57,12 +62,12 @@ public class BucketService {
      * matches the id of the childBucketOwnerId param. Conversely, if the childBucketOwnerId param matches the owner of
      * the bucket, the bucket may be duplicated regardless of whether it is private or public.
      *
-     * @param newBucketOwnerId the id of the new owner of the bucket
-     * @param bucketId the id of the bucket that is to be duplicated
-     * @return a summary of the duplicated bucket once persisted in the database
-     * @throws BadRequestException if a user with childBucketOwnerId does not exist
-     * @throws BadRequestException if a bucket with parentBucketId does not exist
-     * @throws UnauthorizedException if the bucket is private but owners do not match.
+     * @param newBucketOwnerId The id of the new owner of the bucket.
+     * @param bucketId The id of the bucket that is to be duplicated.
+     * @return A summary of the duplicated bucket once persisted in the database.
+     * @throws BadRequestException If a user with childBucketOwnerId does not exist.
+     * @throws BadRequestException If a bucket with parentBucketId does not exist.
+     * @throws UnauthorizedException If the bucket is private but owners do not match.
      * */
     public BucketSummaryResponse duplicateBucket(final Long newBucketOwnerId, final Long bucketId) {
         User childBucketOwner = userDAO.findById(newBucketOwnerId)
@@ -89,10 +94,10 @@ public class BucketService {
     /**
      * Retrieve a list of {@link Bucket}'s associated to a given user.
      *
-     * @param ownerId the id of the user that owns the buckets
-     * @param publicOnly returns only buckets that are public
-     * @return a list of bucket summaries
-     * @throws BadRequestException if a user with the given ownerId does not exist
+     * @param ownerId The id of the user that owns the buckets.
+     * @param publicOnly Returns only buckets that are public.
+     * @return A list of bucket summaries.
+     * @throws BadRequestException If a user with the given ownerId does not exist.
      * */
     public List<BucketSummaryResponse> findBuckets(final Long ownerId, final boolean publicOnly) {
         User bucketOwner = userDAO.findById(ownerId)
@@ -103,7 +108,7 @@ public class BucketService {
                 bucketDAO.findAllByOwner(bucketOwner);
 
         return buckets.stream()
-                .map(this::adaptBucketToBucketSummary)
+                .map(BucketService::adaptBucketToBucketSummary)
                 .collect(Collectors.toList());
     }
 
@@ -113,11 +118,11 @@ public class BucketService {
      * If the bucket is private and the publicOnly parameter is true (i.e. the bucket with the given id is private),
      * then an UnauthorizedException is thrown.
      *
-     * @param bucketId the id of the bucket to retrieve
-     * @param publicOnly specify whether bucket is retrieved only if it is public
-     * @return a summary of a bucket, if found.
-     * @throws BadRequestException if a bucket with the given id cannot be found.
-     * @throws UnauthorizedException if the bucket with the given id is private, but the publicOnly param is true.
+     * @param bucketId The id of the bucket to retrieve.
+     * @param publicOnly Specify whether bucket is retrieved only if it is public.
+     * @return A summary of a bucket, if found.
+     * @throws BadRequestException If a bucket with the given id cannot be found.
+     * @throws UnauthorizedException If the bucket with the given id is private, but the publicOnly param is true.
      * */
     public BucketSummaryResponse findBucketById(final Long bucketId, final boolean publicOnly) {
         Bucket bucket = bucketDAO.findById(bucketId)
@@ -129,6 +134,29 @@ public class BucketService {
         }
 
         return adaptBucketToBucketSummary(bucket);
+    }
+
+    /**
+     * Retrieve a list of users that are following a given bucket.
+     *
+     * @param bucketId The id of the bucket used in the query.
+     * @param publicOnly Specify whether the bucket is visible.
+     * @return List of user summaries.
+     * @throws UnauthorizedException If the bucket is not public but publicOnly flag is true.
+     * */
+    public List<UserSummaryResponse> findFollowers(final Long bucketId, final boolean publicOnly) {
+        Bucket bucket = bucketDAO.findById(bucketId)
+                .orElseThrow(() ->
+                        new BadRequestException("Unable to find a record with id " + bucketId));
+
+        if(publicOnly && !bucket.getIsPublic()) {
+            throw new UnauthorizedException("Insufficient permissions.");
+        }
+
+        return userBucketRelationshipDAO.findAllByFollowing(bucket).stream()
+                .map(UserBucketRelationship::getFollower)
+                .map(UserService::adaptUserToSummary)
+                .collect(Collectors.toList());
     }
 
     /**
@@ -145,12 +173,12 @@ public class BucketService {
      * verify that the user id provided as a path variable matches the owner of the bucket with the id provided as a path
      * variable.
      *
-     * @param partialBucket the partial bucket used to update the bucket
-     * @param bucketId the id of the bucket to patch
-     * @return a summary of the patched bucket, once persisted in the database
-     * @throws BadRequestException if a bucket with the given bucketId cannot be found
-     * @throws BadRequestException if the owner of the partial bucket does not match the owner of the bucket with the
-     * given id. See the api note.
+     * @param partialBucket The partial bucket used to update the bucket.
+     * @param bucketId The id of the bucket to patch.
+     * @return A summary of the patched bucket, once persisted in the database.
+     * @throws BadRequestException If a bucket with the given bucketId cannot be found.
+     * @throws BadRequestException If the owner of the partial bucket does not match the owner of the bucket with the
+     * given id.
      * */
     public BucketSummaryResponse patchBucket(final Bucket partialBucket, final Long bucketId) {
         Bucket persistedBucket = bucketDAO.findById(bucketId)
@@ -186,12 +214,12 @@ public class BucketService {
      * API Note: he bucket provided must have the owner field specified, and it must match the bucket with the provided
      * bucketId. This is used to prevent the transfer of ownership of a bucket.
      *
-     * @param bucket the bucket used to update the persisted bucket
-     * @param bucketId the id of the bucket to patch
-     * @return a summary of the updated bucket, once persisted in the database
-     * @throws BadRequestException if a bucket with the given bucketId cannot be found
-     * @throws BadRequestException if the owner of the partial bucket does not match the owner of the bucket with the
-     * given id. See the api note.
+     * @param bucket The bucket used to update the persisted bucket.
+     * @param bucketId The id of the bucket to patch.
+     * @return A summary of the updated bucket, once persisted in the database.
+     * @throws BadRequestException If a bucket with the given bucketId cannot be found.
+     * @throws BadRequestException If the owner of the partial bucket does not match the owner of the bucket with the
+     * given id.
      * */
     public BucketSummaryResponse updateBucket(final Bucket bucket, final Long bucketId) {
         Bucket persistedBucket = bucketDAO.findById(bucketId)
@@ -216,9 +244,8 @@ public class BucketService {
      * {@link com.unb.beforeigo.api.BucketController} to verify that the user id provided as a path variable matches the
      * owner of the bucket with the id provided as a path variable.
      *
-     * @param bucket the bucket to delete
-     * @throws BadRequestException if the owner of the bucket does not match the owner of the bucket with the given id.
-     * See the api note.
+     * @param bucket The bucket to delete.
+     * @throws BadRequestException If the owner of the bucket does not match the owner of the bucket with the given id.
      * */
     public void deleteBucket(final Bucket bucket) {
         Bucket persistedBucket = bucketDAO.findById(bucket.getId())
@@ -239,10 +266,9 @@ public class BucketService {
      *
      * Performs constraint validation.
      *
-     * @param bucket the bucket to save
-     * @return the bucket once persisted in the database
-     * @throws BadRequestException if the user does not meet validation constraints.
-     * @see org.springframework.data.jpa.repository.JpaRepository#save(Object)
+     * @param bucket The bucket to save.
+     * @return The bucket once persisted in the database.
+     * @throws BadRequestException If the user does not meet validation constraints.
      * */
     private Bucket saveBucket(final Bucket bucket) {
         if(Objects.isNull(bucket.getIsPublic())) {
@@ -257,10 +283,10 @@ public class BucketService {
     /**
      * Build a UserSummaryResponse DTO of a User entity.
      *
-     * @param bucket the bucket to be used to build a BucketSummaryResponse
-     * @return a summary of the bucket
+     * @param bucket The bucket to be used to build a BucketSummaryResponse.
+     * @return A summary of the bucket.
      * */
-    public BucketSummaryResponse adaptBucketToBucketSummary(final Bucket bucket) {
+    public static BucketSummaryResponse adaptBucketToBucketSummary(final Bucket bucket) {
         Long ownerId = Objects.nonNull(bucket.getOwner()) ? bucket.getOwner().getId() : null;
         return new BucketSummaryResponse(bucket.getId(),
                 ownerId,

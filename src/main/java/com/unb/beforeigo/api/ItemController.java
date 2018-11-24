@@ -29,11 +29,12 @@ public class ItemController {
     /**
      * Create a new {@link Item}.
      *
-     * @param ownerId The id of the user that owns the bucket
-     * @param bucketId The id of the bucket that owns the item
-     * @param item A valid item with all necessary fields
-     * @return a new item once persisted in the database
-     * @throws UnauthorizedException if the authenticated principal user does not match the user in the path variable.
+     * @param ownerId The id of the user that owns the bucket.
+     * @param bucketId The id of the bucket that owns the item.
+     * @param item A valid item with all necessary fields.
+     * @param currentUser The principal user.
+     * @return A new item once persisted in the database. HTTP CREATED.
+     * @throws UnauthorizedException If the authenticated principal user does not match the user in the path variable.
      * */
     @ApiOperation(value = "Create a new item.", response = ItemSummaryResponse.class)
     @RequestMapping(value = "/users/{ownerId}/buckets/{bucketId}/items", method = RequestMethod.POST, consumes = "application/json")
@@ -52,8 +53,10 @@ public class ItemController {
     /**
      * Retrieve a list of {@link Item}'s associated to a specific bucket.
      *
-     * @param ownerId id of the user that owns the buckets.
-     * @return a list of buckets associated to a given user
+     * @param ownerId Id of the user that owns the buckets.
+     * @param bucketId Id of the bucket.
+     * @param currentUser The principal user.
+     * @return A list of buckets associated to a given user. HTTP OK.
      * */
     @ApiOperation(value = "Retrieve a list of items associated to a specific bucket.", response = ItemSummaryResponse.class, responseContainer = "List")
     @RequestMapping(value = "/users/{userId}/buckets/{bucketId}/items", method = RequestMethod.GET)
@@ -69,11 +72,12 @@ public class ItemController {
      *
      * If the owner id does not match the id of the principal user, the item is only returned if public.
      *
-     * @param ownerId id of the user that owns the buckets.
-     * @param bucketId id of the bucket
-     * @param itemId id of the item
-     * @return item associated to a given user. If the user and principal have matching ids, public or private bucket
-     * may be returned, otherwise only returns a public bucket
+     * @param ownerId Id of the user that owns the buckets.
+     * @param bucketId Id of the bucket.
+     * @param itemId Id of the item.
+     * @param currentUser The principal user.
+     * @return Item associated to a given user. If the user and principal have matching ids, public or private bucket
+     * may be returned, otherwise only returns a public bucket. HTTP OK.
      * @see ItemService#findItemById(Long, Long, boolean)
      * */
     @ApiOperation(value = "Retrieve a specific item associated to a specific bucket and user.", response = ItemSummaryResponse.class)
@@ -89,11 +93,13 @@ public class ItemController {
     /**
      * Update fields in a {@link Item} that is currently persisted in the database. Only non-null bucket fields are updated.
      *
-     * @param ownerId id of the user that owns the bucket
-     * @param bucketId id of the bucket that will be patched
-     * @param item An item to patch
-     * @return the patched item
-     * @throws UnauthorizedException if the authenticated principal user does not match the user in the path variable.
+     * @param ownerId Id of the user that owns the bucket.
+     * @param bucketId Id of the bucket that owns the item.
+     * @param itemId Id of the item to patch.
+     * @param item An item to patch.
+     * @param currentUser The principal user.
+     * @return The patched item. HTTP OK.
+     * @throws UnauthorizedException If the authenticated principal user does not match the user in the path variable.
      * */
     @ApiOperation(value = "Update fields in an item that is currently persisted in the database.", response = ItemSummaryResponse.class)
     @RequestMapping(value = "/users/{ownerId}/buckets/{bucketId}/items/{itemId}", method = RequestMethod.PATCH, consumes = "application/json")
@@ -113,12 +119,13 @@ public class ItemController {
     /**
      * Completely update a {@link Item} that is currently persisted in the database. All item fields are updated.
      *
-     * @param ownerId id of the user that owns the bucket
-     * @param bucketId id of the bucket that will be updated
-     * @param itemId id of the item that will be updated
-     * @param item An item to update
-     * @return the updated item
-     * @throws UnauthorizedException if the authenticated principal user does not match the user in the path variable.
+     * @param ownerId Id of the user that owns the bucket.
+     * @param bucketId Id of the bucket that will be updated.
+     * @param itemId Id of the item that will be updated.
+     * @param item An item to update.
+     * @param currentUser The principal user.
+     * @return The updated item. HTTP OK.
+     * @throws UnauthorizedException If the authenticated principal user does not match the user in the path variable.
      * */
     @ApiOperation(value = "Completely update an item that is currently persisted in the database.", response = ItemSummaryResponse.class)
     @RequestMapping(value = "/users/{ownerId}/buckets/{bucketId}/items/{itemId}", method = RequestMethod.PUT, consumes = "application/json")
@@ -138,10 +145,12 @@ public class ItemController {
     /**
      * Delete an item.
      *
-     * @param ownerId id of the user that owns the bucket
-     * @param bucketId id of the bucket that owns the item
-     * @param itemId id of the item that will be deleted
-     * @throws UnauthorizedException if the authenticated principal user does not match the user in the path variable.
+     * @param ownerId Id of the user that owns the bucket.
+     * @param bucketId Id of the bucket that owns the item.
+     * @param itemId Id of the item that will be deleted.
+     * @param currentUser The principal user.
+     * @return HTTP OK.
+     * @throws UnauthorizedException If the authenticated principal user does not match the user in the path variable.
      * */
     @ApiOperation(value = "Delete an item.")
     @RequestMapping(value = "/users/{ownerId}/buckets/{bucketId}/items/{itemId}", method = RequestMethod.DELETE)
@@ -160,12 +169,13 @@ public class ItemController {
     /**
      * Create a new {@link Item} from an existing item.
      *
-     * @param ownerId The id of the user that owns the bucket
+     * @param ownerId The id of the user that owns the bucket.
      * @param toBucket The id of the bucket that will own the newly created item.
-     * @param itemId The id of the item to be duplicated
-     * @param fromBucket The id of the bucket that currently owns the bucket
-     * @return a new item once persisted in the database
-     * @throws UnauthorizedException if the id of the currently authenticated user does not match the path variable id
+     * @param itemId The id of the item to be duplicated.
+     * @param fromBucket The id of the bucket that currently owns the bucket.
+     * @param currentUser The principal user.
+     * @return A new item once persisted in the database. HTTP OK.
+     * @throws UnauthorizedException If the id of the currently authenticated user does not match the path variable id.
      * @see ItemService#duplicateItem(Long, Long, Long, Long)
      * */
     @ApiOperation(value = "Create a new item from an existing item.", response = ItemSummaryResponse.class)

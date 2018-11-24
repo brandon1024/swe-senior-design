@@ -37,9 +37,8 @@ public final class JSONWebTokenUtil {
     /**
      * Attempt to extract a username from the JWT token.
      *
-     * @param token The JWT token
-     * @return the username of the user that made the request
-     * @throws MalformedAuthTokenException if the token cannot be parsed
+     * @param token The JWT token.
+     * @return The username of the user that made the request.
      */
     public static String parseUsernameFromToken(String token) {
         JWTClaimsSet cs = JSONWebTokenUtil.parseTokenClaimSet(token);
@@ -50,9 +49,9 @@ public final class JSONWebTokenUtil {
     /**
      * Attempt to extract an email address from the JWT token.
      *
-     * @param token The JWT token
-     * @return the email address of the user that made the request
-     * @throws MalformedAuthTokenException if the token cannot be parsed
+     * @param token The JWT token.
+     * @return The email address of the user that made the request.
+     * @throws MalformedAuthTokenException If the token cannot be parsed.
      */
     public static String parseEmailAddressFromToken(String token) {
         JWTClaimsSet cs = JSONWebTokenUtil.parseTokenClaimSet(token);
@@ -67,9 +66,8 @@ public final class JSONWebTokenUtil {
     /**
      * Attempt to extract a user id from the JWT token.
      *
-     * @param token The JWT token
-     * @return the id of the user that made the request
-     * @throws MalformedAuthTokenException if the token cannot be parsed
+     * @param token The JWT token.
+     * @return The id of the user that made the request.
      */
     public static Long parseUserIdFromToken(String token) {
         JWTClaimsSet cs = JSONWebTokenUtil.parseTokenClaimSet(token);
@@ -84,9 +82,8 @@ public final class JSONWebTokenUtil {
     /**
      * Attempt to extract the issue time from the JWT token.
      *
-     * @param token The JWT token
-     * @return the date representing when this token was issued
-     * @throws MalformedAuthTokenException if the token cannot be parsed
+     * @param token The JWT token.
+     * @return The date representing when this token was issued.
      */
     public static Date parseIssueTimeFromToken(String token) {
         JWTClaimsSet cs = JSONWebTokenUtil.parseTokenClaimSet(token);
@@ -97,9 +94,8 @@ public final class JSONWebTokenUtil {
     /**
      * Attempt to extract the expiration time from the JWT token.
      *
-     * @param token The JWT token
-     * @return the date representing when this token will expire
-     * @throws MalformedAuthTokenException if the token cannot be parsed
+     * @param token The JWT token.
+     * @return The date representing when this token will expire.
      */
     public static Date parseExpirationTimeFromToken(String token) {
         JWTClaimsSet cs = JSONWebTokenUtil.parseTokenClaimSet(token);
@@ -107,6 +103,13 @@ public final class JSONWebTokenUtil {
         return cs.getExpirationTime();
     }
 
+    /**
+     * Parse the JWTClaimSet from the JWT token.
+     *
+     * @param token The JWT token.
+     * @return The JWTClaimSet for the token.
+     * @throws MalformedAuthTokenException If the token cannot be parsed.
+     * */
     private static JWTClaimsSet parseTokenClaimSet(String token) {
         try {
             return JWTParser.parse(token).getJWTClaimsSet();
@@ -118,9 +121,9 @@ public final class JSONWebTokenUtil {
     /**
      * Generate a signed JWT token from the user using HS256.
      *
-     * @param user the user for which the token will be generated
-     * @return the JWT token
-     * @throws SignatureGenerationException if the new token cannot be signed due to an unexpected exception
+     * @param user The user for which the token will be generated.
+     * @return The JWT token.
+     * @throws SignatureGenerationException If the new token cannot be signed due to an unexpected exception.
      */
     public static String generateToken(UserPrincipal user) {
         Date currentTime = new Date();
@@ -151,10 +154,10 @@ public final class JSONWebTokenUtil {
     /**
      * Refresh a token by updating the expirationTime claim and issueTime claim.
      *
-     * @param token the serialized SignedJWT token
-     * @return a serialized refreshed SignedJWT toke
-     * @throws MalformedAuthTokenException if the token cannot be parsed
-     * @throws SignatureGenerationException if the new token cannot be signed due to an unexpected exception
+     * @param token The serialized SignedJWT token.
+     * @return A serialized refreshed SignedJWT token.
+     * @throws MalformedAuthTokenException If the token cannot be parsed.
+     * @throws SignatureGenerationException If the new token cannot be signed due to an unexpected exception.
      * */
     public static String refreshToken(String token) {
         SignedJWT oldToken;
@@ -200,9 +203,9 @@ public final class JSONWebTokenUtil {
      *  <li>the token EMAIL_ADDR_CLAIM_NAME claim matches the user email address provided</li>
      * </ul>
      *
-     * @param token the serialized SignedJWT token
-     * @param user the user to verify the token against
-     * @return whether the token is valid.
+     * @param token The serialized SignedJWT token.
+     * @param user The user to verify the token against.
+     * @return Whether the token is valid.
      * */
     public static boolean validateToken(final String token, final UserPrincipal user) {
         try {
@@ -241,12 +244,12 @@ public final class JSONWebTokenUtil {
      * Verify that a token is valid, returning the token if so, otherwise throw an exception produced by the exception
      * supplying function.
      *
-     * @param <T> Type of the exception to be thrown
-     * @param token the serialized SignedJWT token
-     * @param user the user to verify the token against
-     * @param exceptionSupplier the supplying function that produces an exception to be thrown
-     * @throws T if the token is invalid.
-     * @return the token, if valid.
+     * @param <T> Type of the exception to be thrown.
+     * @param token The serialized SignedJWT token.
+     * @param user The user to verify the token against.
+     * @param exceptionSupplier The supplying function that produces an exception to be thrown.
+     * @throws T If the token is invalid.
+     * @return The token, if valid.
      * */
     public static <T extends Throwable> String validateToken(final String token,
                                                              final UserPrincipal user,
@@ -262,8 +265,8 @@ public final class JSONWebTokenUtil {
      * Generate expiration date from a given date. The expiration date will be determined based on the
      * <pre>jwt.expiration</pre> property value.
      *
-     * @param createdDate basis date
-     * @return a new date that is <pre>jwt.expiration</pre> seconds later than the basis date.
+     * @param createdDate Basis date.
+     * @return A new date that is <pre>jwt.expiration</pre> seconds later than the basis date.
      * */
     private static Date generateExpirationDate(final Date createdDate) {
         return new Date(createdDate.getTime() + expiration * 1000);

@@ -46,13 +46,13 @@ public class UserController {
      *     <li>have email address example@example.com</li>
      * </ul>
      *
-     * @param userId an optional id to be used in the query
-     * @param username an optional username to use in the query
-     * @param email an optional email to use in the query
-     * @param firstName an optional first name to use in the query
-     * @param middleName an optional middle name to use in the query
-     * @param lastName an optional last name to use in the query
-     * @return a list of users found matching any of the request parameters.
+     * @param userId An optional id to be used in the query.
+     * @param username An optional username to use in the query.
+     * @param email An optional email to use in the query.
+     * @param firstName An optional first name to use in the query.
+     * @param middleName An optional middle name to use in the query.
+     * @param lastName An optional last name to use in the query.
+     * @return A list of users found matching any of the request parameters. HTTP OK.
      * */
     @ApiOperation(value = "Retrieve a list of users by various fields.", response = UserSummaryResponse.class, responseContainer = "List")
     @RequestMapping(value = "/users", method = RequestMethod.GET)
@@ -69,9 +69,8 @@ public class UserController {
     /**
      * Retrieve a specific {@link User} by id.
      *
-     * @param userId the id of the user
-     * @return the user with the given id.
-     * @throws BadRequestException if a user with the given id cannot be found.
+     * @param userId The id of the user.
+     * @return The user with the given id. HTTP OK.
      * */
     @ApiOperation(value = "Retrieve a specific user by id.", response = UserSummaryResponse.class)
     @RequestMapping(value = "/users/{id}", method = RequestMethod.GET)
@@ -85,13 +84,11 @@ public class UserController {
      *
      * Only non-null user fields are updated. The id of the currently authenticated user must match the path variable id.
      *
-     * @param userId the id of the user to update
-     * @param user the user to update
-     * @param currentUser the currently authenticated user
-     * @return the updated user
-     * @throws UnauthorizedException if the id of the currently authenticated user does not match the path variable id
-     * @throws BadRequestException if a user cannot be found with the provided id, or the new user does not meet User
-     * validation constraints.
+     * @param userId The id of the user to update.
+     * @param user The user to update.
+     * @param currentUser The currently authenticated user.
+     * @return The updated user. HTTP OK.
+     * @throws UnauthorizedException If the id of the currently authenticated user does not match the path variable id.
      * */
     @ApiOperation(value = "Update fields in a user that is currently persisted in the database.", response = UserSummaryResponse.class)
     @RequestMapping(value = "/users/{id}", method = RequestMethod.PATCH, consumes = "application/json")
@@ -111,13 +108,11 @@ public class UserController {
      *
      * The id of the currently authenticated user must match the path variable id.
      *
-     * @param userId the id of the user to update
-     * @param user the user to update
-     * @param currentUser the currently authenticated user
-     * @return the updated user
-     * @throws UnauthorizedException if the id of the currently authenticated user does not match the path variable id
-     * @throws BadRequestException if a user cannot be found with the provided id, or the new user does not meet User
-     * validation constraints.
+     * @param userId The id of the user to update.
+     * @param user The user to update.
+     * @param currentUser The currently authenticated user.
+     * @return The updated user. HTTP OK.
+     * @throws UnauthorizedException If the id of the currently authenticated user does not match the path variable id.
      * */
     @ApiOperation(value = "Completely update a user that is currently persisted in the database.", response = UserSummaryResponse.class)
     @RequestMapping(value = "/users/{id}", method = RequestMethod.PUT, consumes = "application/json")
@@ -137,11 +132,10 @@ public class UserController {
      *
      * The id of the currently authenticated user must match the path variable id.
      *
-     * @param userId the id of the user to be deleted
-     * @param currentUser the currently authenticated user
-     * @return Http OK
-     * @throws UnauthorizedException if the id of the currently authenticated user does not match the path variable id
-     * @throws BadRequestException if a user cannot be found with the provided id
+     * @param userId The id of the user to be deleted.
+     * @param currentUser The currently authenticated user.
+     * @return HTTP OK.
+     * @throws UnauthorizedException If the id of the currently authenticated user does not match the path variable id.
      * */
     @ApiOperation(value = "Delete a user.")
     @RequestMapping(value = "/users/{id}", method = RequestMethod.DELETE)
