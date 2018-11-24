@@ -25,6 +25,7 @@ stages:
 unit_tests:
   stage: test
   script:
+    - ./gradlew -s docs
     - ./gradlew -s test
 
 after_script:
