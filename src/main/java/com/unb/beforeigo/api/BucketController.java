@@ -6,6 +6,7 @@ import com.unb.beforeigo.core.model.Bucket;
 import com.unb.beforeigo.core.model.User;
 import com.unb.beforeigo.core.svc.BucketService;
 import com.unb.beforeigo.infrastructure.security.UserPrincipal;
+import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -38,6 +39,7 @@ public class BucketController {
      * @throws UnauthorizedException if the id of the currently authenticated user does not match the path variable id
      * @see BucketService#createBucket(Long, Bucket)
      * */
+    @ApiOperation(value = "Create a new bucket.", response = BucketSummaryResponse.class)
     @RequestMapping(value = "/users/{id}/buckets", method = RequestMethod.POST, consumes = "application/json")
     public ResponseEntity<BucketSummaryResponse> createBucket(@PathVariable(name = "id") final Long ownerId,
                                                               @RequestBody final Bucket bucket,
@@ -60,6 +62,7 @@ public class BucketController {
      * @throws UnauthorizedException if the id of the currently authenticated user does not match the path variable id
      * @see BucketService#duplicateBucket(Long, Long)
      * */
+    @ApiOperation(value = "Create a new bucket from an existing bucket.", response = BucketSummaryResponse.class)
     @RequestMapping(value = "/users/{id}/buckets", method = RequestMethod.POST, consumes = "application/json", params = {"from"})
     public ResponseEntity<BucketSummaryResponse> duplicateBucket(@PathVariable(name = "id") final Long ownerId,
                                                                  @RequestParam(name = "from") final Long parentBucketId,
@@ -83,6 +86,7 @@ public class BucketController {
      * private buckets are returned, otherwise only returns public buckets
      * @see BucketService#findBuckets(Long, boolean)
      * */
+    @ApiOperation(value = "Retrieve a list of buckets associated to a specific user.", response = BucketSummaryResponse.class, responseContainer = "List")
     @RequestMapping(value = "/users/{id}/buckets", method = RequestMethod.GET)
     public ResponseEntity<List<BucketSummaryResponse>> findBuckets(@PathVariable(name = "id") final Long ownerId,
                                                                    @AuthenticationPrincipal final UserPrincipal currentUser) {
@@ -103,6 +107,7 @@ public class BucketController {
      * may be returned, otherwise only returns a public bucket
      * @see BucketService#findBucketById(Long, boolean)
      * */
+    @ApiOperation(value = "Retrieve a specific bucket associated to a specific user.", response = BucketSummaryResponse.class)
     @RequestMapping(value = "/users/{ownerId}/buckets/{bucketId}", method = RequestMethod.GET)
     public ResponseEntity<BucketSummaryResponse> findBucketById(@PathVariable(name = "ownerId") final Long ownerId,
                                                                 @PathVariable(name = "bucketId") final Long bucketId,
@@ -127,6 +132,7 @@ public class BucketController {
      * @throws UnauthorizedException if the id of the currently authenticated user does not match the path variable id
      * @see BucketService#patchBucket(Bucket, Long)
      * */
+    @ApiOperation(value = "Update fields in a bucket that is currently persisted in the database.", response = BucketSummaryResponse.class)
     @RequestMapping(value = "/users/{ownerId}/buckets/{bucketId}", method = RequestMethod.PATCH,
             consumes = "application/json")
     public ResponseEntity<BucketSummaryResponse> patchBucket(@PathVariable(value = "ownerId") final Long ownerId,
@@ -157,6 +163,7 @@ public class BucketController {
      * @throws UnauthorizedException if the id of the currently authenticated user does not match the path variable id
      * @see BucketService#updateBucket(Bucket, Long)
      * */
+    @ApiOperation(value = "Completely update a bucket that currently persisted in the database.", response = BucketSummaryResponse.class)
     @RequestMapping(value = "/users/{ownerId}/buckets/{bucketId}", method = RequestMethod.PUT,
             consumes = "application/json")
     public ResponseEntity<BucketSummaryResponse> updateBucket(@PathVariable(value = "ownerId") final Long ownerId,
@@ -186,6 +193,7 @@ public class BucketController {
      * @throws UnauthorizedException if the id of the currently authenticated user does not match the path variable id
      * @see BucketService#deleteBucket(Bucket)
      * */
+    @ApiOperation(value = "Delete a bucket.")
     @RequestMapping(value = "/users/{ownerId}/buckets/{bucketId}", method = RequestMethod.DELETE)
     public ResponseEntity<?> deleteBucket(@PathVariable(value = "ownerId") final Long ownerId,
                                           @PathVariable(value = "bucketId") final Long bucketId,

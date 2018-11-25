@@ -1,5 +1,6 @@
 package com.unb.beforeigo.api;
 
+import com.unb.beforeigo.api.dto.response.BucketSummaryResponse;
 import com.unb.beforeigo.api.dto.response.ItemSummaryResponse;
 import com.unb.beforeigo.api.exception.client.BadRequestException;
 import com.unb.beforeigo.api.exception.client.UnauthorizedException;
@@ -7,6 +8,7 @@ import com.unb.beforeigo.core.model.Bucket;
 import com.unb.beforeigo.core.model.Item;
 import com.unb.beforeigo.core.svc.ItemService;
 import com.unb.beforeigo.infrastructure.security.UserPrincipal;
+import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -33,6 +35,7 @@ public class ItemController {
      * @return a new item once persisted in the database
      * @throws UnauthorizedException if the authenticated principal user does not match the user in the path variable.
      * */
+    @ApiOperation(value = "Create a new item.", response = ItemSummaryResponse.class)
     @RequestMapping(value = "/users/{ownerId}/buckets/{bucketId}/items", method = RequestMethod.POST, consumes = "application/json")
     public ResponseEntity<ItemSummaryResponse> createItem(@PathVariable(name = "ownerId") final Long ownerId,
                                                           @PathVariable(name = "bucketId") final Long bucketId,
@@ -52,6 +55,7 @@ public class ItemController {
      * @param ownerId id of the user that owns the buckets.
      * @return a list of buckets associated to a given user
      * */
+    @ApiOperation(value = "Retrieve a list of items associated to a specific bucket.", response = ItemSummaryResponse.class, responseContainer = "List")
     @RequestMapping(value = "/users/{userId}/buckets/{bucketId}/items", method = RequestMethod.GET)
     public ResponseEntity<List<ItemSummaryResponse>> findItems(@PathVariable(name = "userId") final Long ownerId,
                                                                @PathVariable(name = "bucketId") final Long bucketId,
@@ -72,6 +76,7 @@ public class ItemController {
      * may be returned, otherwise only returns a public bucket
      * @see ItemService#findItemById(Long, Long, boolean)
      * */
+    @ApiOperation(value = "Retrieve a specific item associated to a specific bucket and user.", response = ItemSummaryResponse.class)
     @RequestMapping(value = "/users/{ownerId}/buckets/{bucketId}/items/{itemId}", method = RequestMethod.GET)
     public ResponseEntity<ItemSummaryResponse> findItemById(@PathVariable(name = "ownerId") final Long ownerId,
                                                             @PathVariable(name = "bucketId") final Long bucketId,
@@ -82,7 +87,7 @@ public class ItemController {
     }
 
     /**
-     * Update fields in a {@link Bucket} that is currently persisted in the database. Only non-null bucket fields are updated.
+     * Update fields in a {@link Item} that is currently persisted in the database. Only non-null bucket fields are updated.
      *
      * @param ownerId id of the user that owns the bucket
      * @param bucketId id of the bucket that will be patched
@@ -90,6 +95,7 @@ public class ItemController {
      * @return the patched item
      * @throws UnauthorizedException if the authenticated principal user does not match the user in the path variable.
      * */
+    @ApiOperation(value = "Update fields in an item that is currently persisted in the database.", response = ItemSummaryResponse.class)
     @RequestMapping(value = "/users/{ownerId}/buckets/{bucketId}/items/{itemId}", method = RequestMethod.PATCH, consumes = "application/json")
     public ResponseEntity<ItemSummaryResponse> patchItem(@PathVariable(name = "ownerId") final Long ownerId,
                                                          @PathVariable(name = "bucketId") final Long bucketId,
@@ -114,6 +120,7 @@ public class ItemController {
      * @return the updated item
      * @throws UnauthorizedException if the authenticated principal user does not match the user in the path variable.
      * */
+    @ApiOperation(value = "Completely update an item that is currently persisted in the database.", response = ItemSummaryResponse.class)
     @RequestMapping(value = "/users/{ownerId}/buckets/{bucketId}/items/{itemId}", method = RequestMethod.PUT, consumes = "application/json")
     public ResponseEntity<ItemSummaryResponse> updateItem(@PathVariable(name = "ownerId") final Long ownerId,
                                                           @PathVariable(name = "bucketId") final Long bucketId,
@@ -136,6 +143,7 @@ public class ItemController {
      * @param itemId id of the item that will be deleted
      * @throws UnauthorizedException if the authenticated principal user does not match the user in the path variable.
      * */
+    @ApiOperation(value = "Delete an item.")
     @RequestMapping(value = "/users/{ownerId}/buckets/{bucketId}/items/{itemId}", method = RequestMethod.DELETE)
     public ResponseEntity<?> deleteItem(@PathVariable(name = "ownerId") final Long ownerId,
                                         @PathVariable(name = "bucketId") final Long bucketId,
@@ -160,6 +168,7 @@ public class ItemController {
      * @throws UnauthorizedException if the id of the currently authenticated user does not match the path variable id
      * @see ItemService#duplicateItem(Long, Long, Long, Long)
      * */
+    @ApiOperation(value = "Create a new item from an existing item.", response = ItemSummaryResponse.class)
     @RequestMapping(value = "/users/{id}/buckets/{bucketId}/items/{itemId}", method = RequestMethod.POST, consumes = "application/json", params = {"from"})
     public ResponseEntity<ItemSummaryResponse> duplicateItem(@PathVariable(name = "id") final Long ownerId,
                                                              @PathVariable(name = "bucketId") final Long toBucket,

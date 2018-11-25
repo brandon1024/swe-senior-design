@@ -8,6 +8,7 @@ import com.unb.beforeigo.core.model.User;
 import com.unb.beforeigo.core.model.UserRelationship;
 import com.unb.beforeigo.core.svc.UserService;
 import com.unb.beforeigo.infrastructure.security.UserPrincipal;
+import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -43,6 +44,7 @@ public class UserRelationshipController {
      * @throws UnauthorizedException if the id of the currently authenticated user does not match the path variable id
      * @throws BadRequestException if the subjectId and initiatorId are equal.
      * */
+    @ApiOperation(value = "Create a new user relationship.", response = UserRelationshipSummaryResponse.class)
     @RequestMapping(value = "/{id}/following", method = RequestMethod.POST)
     public ResponseEntity<UserRelationshipSummaryResponse> createUserRelationship(@PathVariable(name = "id") final Long initiatorId,
                                                                                   @RequestParam(name = "id") final Long subjectId,
@@ -65,6 +67,7 @@ public class UserRelationshipController {
      * @param subjectId the id of the user to be used in the query
      * @return a list of users that are following the user with the given id
      * */
+    @ApiOperation(value = "Retrieve a list of users that are following a given user.", response = UserSummaryResponse.class, responseContainer = "List")
     @RequestMapping(value = "/{id}/followers", method = RequestMethod.GET)
     public ResponseEntity<List<UserSummaryResponse>> findFollowers(@PathVariable(name = "id") final Long subjectId) {
         List<UserSummaryResponse> response = userService.findFollowers(subjectId);
@@ -77,6 +80,7 @@ public class UserRelationshipController {
      * @param subjectId the id of the user to be used in the query
      * @return a list of users that are followed by the user with the given id
      * */
+    @ApiOperation(value = "Retrieve a list of users that are followed by a given user.", response = UserSummaryResponse.class, responseContainer = "List")
     @RequestMapping(value = "/{id}/following", method = RequestMethod.GET)
     public ResponseEntity<List<UserSummaryResponse>> findFollowing(@PathVariable(name = "id") final Long subjectId) {
         List<UserSummaryResponse> response = userService.findFollowing(subjectId);
@@ -84,7 +88,7 @@ public class UserRelationshipController {
     }
 
     /**
-     * Delete a {@link UserRelationship} The user with the id provided as a path variable will no longer be following the
+     * Delete a {@link UserRelationship}. The user with the id provided as a path variable will no longer be following the
      * user with id specified as a request parameter.
      *
      * Example usage:
@@ -97,6 +101,7 @@ public class UserRelationshipController {
      * @return Http OK
      * @throws UnauthorizedException if the id of the currently authenticated user does not match the path variable id
      * */
+    @ApiOperation(value = "Delete a user relationship.")
     @RequestMapping(value = "/{id}/following", method = RequestMethod.DELETE)
     public ResponseEntity<?> deleteUserRelationship(@PathVariable(value = "id") final Long initiatorId,
                                                     @RequestParam(value = "id") final Long subjectId,

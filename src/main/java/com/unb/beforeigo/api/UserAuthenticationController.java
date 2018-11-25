@@ -2,6 +2,7 @@ package com.unb.beforeigo.api;
 
 import com.unb.beforeigo.api.dto.request.UserAuthenticationRequest;
 import com.unb.beforeigo.api.dto.request.UserRegistrationRequest;
+import com.unb.beforeigo.api.dto.response.ItemSummaryResponse;
 import com.unb.beforeigo.api.dto.response.UserAuthenticationResponse;
 import com.unb.beforeigo.api.dto.response.UserIdentityAvailabilityResponse;
 import com.unb.beforeigo.api.dto.response.UserSummaryResponse;
@@ -14,6 +15,7 @@ import com.unb.beforeigo.core.svc.UserService;
 import com.unb.beforeigo.infrastructure.security.JSONWebTokenUtil;
 import com.unb.beforeigo.infrastructure.security.UserPrincipal;
 import com.unb.beforeigo.infrastructure.security.UserPrincipalService;
+import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -54,6 +56,7 @@ public class UserAuthenticationController {
      * @throws com.unb.beforeigo.infrastructure.security.exception.UserNotFoundException if a user with the username
      * in the request body does not exist.
      * */
+    @ApiOperation(value = "Issue a new token to a user.", response = UserAuthenticationResponse.class)
     @RequestMapping(value = "/signin", method = RequestMethod.POST)
     public ResponseEntity<UserAuthenticationResponse> issueToken(@Valid @RequestBody final UserAuthenticationRequest request)
             throws AuthenticationException {
@@ -85,6 +88,7 @@ public class UserAuthenticationController {
      * @throws AuthenticationException if authentication fails
      * @throws BadRequestException if the new user does not meet validation constraints
      * */
+    @ApiOperation(value = "Register a new user and issue a new token.", response = UserAuthenticationResponse.class)
     @RequestMapping(value = "/signup", method = RequestMethod.POST)
     public ResponseEntity<UserAuthenticationResponse> registerAndIssueToken(
             @Valid @RequestBody final UserRegistrationRequest registrationRequest) {
@@ -116,6 +120,7 @@ public class UserAuthenticationController {
      * @param userPrincipal The principal user.
      * @return 200 OK if the authentication succeeded, with the token in the response body.
      * */
+    @ApiOperation(value = "Refresh a token.", response = UserAuthenticationResponse.class)
     @RequestMapping(value = "/token_refresh", method = RequestMethod.POST)
     public ResponseEntity<UserAuthenticationResponse> refreshToken(
             @AuthenticationPrincipal final UserPrincipal userPrincipal) {
@@ -138,6 +143,7 @@ public class UserAuthenticationController {
      * @param email optional request parameter for the username
      * @return UserIdentityAvailabilityResponse
      * */
+    @ApiOperation(value = "Check if a given identity is available.", response = UserAuthenticationResponse.class)
     @RequestMapping(value = "/identity_available", method = RequestMethod.GET)
     public ResponseEntity<UserIdentityAvailabilityResponse> checkIdentityAvailability(
             @RequestParam(name = "username", required = false) final String username,

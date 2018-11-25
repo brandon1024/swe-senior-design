@@ -1,11 +1,13 @@
 package com.unb.beforeigo.api;
 
+import com.unb.beforeigo.api.dto.response.UserAuthenticationResponse;
 import com.unb.beforeigo.api.dto.response.UserSummaryResponse;
 import com.unb.beforeigo.api.exception.client.BadRequestException;
 import com.unb.beforeigo.api.exception.client.UnauthorizedException;
 import com.unb.beforeigo.core.model.User;
 import com.unb.beforeigo.core.svc.UserService;
 import com.unb.beforeigo.infrastructure.security.UserPrincipal;
+import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -30,7 +32,7 @@ public class UserController {
     @Autowired private UserService userService;
 
     /**
-     * Retrieve a list of {@link User}'s by with a given id, username or email address, first, middle or last name.
+     * Retrieve a list of {@link User}'s with a given id, username or email address, first, middle or last name.
      *
      * If no request parameters are provided, all users are returned. If more than one request parameter is specified,
      * users are queried and selected if they match any of the parameters.
@@ -52,6 +54,7 @@ public class UserController {
      * @param lastName an optional last name to use in the query
      * @return a list of users found matching any of the request parameters.
      * */
+    @ApiOperation(value = "Retrieve a list of users by various fields.", response = UserSummaryResponse.class, responseContainer = "List")
     @RequestMapping(value = "/users", method = RequestMethod.GET)
     public ResponseEntity<List<UserSummaryResponse>> findUsers(@RequestParam(name = "id", required = false) final Long userId,
                                                                @RequestParam(name = "username", required = false) final String username,
@@ -70,6 +73,7 @@ public class UserController {
      * @return the user with the given id.
      * @throws BadRequestException if a user with the given id cannot be found.
      * */
+    @ApiOperation(value = "Retrieve a specific user by id.", response = UserSummaryResponse.class)
     @RequestMapping(value = "/users/{id}", method = RequestMethod.GET)
     public ResponseEntity<UserSummaryResponse> findUserById(@PathVariable(name = "id") final Long userId) {
         UserSummaryResponse user = userService.findUserById(userId);
@@ -89,6 +93,7 @@ public class UserController {
      * @throws BadRequestException if a user cannot be found with the provided id, or the new user does not meet User
      * validation constraints.
      * */
+    @ApiOperation(value = "Update fields in a user that is currently persisted in the database.", response = UserSummaryResponse.class)
     @RequestMapping(value = "/users/{id}", method = RequestMethod.PATCH, consumes = "application/json")
     public ResponseEntity<UserSummaryResponse> patchUser(@PathVariable(name = "id") final Long userId,
                                                          @RequestBody final User user,
@@ -114,6 +119,7 @@ public class UserController {
      * @throws BadRequestException if a user cannot be found with the provided id, or the new user does not meet User
      * validation constraints.
      * */
+    @ApiOperation(value = "Completely update a user that is currently persisted in the database.", response = UserSummaryResponse.class)
     @RequestMapping(value = "/users/{id}", method = RequestMethod.PUT, consumes = "application/json")
     public ResponseEntity<UserSummaryResponse> updateUser(@PathVariable(name = "id") final Long userId,
                                                           @Valid @RequestBody final User user,
@@ -137,6 +143,7 @@ public class UserController {
      * @throws UnauthorizedException if the id of the currently authenticated user does not match the path variable id
      * @throws BadRequestException if a user cannot be found with the provided id
      * */
+    @ApiOperation(value = "Delete a user.")
     @RequestMapping(value = "/users/{id}", method = RequestMethod.DELETE)
     public ResponseEntity<?> deleteUser(@PathVariable(name = "id") final Long userId,
                                         @AuthenticationPrincipal final UserPrincipal currentUser) {
