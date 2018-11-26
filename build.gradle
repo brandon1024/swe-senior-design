@@ -48,6 +48,7 @@ test {
 
 task delombok(type: Exec) {
 	def lombokJarPath = configurations.compileOnly.find { it.name.startsWith("lombok") }
+	delete 'src/src-delomboked'
 	commandLine 'java', '-jar', lombokJarPath, 'delombok', 'src/main/java', '-d', 'build/src-delomboked', '--classpath', configurations.compile.asPath
 }
 
