@@ -2,26 +2,28 @@ package com.unb.beforeigo.api.dto.request;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 
 @Data
 @AllArgsConstructor
+@NoArgsConstructor
 public class UserRegistrationRequest implements Serializable {
 
-    private final String username;
+    private String username;
 
-    private final String email;
+    private String email;
 
-    private final String password;
+    private String password;
 
-    private final String passwordConfirm;
+    private String passwordConfirm;
 
-    private final String firstName;
+    private String firstName;
 
-    private final String middleName;
+    private String middleName;
 
-    private final String lastName;
+    private String lastName;
 
     private String primaryStreetAddress;
 
