@@ -1,10 +1,12 @@
 package com.unb.beforeigo.api.dto.response;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 
 import java.io.Serializable;
 
 @Data
+@AllArgsConstructor
 public class UserSummaryResponse implements Serializable {
 
     private final Long id;
