@@ -27,6 +27,9 @@ public class BeforeIGoController {
 
     /**
      * Alternate endpoint for swagger API documentation.
+     *
+     * @param response The HTTP response
+     * @throws IOException if IO exception occurs
      * */
     @ApiOperation(value = "Alternate endpoint for swagger API documentation.")
     @RequestMapping(value = "/api-docs", method = RequestMethod.GET)
