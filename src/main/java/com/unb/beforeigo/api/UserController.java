@@ -1,8 +1,6 @@
 package com.unb.beforeigo.api;
 
-import com.unb.beforeigo.api.dto.response.UserAuthenticationResponse;
 import com.unb.beforeigo.api.dto.response.UserSummaryResponse;
-import com.unb.beforeigo.api.exception.client.BadRequestException;
 import com.unb.beforeigo.api.exception.client.UnauthorizedException;
 import com.unb.beforeigo.core.model.User;
 import com.unb.beforeigo.core.svc.UserService;

@@ -2,7 +2,6 @@ package com.unb.beforeigo.api;
 
 import com.unb.beforeigo.api.dto.request.UserAuthenticationRequest;
 import com.unb.beforeigo.api.dto.request.UserRegistrationRequest;
-import com.unb.beforeigo.api.dto.response.ItemSummaryResponse;
 import com.unb.beforeigo.api.dto.response.UserAuthenticationResponse;
 import com.unb.beforeigo.api.dto.response.UserIdentityAvailabilityResponse;
 import com.unb.beforeigo.api.dto.response.UserSummaryResponse;

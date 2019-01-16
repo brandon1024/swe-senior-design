@@ -1,10 +1,7 @@
 package com.unb.beforeigo.api;
 
-import com.unb.beforeigo.api.dto.response.BucketSummaryResponse;
 import com.unb.beforeigo.api.dto.response.ItemSummaryResponse;
-import com.unb.beforeigo.api.exception.client.BadRequestException;
 import com.unb.beforeigo.api.exception.client.UnauthorizedException;
-import com.unb.beforeigo.core.model.Bucket;
 import com.unb.beforeigo.core.model.Item;
 import com.unb.beforeigo.core.svc.ItemService;
 import com.unb.beforeigo.infrastructure.security.UserPrincipal;

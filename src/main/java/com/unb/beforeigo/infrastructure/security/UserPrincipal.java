@@ -3,11 +3,12 @@ package com.unb.beforeigo.infrastructure.security;
 import com.unb.beforeigo.core.model.User;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.Collections;
 
-public class UserPrincipal extends org.springframework.security.core.userdetails.User {
+public class UserPrincipal extends org.springframework.security.core.userdetails.User implements UserDetails {
 
     private final Long id;
 
