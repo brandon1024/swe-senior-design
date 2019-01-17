@@ -24,8 +24,6 @@ public class SpringSecurityConfiguration extends WebSecurityConfigurerAdapter {
 
     @Autowired AuthenticationEntryPoint authenticationEntryPoint;
 
-    @Autowired AuthenticationProcessingFilter authenticationProcessingFilter;
-
     @Autowired CORSFilter crossOriginResourceSharingFilter;
 
     @Autowired
@@ -61,11 +59,12 @@ public class SpringSecurityConfiguration extends WebSecurityConfigurerAdapter {
                             "/")
                         .permitAll()
                 .anyRequest()
-                    .authenticated();
+                    .authenticated()
+                .and()
+                    .addFilter(new AuthorizationProcessingFilter(authenticationManagerBean(), userPrincipalService));
 
         http
-                .addFilterBefore(crossOriginResourceSharingFilter, SessionManagementFilter.class)
-                .addFilterBefore(authenticationProcessingFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(crossOriginResourceSharingFilter, SessionManagementFilter.class);
     }
 
     @Bean

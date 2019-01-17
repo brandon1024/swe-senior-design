@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -30,14 +31,15 @@ public class UserBucketRelationshipController {
      *
      * @param initiatorId The id of the user that is following the bucket.
      * @param bucketId The id of the bucket that the user is following.
-     * @param currentUser The principal user.
+     * @param auth The authentication token.
      * @return A summary of the relationship. HTTP CREATED.
      * @throws UnauthorizedException If the principal user does not match the initiator.
      * */
     @RequestMapping(value = "/users/{id}/following_bucket", method = RequestMethod.POST)
     public ResponseEntity<UserBucketRelationshipSummaryResponse> createUserBucketRelationship(@PathVariable(name = "id") final Long initiatorId,
                                                                                               @RequestParam(name = "id") final Long bucketId,
-                                                                                              @AuthenticationPrincipal final UserPrincipal currentUser) {
+                                                                                              @AuthenticationPrincipal final Authentication auth) {
+        UserPrincipal currentUser = (UserPrincipal) auth.getPrincipal();
         if(!Objects.equals(currentUser.getId(), initiatorId)) {
             throw new UnauthorizedException("Insufficient permissions.");
         }
@@ -63,14 +65,15 @@ public class UserBucketRelationshipController {
      *
      * @param initiatorId The id of the user is following the bucket.
      * @param subjectId The id of the bucket that the user is following.
-     * @param currentUser The principal user.
+     * @param auth The authentication token.
      * @return HTTP OK.
      * @throws UnauthorizedException If the principal user does not match the initiator.
      * */
     @RequestMapping(value = "/users/{id}/following_bucket", method = RequestMethod.DELETE)
     public ResponseEntity<?> deleteUserBucketRelationship(@PathVariable(value = "id") final Long initiatorId,
                                                     @RequestParam(value = "id") final Long subjectId,
-                                                    @AuthenticationPrincipal final UserPrincipal currentUser) {
+                                                    @AuthenticationPrincipal final Authentication auth) {
+        UserPrincipal currentUser = (UserPrincipal) auth.getPrincipal();
         if(!Objects.equals(currentUser.getId(), initiatorId)) {
             throw new UnauthorizedException("Insufficient permissions.");
         }

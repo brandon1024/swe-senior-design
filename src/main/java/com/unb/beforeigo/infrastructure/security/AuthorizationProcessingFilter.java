@@ -3,12 +3,13 @@ package com.unb.beforeigo.infrastructure.security;
 import com.unb.beforeigo.infrastructure.security.exception.MalformedAuthTokenException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.stereotype.Component;
-import org.springframework.web.filter.OncePerRequestFilter;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
@@ -20,13 +21,14 @@ import java.util.Optional;
 
 @Component
 @Slf4j
-class AuthenticationProcessingFilter extends OncePerRequestFilter {
+class AuthorizationProcessingFilter extends BasicAuthenticationFilter {
 
     private final UserPrincipalService userPrincipalService;
 
     private static final String AUTHENTICATION_SCHEME = "Bearer";
 
-    public AuthenticationProcessingFilter(UserPrincipalService userPrincipalService) {
+    public AuthorizationProcessingFilter(AuthenticationManager authManager, UserPrincipalService userPrincipalService) {
+        super(authManager);
         this.userPrincipalService = userPrincipalService;
     }
 

@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,7 +30,7 @@ public class ItemController {
      * @param ownerId The id of the user that owns the bucket.
      * @param bucketId The id of the bucket that owns the item.
      * @param item A valid item with all necessary fields.
-     * @param currentUser The principal user.
+     * @param auth The authentication token.
      * @return A new item once persisted in the database. HTTP CREATED.
      * @throws UnauthorizedException If the authenticated principal user does not match the user in the path variable.
      * */
@@ -38,7 +39,8 @@ public class ItemController {
     public ResponseEntity<ItemSummaryResponse> createItem(@PathVariable(name = "ownerId") final Long ownerId,
                                                           @PathVariable(name = "bucketId") final Long bucketId,
                                                           @RequestBody final Item item,
-                                                          @AuthenticationPrincipal final UserPrincipal currentUser) {
+                                                          @AuthenticationPrincipal final Authentication auth) {
+        UserPrincipal currentUser = (UserPrincipal) auth.getPrincipal();
         if(!Objects.equals(currentUser.getId(), ownerId)) {
             throw new UnauthorizedException("Insufficient permissions.");
         }
@@ -52,14 +54,15 @@ public class ItemController {
      *
      * @param ownerId Id of the user that owns the buckets.
      * @param bucketId Id of the bucket.
-     * @param currentUser The principal user.
+     * @param auth The authentication token.
      * @return A list of buckets associated to a given user. HTTP OK.
      * */
     @ApiOperation(value = "Retrieve a list of items associated to a specific bucket.", response = ItemSummaryResponse.class, responseContainer = "List")
     @RequestMapping(value = "/users/{userId}/buckets/{bucketId}/items", method = RequestMethod.GET)
     public ResponseEntity<List<ItemSummaryResponse>> findItems(@PathVariable(name = "userId") final Long ownerId,
                                                                @PathVariable(name = "bucketId") final Long bucketId,
-                                                               @AuthenticationPrincipal final UserPrincipal currentUser) {
+                                                               @AuthenticationPrincipal final Authentication auth) {
+        UserPrincipal currentUser = (UserPrincipal) auth.getPrincipal();
         List<ItemSummaryResponse> response = itemService.findItems(bucketId, !Objects.equals(currentUser.getId(), ownerId));
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
@@ -72,7 +75,7 @@ public class ItemController {
      * @param ownerId Id of the user that owns the buckets.
      * @param bucketId Id of the bucket.
      * @param itemId Id of the item.
-     * @param currentUser The principal user.
+     * @param auth The authentication token.
      * @return Item associated to a given user. If the user and principal have matching ids, public or private bucket
      * may be returned, otherwise only returns a public bucket. HTTP OK.
      * @see ItemService#findItemById(Long, Long, boolean)
@@ -82,7 +85,8 @@ public class ItemController {
     public ResponseEntity<ItemSummaryResponse> findItemById(@PathVariable(name = "ownerId") final Long ownerId,
                                                             @PathVariable(name = "bucketId") final Long bucketId,
                                                             @PathVariable(name = "itemId") final Long itemId,
-                                                            @AuthenticationPrincipal final UserPrincipal currentUser) {
+                                                            @AuthenticationPrincipal final Authentication auth) {
+        UserPrincipal currentUser = (UserPrincipal) auth.getPrincipal();
         ItemSummaryResponse response = itemService.findItemById(bucketId, itemId, !Objects.equals(currentUser.getId(), ownerId));
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
@@ -94,7 +98,7 @@ public class ItemController {
      * @param bucketId Id of the bucket that owns the item.
      * @param itemId Id of the item to patch.
      * @param item An item to patch.
-     * @param currentUser The principal user.
+     * @param auth The authentication token.
      * @return The patched item. HTTP OK.
      * @throws UnauthorizedException If the authenticated principal user does not match the user in the path variable.
      * */
@@ -104,7 +108,8 @@ public class ItemController {
                                                          @PathVariable(name = "bucketId") final Long bucketId,
                                                          @PathVariable(name = "itemId") final Long itemId,
                                                          @RequestBody final Item item,
-                                                         @AuthenticationPrincipal final UserPrincipal currentUser) {
+                                                         @AuthenticationPrincipal final Authentication auth) {
+        UserPrincipal currentUser = (UserPrincipal) auth.getPrincipal();
         if(!Objects.equals(currentUser.getId(), ownerId)) {
             throw new UnauthorizedException("Insufficient permissions.");
         }
@@ -120,7 +125,7 @@ public class ItemController {
      * @param bucketId Id of the bucket that will be updated.
      * @param itemId Id of the item that will be updated.
      * @param item An item to update.
-     * @param currentUser The principal user.
+     * @param auth The authentication token.
      * @return The updated item. HTTP OK.
      * @throws UnauthorizedException If the authenticated principal user does not match the user in the path variable.
      * */
@@ -130,7 +135,8 @@ public class ItemController {
                                                           @PathVariable(name = "bucketId") final Long bucketId,
                                                           @PathVariable(name = "itemId") final Long itemId,
                                                           @RequestBody final Item item,
-                                                          @AuthenticationPrincipal final UserPrincipal currentUser) {
+                                                          @AuthenticationPrincipal final Authentication auth) {
+        UserPrincipal currentUser = (UserPrincipal) auth.getPrincipal();
         if(!Objects.equals(currentUser.getId(), ownerId)) {
             throw new UnauthorizedException("Insufficient permissions.");
         }
@@ -145,7 +151,7 @@ public class ItemController {
      * @param ownerId Id of the user that owns the bucket.
      * @param bucketId Id of the bucket that owns the item.
      * @param itemId Id of the item that will be deleted.
-     * @param currentUser The principal user.
+     * @param auth The authentication token.
      * @return HTTP OK.
      * @throws UnauthorizedException If the authenticated principal user does not match the user in the path variable.
      * */
@@ -154,7 +160,8 @@ public class ItemController {
     public ResponseEntity<?> deleteItem(@PathVariable(name = "ownerId") final Long ownerId,
                                         @PathVariable(name = "bucketId") final Long bucketId,
                                         @PathVariable(name = "itemId") final Long itemId,
-                                        @AuthenticationPrincipal final UserPrincipal currentUser) {
+                                        @AuthenticationPrincipal final Authentication auth) {
+        UserPrincipal currentUser = (UserPrincipal) auth.getPrincipal();
         if(!Objects.equals(currentUser.getId(), ownerId)) {
             throw new UnauthorizedException("Insufficient permissions.");
         }
@@ -170,7 +177,7 @@ public class ItemController {
      * @param toBucket The id of the bucket that will own the newly created item.
      * @param itemId The id of the item to be duplicated.
      * @param fromBucket The id of the bucket that currently owns the bucket.
-     * @param currentUser The principal user.
+     * @param auth The authentication token.
      * @return A new item once persisted in the database. HTTP OK.
      * @throws UnauthorizedException If the id of the currently authenticated user does not match the path variable id.
      * @see ItemService#duplicateItem(Long, Long, Long, Long)
@@ -181,7 +188,8 @@ public class ItemController {
                                                              @PathVariable(name = "bucketId") final Long toBucket,
                                                              @PathVariable(name = "itemId") final Long itemId,
                                                              @RequestParam(name = "from") final Long fromBucket,
-                                                             @AuthenticationPrincipal final UserPrincipal currentUser) {
+                                                             @AuthenticationPrincipal final Authentication auth) {
+        UserPrincipal currentUser = (UserPrincipal) auth.getPrincipal();
         if(!Objects.equals(currentUser.getId(), ownerId)) {
             throw new UnauthorizedException("Insufficient permissions.");
         }

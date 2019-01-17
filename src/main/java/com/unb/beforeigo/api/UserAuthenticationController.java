@@ -114,19 +114,19 @@ public class UserAuthenticationController {
     /**
      * Refresh token.
      *
-     * @param userPrincipal The principal user.
+     * @param auth The authentication token.
      * @return The token. HTTP OK.
      * @throws UnauthorizedException If the user is not authenticated.
      * */
     @ApiOperation(value = "Refresh a token.", response = UserAuthenticationResponse.class)
     @RequestMapping(value = "/token_refresh", method = RequestMethod.POST)
-    public ResponseEntity<UserAuthenticationResponse> refreshToken(
-            @AuthenticationPrincipal final UserPrincipal userPrincipal) {
-        if(Objects.isNull(userPrincipal)) {
+    public ResponseEntity<UserAuthenticationResponse> refreshToken(@AuthenticationPrincipal final Authentication auth) {
+        if(Objects.isNull(auth)) {
             throw new UnauthorizedException("User is not authenticated, and therefore cannot be granted a new token.");
         }
 
         //Generate new token
+        UserPrincipal userPrincipal = (UserPrincipal) auth.getPrincipal();
         final String newToken = JSONWebTokenUtil.generateToken(userPrincipal);
         userPrincipal.eraseCredentials();
 

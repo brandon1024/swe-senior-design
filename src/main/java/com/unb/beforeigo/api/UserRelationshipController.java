@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -39,7 +40,7 @@ public class UserRelationshipController {
      *
      * @param initiatorId The id of the user that wishes to follow the subject.
      * @param subjectId The id of the user that is to be followed by the initiator.
-     * @param currentUser The principal user.
+     * @param auth The authentication token.
      * @return A user relationship summary once persisted in the database. HTTP CREATED.
      * @throws UnauthorizedException If the id of the currently authenticated user does not match the path variable id.
      * @throws BadRequestException If the subjectId and initiatorId are equal.
@@ -48,7 +49,8 @@ public class UserRelationshipController {
     @RequestMapping(value = "/{id}/following", method = RequestMethod.POST)
     public ResponseEntity<UserRelationshipSummaryResponse> createUserRelationship(@PathVariable(name = "id") final Long initiatorId,
                                                                                   @RequestParam(name = "id") final Long subjectId,
-                                                                                  @AuthenticationPrincipal final UserPrincipal currentUser) {
+                                                                                  @AuthenticationPrincipal final Authentication auth) {
+        UserPrincipal currentUser = (UserPrincipal) auth.getPrincipal();
         if(!Objects.equals(currentUser.getId(), initiatorId)) {
             throw new UnauthorizedException("Insufficient permissions.");
         }
@@ -97,7 +99,7 @@ public class UserRelationshipController {
      *
      * @param subjectId The id of the user.
      * @param initiatorId The id of the user.
-     * @param currentUser The principal user.
+     * @param auth The authentication token.
      * @return HTTP OK.
      * @throws UnauthorizedException If the id of the currently authenticated user does not match the path variable id.
      * */
@@ -105,7 +107,8 @@ public class UserRelationshipController {
     @RequestMapping(value = "/{id}/following", method = RequestMethod.DELETE)
     public ResponseEntity<?> deleteUserRelationship(@PathVariable(value = "id") final Long initiatorId,
                                                     @RequestParam(value = "id") final Long subjectId,
-                                                    @AuthenticationPrincipal final UserPrincipal currentUser) {
+                                                    @AuthenticationPrincipal final Authentication auth) {
+        UserPrincipal currentUser = (UserPrincipal) auth.getPrincipal();
         if(!Objects.equals(currentUser.getId(), initiatorId)) {
             throw new UnauthorizedException("Insufficient permissions.");
         }

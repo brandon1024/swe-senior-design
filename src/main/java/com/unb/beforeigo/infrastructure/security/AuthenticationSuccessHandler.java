@@ -1,5 +1,6 @@
 package com.unb.beforeigo.infrastructure.security;
 
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
@@ -19,5 +20,7 @@ public class AuthenticationSuccessHandler
      */
     @Override
     public void onAuthenticationSuccess(final HttpServletRequest request, final HttpServletResponse response,
-                                        final Authentication authentication) {}
+                                        final Authentication authentication) {
+        response.setHeader(HttpHeaders.AUTHORIZATION, request.getHeader(HttpHeaders.AUTHORIZATION));
+    }
 }

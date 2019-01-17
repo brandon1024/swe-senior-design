@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -84,7 +85,7 @@ public class UserController {
      *
      * @param userId The id of the user to update.
      * @param user The user to update.
-     * @param currentUser The currently authenticated user.
+     * @param auth The authentication token.
      * @return The updated user. HTTP OK.
      * @throws UnauthorizedException If the id of the currently authenticated user does not match the path variable id.
      * */
@@ -92,7 +93,8 @@ public class UserController {
     @RequestMapping(value = "/users/{id}", method = RequestMethod.PATCH, consumes = "application/json")
     public ResponseEntity<UserSummaryResponse> patchUser(@PathVariable(name = "id") final Long userId,
                                                          @RequestBody final User user,
-                                                         @AuthenticationPrincipal final UserPrincipal currentUser) {
+                                                         @AuthenticationPrincipal final Authentication auth) {
+        UserPrincipal currentUser = (UserPrincipal) auth.getPrincipal();
         if(!Objects.equals(currentUser.getId(), userId)) {
             throw new UnauthorizedException("Insufficient permissions.");
         }
@@ -108,7 +110,7 @@ public class UserController {
      *
      * @param userId The id of the user to update.
      * @param user The user to update.
-     * @param currentUser The currently authenticated user.
+     * @param auth The authentication token.
      * @return The updated user. HTTP OK.
      * @throws UnauthorizedException If the id of the currently authenticated user does not match the path variable id.
      * */
@@ -116,7 +118,8 @@ public class UserController {
     @RequestMapping(value = "/users/{id}", method = RequestMethod.PUT, consumes = "application/json")
     public ResponseEntity<UserSummaryResponse> updateUser(@PathVariable(name = "id") final Long userId,
                                                           @Valid @RequestBody final User user,
-                                                          @AuthenticationPrincipal final UserPrincipal currentUser) {
+                                                          @AuthenticationPrincipal final Authentication auth) {
+        UserPrincipal currentUser = (UserPrincipal) auth.getPrincipal();
         if(!Objects.equals(currentUser.getId(), userId)) {
             throw new UnauthorizedException("Insufficient permissions.");
         }
@@ -131,14 +134,15 @@ public class UserController {
      * The id of the currently authenticated user must match the path variable id.
      *
      * @param userId The id of the user to be deleted.
-     * @param currentUser The currently authenticated user.
+     * @param auth The authentication token.
      * @return HTTP OK.
      * @throws UnauthorizedException If the id of the currently authenticated user does not match the path variable id.
      * */
     @ApiOperation(value = "Delete a user.")
     @RequestMapping(value = "/users/{id}", method = RequestMethod.DELETE)
     public ResponseEntity<?> deleteUser(@PathVariable(name = "id") final Long userId,
-                                        @AuthenticationPrincipal final UserPrincipal currentUser) {
+                                        @AuthenticationPrincipal final Authentication auth) {
+        UserPrincipal currentUser = (UserPrincipal) auth.getPrincipal();
         if(!Objects.equals(currentUser.getId(), userId)) {
             throw new UnauthorizedException("Insufficient permissions.");
         }

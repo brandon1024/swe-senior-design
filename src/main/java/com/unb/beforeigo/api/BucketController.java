@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -35,7 +36,7 @@ public class BucketController {
      *
      * @param ownerId The id of the user that owns the bucket.
      * @param bucket A valid bucket with all necessary fields.
-     * @param currentUser The principal user.
+     * @param auth The authentication token.
      * @return A new bucket once persisted in the database.
      * @throws UnauthorizedException If the id of the currently authenticated user does not match the path variable id.
      * @see BucketService#createBucket(Long, Bucket)
@@ -44,7 +45,8 @@ public class BucketController {
     @RequestMapping(value = "/users/{id}/buckets", method = RequestMethod.POST, consumes = "application/json")
     public ResponseEntity<BucketSummaryResponse> createBucket(@PathVariable(name = "id") final Long ownerId,
                                                               @RequestBody final Bucket bucket,
-                                                              @AuthenticationPrincipal final UserPrincipal currentUser) {
+                                                              @AuthenticationPrincipal final Authentication auth) {
+        UserPrincipal currentUser = (UserPrincipal) auth.getPrincipal();
         if(!Objects.equals(currentUser.getId(), ownerId)) {
             throw new UnauthorizedException("Insufficient permissions.");
         }
@@ -58,7 +60,7 @@ public class BucketController {
      *
      * @param ownerId The id of the user that owns the bucket.
      * @param parentBucketId The id of the bucket that is to be duplicated.
-     * @param currentUser The principal user.
+     * @param auth The authentication token.
      * @return a new bucket once persisted in the database. HTTP CREATED.
      * @throws UnauthorizedException If the id of the currently authenticated user does not match the path variable id.
      * @see BucketService#duplicateBucket(Long, Long)
@@ -67,7 +69,8 @@ public class BucketController {
     @RequestMapping(value = "/users/{id}/buckets", method = RequestMethod.POST, consumes = "application/json", params = {"from"})
     public ResponseEntity<BucketSummaryResponse> duplicateBucket(@PathVariable(name = "id") final Long ownerId,
                                                                  @RequestParam(name = "from") final Long parentBucketId,
-                                                                 @AuthenticationPrincipal final UserPrincipal currentUser) {
+                                                                 @AuthenticationPrincipal final Authentication auth) {
+        UserPrincipal currentUser = (UserPrincipal) auth.getPrincipal();
         if(!Objects.equals(currentUser.getId(), ownerId)) {
             throw new UnauthorizedException("Insufficient permissions.");
         }
@@ -82,7 +85,7 @@ public class BucketController {
      * If the owner id does not match the id of the principal user, only public buckets are returned.
      *
      * @param ownerId Id of the user that owns the buckets.
-     * @param currentUser The principal user.
+     * @param auth The authentication token.
      * @return A list of all buckets associated to a given user. If the user and principal have matching ids, public and
      * private buckets are returned, otherwise only returns public buckets. HTTP OK.
      * @see BucketService#findBuckets(Long, boolean)
@@ -90,7 +93,8 @@ public class BucketController {
     @ApiOperation(value = "Retrieve a list of buckets associated to a specific user.", response = BucketSummaryResponse.class, responseContainer = "List")
     @RequestMapping(value = "/users/{id}/buckets", method = RequestMethod.GET)
     public ResponseEntity<List<BucketSummaryResponse>> findBuckets(@PathVariable(name = "id") final Long ownerId,
-                                                                   @AuthenticationPrincipal final UserPrincipal currentUser) {
+                                                                   @AuthenticationPrincipal final Authentication auth) {
+        UserPrincipal currentUser = (UserPrincipal) auth.getPrincipal();
         List<BucketSummaryResponse> response = bucketService.findBuckets(ownerId, !Objects.equals(currentUser.getId(), ownerId));
 
         return new ResponseEntity<>(response, HttpStatus.OK);
@@ -103,7 +107,7 @@ public class BucketController {
      *
      * @param ownerId Id of the user that owns the buckets.
      * @param bucketId Id of the bucket.
-     * @param currentUser The principal user.
+     * @param auth The authentication token.
      * @return Bucket associated to a given user. If the user and principal have matching ids, public or private bucket
      * may be returned, otherwise only returns a public bucket. HTTP OK.
      * @see BucketService#findBucketById(Long, boolean)
@@ -112,7 +116,8 @@ public class BucketController {
     @RequestMapping(value = "/users/{ownerId}/buckets/{bucketId}", method = RequestMethod.GET)
     public ResponseEntity<BucketSummaryResponse> findBucketById(@PathVariable(name = "ownerId") final Long ownerId,
                                                                 @PathVariable(name = "bucketId") final Long bucketId,
-                                                                @AuthenticationPrincipal final UserPrincipal currentUser) {
+                                                                @AuthenticationPrincipal final Authentication auth) {
+        UserPrincipal currentUser = (UserPrincipal) auth.getPrincipal();
         BucketSummaryResponse response = bucketService.findBucketById(bucketId, !Objects.equals(currentUser.getId(), ownerId));
 
         return new ResponseEntity<>(response, HttpStatus.OK);
@@ -123,13 +128,14 @@ public class BucketController {
      *
      * @param ownerId The owner of the bucket.
      * @param bucketId The id of the bucket.
-     * @param currentUser The principal user.
+     * @param auth The authentication token.
      * @return List of user summaries for users that are following the given bucket. HTTP OK.
      * */
     @RequestMapping(value = "/users/{ownerId}/bucket/{bucketId}/followers", method = RequestMethod.GET)
     public ResponseEntity<List<UserSummaryResponse>> findFollowing(@PathVariable(name = "ownerId") final Long ownerId,
                                                                    @PathVariable(name = "bucketId") final Long bucketId,
-                                                                   @AuthenticationPrincipal final UserPrincipal currentUser) {
+                                                                   @AuthenticationPrincipal final Authentication auth) {
+        UserPrincipal currentUser = (UserPrincipal) auth.getPrincipal();
         List<UserSummaryResponse> response = bucketService.findFollowers(bucketId, !Objects.equals(currentUser.getId(), ownerId));
 
         return new ResponseEntity<>(response, HttpStatus.OK);
@@ -145,7 +151,7 @@ public class BucketController {
      * @param ownerId Id of the user that owns the bucket.
      * @param bucketId Id of the bucket that will be patched.
      * @param bucket A partial bucket used to patch a persisted bucket.
-     * @param currentUser The principal user.
+     * @param auth The authentication token.
      * @return The patched bucket. HTTP OK.
      * @throws UnauthorizedException If the id of the currently authenticated user does not match the path variable id.
      * @see BucketService#patchBucket(Bucket, Long)
@@ -156,7 +162,8 @@ public class BucketController {
     public ResponseEntity<BucketSummaryResponse> patchBucket(@PathVariable(value = "ownerId") final Long ownerId,
                                                              @PathVariable(value = "bucketId") final Long bucketId,
                                                              @RequestBody final Bucket bucket,
-                                                             @AuthenticationPrincipal final UserPrincipal currentUser) {
+                                                             @AuthenticationPrincipal final Authentication auth) {
+        UserPrincipal currentUser = (UserPrincipal) auth.getPrincipal();
         if(!Objects.equals(currentUser.getId(), ownerId)) {
             throw new UnauthorizedException("Insufficient permissions.");
         }
@@ -176,7 +183,7 @@ public class BucketController {
      * @param ownerId Id of the user that owns the bucket.
      * @param bucketId Id of the bucket that will be updated.
      * @param bucket A bucket to update.
-     * @param currentUser The principal user.
+     * @param auth The authentication token.
      * @return The updated bucket. HTTP OK.
      * @throws UnauthorizedException If the id of the currently authenticated user does not match the path variable id.
      * @see BucketService#updateBucket(Bucket, Long)
@@ -187,7 +194,8 @@ public class BucketController {
     public ResponseEntity<BucketSummaryResponse> updateBucket(@PathVariable(value = "ownerId") final Long ownerId,
                                                               @PathVariable(value = "bucketId") final Long bucketId,
                                                               @RequestBody final Bucket bucket,
-                                                              @AuthenticationPrincipal final UserPrincipal currentUser) {
+                                                              @AuthenticationPrincipal final Authentication auth) {
+        UserPrincipal currentUser = (UserPrincipal) auth.getPrincipal();
         if(!Objects.equals(currentUser.getId(), ownerId)) {
             throw new UnauthorizedException("Insufficient permissions.");
         }
@@ -206,7 +214,7 @@ public class BucketController {
      *
      * @param ownerId Id of the user that owns the bucket.
      * @param bucketId Id of the bucket that will be patched.
-     * @param currentUser The principal user.
+     * @param auth The authentication token.
      * @return HTTP OK.
      * @throws UnauthorizedException If the id of the currently authenticated user does not match the path variable id.
      * @see BucketService#deleteBucket(Bucket)
@@ -215,7 +223,8 @@ public class BucketController {
     @RequestMapping(value = "/users/{ownerId}/buckets/{bucketId}", method = RequestMethod.DELETE)
     public ResponseEntity<?> deleteBucket(@PathVariable(value = "ownerId") final Long ownerId,
                                           @PathVariable(value = "bucketId") final Long bucketId,
-                                          @AuthenticationPrincipal final UserPrincipal currentUser) {
+                                          @AuthenticationPrincipal final Authentication auth) {
+        UserPrincipal currentUser = (UserPrincipal) auth.getPrincipal();
         if(!Objects.equals(currentUser.getId(), ownerId)) {
             throw new UnauthorizedException("Insufficient permissions.");
         }
