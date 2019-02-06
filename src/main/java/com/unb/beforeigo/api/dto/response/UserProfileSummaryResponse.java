@@ -8,7 +8,7 @@ import java.util.Date;
 
 @Data
 @AllArgsConstructor
-public class UserProfileResponse implements Serializable {
+public class UserProfileSummaryResponse implements Serializable {
 
     private final UserSummaryResponse user;
 

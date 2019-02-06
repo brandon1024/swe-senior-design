@@ -3,6 +3,8 @@ package com.unb.beforeigo.application.dao;
 import com.unb.beforeigo.core.model.User;
 import com.unb.beforeigo.core.model.UserRelationship;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
@@ -28,4 +30,23 @@ public interface UserRelationshipDAO extends JpaRepository<UserRelationship, Lon
      * @return List of relationships that users have initiated with a given user.
      * */
     List<UserRelationship> findByFollowing(final User user);
+
+    /**
+     * Retrieve follower count for a given user.
+     *
+     * @param user The user who's follower count will be retrieved.
+     * @return Follower count of given user.
+     * */
+    @Query("SELECT COUNT(following) FROM UserRelationship u WHERE u.following = :user")
+    int findFollowerCount(@Param("user") User user);
+
+    /**
+     * Retrieve following count for a given user.
+     *
+     * @param user The user who's following count will be retrieved.
+     * @return Following count of given user.
+     * */
+    @Query("SELECT COUNT(follower) FROM UserRelationship u WHERE u.follower = :user")
+    int findFollowingCount(@Param("user") User user);
+
 }

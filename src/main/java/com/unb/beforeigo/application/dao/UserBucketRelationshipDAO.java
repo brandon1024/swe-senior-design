@@ -4,6 +4,8 @@ import com.unb.beforeigo.core.model.Bucket;
 import com.unb.beforeigo.core.model.User;
 import com.unb.beforeigo.core.model.UserBucketRelationship;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -41,5 +43,15 @@ public interface UserBucketRelationshipDAO extends JpaRepository<UserBucketRelat
      * @return An {@link Optional} UserBucketRelationship.
      * */
     Optional<UserBucketRelationship> findByFollowerAndFollowing(final User follower, final Bucket following);
+
+    /**
+     * Retrieve bucket count for a given user.
+     *
+     * @param owner The user who's bucket count will be retrieved.
+     * @return Bucket count of given user.
+     * */
+    @Query("SELECT COUNT(owner) FROM Bucket b WHERE b.owner = :owner")
+    int findBucketCount(@Param("owner") User owner);
+
 
 }
