@@ -50,8 +50,16 @@ public interface UserBucketRelationshipDAO extends JpaRepository<UserBucketRelat
      * @param owner The user who's bucket count will be retrieved.
      * @return Bucket count of given user.
      * */
-    @Query("SELECT COUNT(owner) FROM Bucket b WHERE b.owner = :owner")
-    int findBucketCount(@Param("owner") User owner);
+    @Query("SELECT COUNT(owner) FROM Bucket b WHERE b.owner = :owner AND b.isPublic = true")
+    int findPublicBucketCount(@Param("owner") User owner);
 
+    /**
+     * Retrieve bucket count for a given user.
+     *
+     * @param owner The user who's bucket count will be retrieved.
+     * @return Bucket count of given user.
+     * */
+    @Query("SELECT COUNT(owner) FROM Bucket b WHERE b.owner = :owner AND b.isPublic = false")
+    int findPrivateBucketCount(@Param("owner") User owner);
 
 }

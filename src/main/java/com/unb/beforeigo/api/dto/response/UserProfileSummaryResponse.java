@@ -16,7 +16,9 @@ public class UserProfileSummaryResponse implements Serializable {
 
     private final int followingCount;
 
-    private final int bucketCount;
+    private final int publicBucketCount;
+
+    private final int privateBucketCount;
 
     private final Date joined;
 }

@@ -368,8 +368,8 @@ public class UserService {
 
 
         return new UserProfileSummaryResponse(userSummary, userRelationshipDAO.findFollowerCount(user),
-                userRelationshipDAO.findFollowingCount(user), userBucketRelationshipDAO.findBucketCount(user),
-                user.getCreatedAt());
+                userRelationshipDAO.findFollowingCount(user), userBucketRelationshipDAO.findPublicBucketCount(user),
+                userBucketRelationshipDAO.findPrivateBucketCount(user), user.getCreatedAt());
     }
 
 }
