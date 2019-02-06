@@ -163,10 +163,13 @@ public class UserController {
      * */
     @ApiOperation(value = "Get a user's profile.")
     @RequestMapping(value = "/users/{id}/profile", method = RequestMethod.GET)
-    public ResponseEntity<UserProfileSummaryResponse> getUserProfile(@PathVariable(name = "id") final Long userId) {
+    public ResponseEntity<UserProfileSummaryResponse> getUserProfile(@PathVariable(name = "id") final Long userId,
+                                                                     @AuthenticationPrincipal final Authentication auth) {
 
-        UserProfileSummaryResponse userProfile = userService.constructProfileSummary(userId);
+        UserPrincipal currentUser = (UserPrincipal) auth.getPrincipal();
+        Long initiatorId = currentUser.getId();
 
+        UserProfileSummaryResponse userProfile = userService.constructProfileSummary(userId, initiatorId);
         return new ResponseEntity<>(userProfile, HttpStatus.OK);
     }
 

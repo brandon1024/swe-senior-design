@@ -360,16 +360,22 @@ public class UserService {
      * @return The profile summary of the user.
      * @throws BadRequestException if the user cannot be found with the specific id.
      * */
-    public UserProfileSummaryResponse constructProfileSummary(final Long userId) {
+    public UserProfileSummaryResponse constructProfileSummary(final Long userId, final Long initiatorId) {
 
         User user = userDAO.findById(userId).orElseThrow(() -> new BadRequestException("Unable to find user with id " +
                 userId));
         UserSummaryResponse userSummary = adaptUserToSummary(user);
 
+        int bucketCount;
+        if(Objects.equals(userId, initiatorId)){
+            bucketCount = userBucketRelationshipDAO.findPublicBucketCount(user) +
+                    userBucketRelationshipDAO.findPrivateBucketCount(user);
+        }else{
+            bucketCount = userBucketRelationshipDAO.findPublicBucketCount(user);
+        }
 
         return new UserProfileSummaryResponse(userSummary, userRelationshipDAO.findFollowerCount(user),
-                userRelationshipDAO.findFollowingCount(user), userBucketRelationshipDAO.findPublicBucketCount(user),
-                userBucketRelationshipDAO.findPrivateBucketCount(user), user.getCreatedAt());
+                userRelationshipDAO.findFollowingCount(user), bucketCount, user.getCreatedAt());
     }
 
 }
