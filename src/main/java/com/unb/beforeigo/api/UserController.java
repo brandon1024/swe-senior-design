@@ -1,6 +1,8 @@
 package com.unb.beforeigo.api;
 
+import com.unb.beforeigo.api.dto.response.UserProfileResponse;
 import com.unb.beforeigo.api.dto.response.UserSummaryResponse;
+import com.unb.beforeigo.api.exception.client.BadRequestException;
 import com.unb.beforeigo.api.exception.client.UnauthorizedException;
 import com.unb.beforeigo.core.model.User;
 import com.unb.beforeigo.core.svc.UserService;
@@ -149,5 +151,25 @@ public class UserController {
 
         userService.deleteUser(userId);
         return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    /**
+     * Get a {@link User}'s profile information.
+     *
+     * {@link User}'s id must be provided.
+     *
+     *
+     * @param userId The id of the user who's profile you wish to obtain.
+     * @return User profile response data. HTTP OK.
+     * @throws BadRequestException If the id in the path variable does not correspond to a valid user.
+     * */
+    @ApiOperation(value = "Get a user's profile.")
+    @RequestMapping(value = "/users/{id}/profile", method = RequestMethod.GET)
+    public ResponseEntity<UserProfileResponse> getUserProfile(@PathVariable(name = "id") final Long userId) {
+
+        UserSummaryResponse user = userService.findUserById(userId);
+        UserProfileResponse userProfile = userService.adaptUserSummaryToProfile(user);
+
+        return new ResponseEntity<>(userProfile, HttpStatus.OK);
     }
 }

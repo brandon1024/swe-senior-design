@@ -1,17 +1,22 @@
 package com.unb.beforeigo.core.svc;
 
 import com.unb.beforeigo.api.dto.request.UserRegistrationRequest;
+import com.unb.beforeigo.api.dto.response.UserProfileResponse;
 import com.unb.beforeigo.api.dto.response.UserRelationshipSummaryResponse;
 import com.unb.beforeigo.api.dto.response.UserSummaryResponse;
 import com.unb.beforeigo.api.exception.client.BadRequestException;
+import com.unb.beforeigo.api.exception.client.NotFoundException;
 import com.unb.beforeigo.application.dao.PhysicalAddressDAO;
+import com.unb.beforeigo.application.dao.UserBucketRelationshipDAO;
 import com.unb.beforeigo.application.dao.UserDAO;
 import com.unb.beforeigo.application.dao.UserRelationshipDAO;
 import com.unb.beforeigo.core.model.PhysicalAddress;
 import com.unb.beforeigo.core.model.User;
+import com.unb.beforeigo.core.model.UserBucketRelationship;
 import com.unb.beforeigo.core.model.UserRelationship;
 import com.unb.beforeigo.core.model.validation.EntityValidator;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.crossstore.ChangeSetPersister;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.ExampleMatcher;
 import org.springframework.lang.Nullable;
@@ -28,6 +33,8 @@ public class UserService {
     @Autowired private UserDAO userDAO;
 
     @Autowired private UserRelationshipDAO userRelationshipDAO;
+
+    @Autowired private UserBucketRelationshipDAO userBucketRelationshipDAO;
 
     @Autowired private PhysicalAddressDAO physicalAddressDAO;
 
@@ -346,5 +353,17 @@ public class UserService {
      * */
     public static UserRelationshipSummaryResponse adaptUserRelationshipToSummary(final UserRelationship relationship) {
         return new UserRelationshipSummaryResponse(relationship.getFollower().getId(), relationship.getFollowing().getId());
+    }
+
+    /**
+     * Build a UserProfileResponse DTO of a {@link User}.
+     *
+     * @param userSummary The user summary to be used to build a UserProfileResponse.
+     * @return The profile of the user.
+     * @throws NotFoundException if the user cannot be found with the specific id.
+     * */
+    public UserProfileResponse adaptUserSummaryToProfile(final UserSummaryResponse userSummary) {
+        User user = userDAO.findById(userSummary.getId()).orElseThrow(() -> new NotFoundException("Cannot find user with id " + userSummary.getId()));
+        return new UserProfileResponse(userSummary, userRelationshipDAO.findByFollower(user).size(), userRelationshipDAO.findByFollowing(user).size(), userBucketRelationshipDAO.findAllByFollower(user).size(), user.getCreatedAt());
     }
 }
