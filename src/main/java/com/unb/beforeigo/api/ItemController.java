@@ -210,7 +210,7 @@ public class ItemController {
      * @return HTTP OK.
      * @see ItemService#completeItem(Long, Long, boolean)
      * */
-    @ApiOperation(value = "Retrieve a specific item associated to a specific bucket and user.", response = ItemSummaryResponse.class)
+    @ApiOperation(value = "Complete a specific item associated to a specific bucket and user.", response = ItemSummaryResponse.class)
     @RequestMapping(value = "/users/{ownerId}/buckets/{bucketId}/items/{itemId}/complete", method = RequestMethod.POST)
     public ResponseEntity<?> completeItem(@PathVariable(name = "ownerId") final Long ownerId,
                                                             @PathVariable(name = "bucketId") final Long bucketId,
@@ -233,7 +233,7 @@ public class ItemController {
      * @return HTTP OK.
      * @see ItemService#uncompleteItem(Long, Long, boolean)
      * */
-    @ApiOperation(value = "Retrieve a specific item associated to a specific bucket and user.", response = ItemSummaryResponse.class)
+    @ApiOperation(value = "Uncomplete a specific item associated to a specific bucket and user.", response = ItemSummaryResponse.class)
     @RequestMapping(value = "/users/{ownerId}/buckets/{bucketId}/items/{itemId}/uncomplete", method = RequestMethod.POST)
     public ResponseEntity<?> uncompleteItem(@PathVariable(name = "ownerId") final Long ownerId,
                                           @PathVariable(name = "bucketId") final Long bucketId,
