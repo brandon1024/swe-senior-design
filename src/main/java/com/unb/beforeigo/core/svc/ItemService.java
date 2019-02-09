@@ -321,4 +321,76 @@ public class ItemService {
                 item.getLink(),
                 item.getDescription());
     }
+
+    /**
+     * Complete a specific {@link Item} by item id.
+     *
+     * If the isOwner parameter is false (i.e. the current user is not the owner),
+     * then an UnauthorizedException is thrown.
+     *
+     * @param bucketId The id of the bucket that the item belongs to.
+     * @param itemId The id of the item to complete.
+     * @param isOwner Determine if the owner of the item is the current user.
+     * @return Item summary with item completed.
+     * @throws BadRequestException If a bucket with the given id cannot be found.
+     * @throws BadRequestException If an item with the given id cannot be found.
+     * @throws UnauthorizedException If the current user isn't the owner.
+     * */
+    public ItemSummaryResponse completeItem(final Long bucketId, final Long itemId, final boolean isOwner) {
+        Bucket parent = bucketDAO.findById(bucketId)
+                .orElseThrow(() ->
+                        new BadRequestException("Unable to find a bucket with id " + bucketId));
+
+        Item item = itemDAO.findById(itemId)
+                .orElseThrow(() ->
+                        new BadRequestException("Unable to find a item with id " + itemId));
+
+        if(!Objects.equals(parent.getId(), item.getParent().getId())){
+            throw new BadRequestException("Item parent with id " + item.getParent().getId() + " doesn't match bucket id");
+        }
+
+        if(!isOwner) {
+            throw new UnauthorizedException("Insufficient permissions.");
+        }
+
+        item.setIsComplete(true);
+
+        return adaptItemToItemSummary(item);
+    }
+
+    /**
+     * Retrieve a specific {@link Item} by item id.
+     *
+     * If the isOwner parameter is false (i.e. the current user is not the owner),
+     * then an UnauthorizedException is thrown.
+     *
+     * @param bucketId The id of the bucket that the item belongs to.
+     * @param itemId The id of the item to uncomplete.
+     * @param isOwner Determine if the owner of the item is the current user.
+     * @return Item summary with item uncompleted.
+     * @throws BadRequestException If a bucket with the given id cannot be found.
+     * @throws BadRequestException If an item with the given id cannot be found.
+     * @throws UnauthorizedException If the current user isn't the owner.
+     * */
+    public ItemSummaryResponse uncompleteItem(final Long bucketId, final Long itemId, final boolean isOwner) {
+        Bucket parent = bucketDAO.findById(bucketId)
+                .orElseThrow(() ->
+                        new BadRequestException("Unable to find a bucket with id " + bucketId));
+
+        Item item = itemDAO.findById(itemId)
+                .orElseThrow(() ->
+                        new BadRequestException("Unable to find a item with id " + itemId));
+
+        if(!Objects.equals(parent.getId(), item.getParent().getId())){
+            throw new BadRequestException("Item parent with id " + item.getParent().getId() + " doesn't match bucket id");
+        }
+
+        if(!isOwner) {
+            throw new UnauthorizedException("Insufficient permissions.");
+        }
+
+        item.setIsComplete(false);
+
+        return adaptItemToItemSummary(item);
+    }
 }

@@ -41,4 +41,7 @@ public class Item extends PersistentObject {
     @ManyToOne
     @NotNull
     private Bucket parent;
+
+    @NotNull
+    private Boolean isComplete;
 }
