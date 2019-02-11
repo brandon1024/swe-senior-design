@@ -18,4 +18,6 @@ public class ItemSummaryResponse implements Serializable {
     private final String link;
 
     private final String description;
+
+    private final boolean isComplete;
 }

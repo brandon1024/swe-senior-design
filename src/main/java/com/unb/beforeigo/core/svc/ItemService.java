@@ -323,6 +323,7 @@ public class ItemService {
                 parentId,
                 item.getName(),
                 item.getLink(),
-                item.getDescription());
+                item.getDescription(),
+                item.getIsComplete());
     }
 }
