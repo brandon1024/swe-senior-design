@@ -26,8 +26,8 @@ public class ItemService {
     /**
      * Create a new {@link Item} that is associated to a given bucket.
      *
-     * The item provided must be valid. The {@link Item#parent} field will be overwritten with the bucket found using the
-     * bucketId parameter. The {@link Item#id} field is set to null to prevent this method from being used to
+     * The item provided must be valid. The {@link Item} parent field will be overwritten with the bucket found using the
+     * bucketId parameter. The {@link Item} id field is set to null to prevent this method from being used to
      * overwrite an item already persisted.
      *
      * @param bucketId The id of the bucket that the item is in.
@@ -50,7 +50,7 @@ public class ItemService {
     /**
      * Create a new {@link Item} that is associated to a given bucket, that is duplicated from an existing item.
      *
-     * Duplicated items will inherit all fields from the parent item (except {@link Item#parent}).
+     * Duplicated items will inherit all fields from the parent item (except {@link Item#} parent).
      *
      * If the item parent with the id provided is private, the item will only be duplicated if the owner of the item
      * matches the id of the childBucketOwnerId param. Conversely, if the childBucketOwnerId param matches the owner of
@@ -213,15 +213,19 @@ public class ItemService {
         }
 
         if(Objects.nonNull(partialItem.getName())) {
-            persistedItem.setName(persistedItem.getName());
+            persistedItem.setName(partialItem.getName());
         }
 
         if(Objects.nonNull(partialItem.getLink())) {
-            persistedItem.setLink(persistedItem.getLink());
+            persistedItem.setLink(partialItem.getLink());
         }
 
         if(Objects.nonNull(partialItem.getDescription())) {
-            persistedItem.setDescription(persistedItem.getDescription());
+            persistedItem.setDescription(partialItem.getDescription());
+        }
+
+        if(Objects.nonNull(partialItem.getIsComplete())) {
+            persistedItem.setIsComplete(partialItem.getIsComplete());
         }
 
         Item childItem = saveItem(persistedItem);
@@ -261,7 +265,7 @@ public class ItemService {
     }
 
     /**
-     * Delete a given item. The {@link Item#id} field must be non-null.
+     * Delete a given item. The {@link Item} id field must be non-null.
      *
      * The item provided must have the parent field specified. It is used to verify the bucket that has the
      * item provided matches the bucket that has the item with the given id. Specifically, this is used by the
@@ -320,77 +324,5 @@ public class ItemService {
                 item.getName(),
                 item.getLink(),
                 item.getDescription());
-    }
-
-    /**
-     * Complete a specific {@link Item} by item id.
-     *
-     * If the isOwner parameter is false (i.e. the current user is not the owner),
-     * then an UnauthorizedException is thrown.
-     *
-     * @param bucketId The id of the bucket that the item belongs to.
-     * @param itemId The id of the item to complete.
-     * @param isOwner Determine if the owner of the item is the current user.
-     * @return Item summary with item completed.
-     * @throws BadRequestException If a bucket with the given id cannot be found.
-     * @throws BadRequestException If an item with the given id cannot be found.
-     * @throws UnauthorizedException If the current user isn't the owner.
-     * */
-    public ItemSummaryResponse completeItem(final Long bucketId, final Long itemId, final boolean isOwner) {
-        Bucket parent = bucketDAO.findById(bucketId)
-                .orElseThrow(() ->
-                        new BadRequestException("Unable to find a bucket with id " + bucketId));
-
-        Item item = itemDAO.findById(itemId)
-                .orElseThrow(() ->
-                        new BadRequestException("Unable to find a item with id " + itemId));
-
-        if(!Objects.equals(parent.getId(), item.getParent().getId())){
-            throw new BadRequestException("Item parent with id " + item.getParent().getId() + " doesn't match bucket id");
-        }
-
-        if(!isOwner) {
-            throw new UnauthorizedException("Insufficient permissions.");
-        }
-
-        item.setIsComplete(true);
-
-        return adaptItemToItemSummary(item);
-    }
-
-    /**
-     * Retrieve a specific {@link Item} by item id.
-     *
-     * If the isOwner parameter is false (i.e. the current user is not the owner),
-     * then an UnauthorizedException is thrown.
-     *
-     * @param bucketId The id of the bucket that the item belongs to.
-     * @param itemId The id of the item to uncomplete.
-     * @param isOwner Determine if the owner of the item is the current user.
-     * @return Item summary with item uncompleted.
-     * @throws BadRequestException If a bucket with the given id cannot be found.
-     * @throws BadRequestException If an item with the given id cannot be found.
-     * @throws UnauthorizedException If the current user isn't the owner.
-     * */
-    public ItemSummaryResponse uncompleteItem(final Long bucketId, final Long itemId, final boolean isOwner) {
-        Bucket parent = bucketDAO.findById(bucketId)
-                .orElseThrow(() ->
-                        new BadRequestException("Unable to find a bucket with id " + bucketId));
-
-        Item item = itemDAO.findById(itemId)
-                .orElseThrow(() ->
-                        new BadRequestException("Unable to find a item with id " + itemId));
-
-        if(!Objects.equals(parent.getId(), item.getParent().getId())){
-            throw new BadRequestException("Item parent with id " + item.getParent().getId() + " doesn't match bucket id");
-        }
-
-        if(!isOwner) {
-            throw new UnauthorizedException("Insufficient permissions.");
-        }
-
-        item.setIsComplete(false);
-
-        return adaptItemToItemSummary(item);
     }
 }
