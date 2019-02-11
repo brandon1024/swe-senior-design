@@ -46,6 +46,6 @@ public class UserPrincipalService implements UserDetailsService {
      * @return A summary of the principal.
      * */
     public static UserSummaryResponse adaptPrincipalToSummary(final UserPrincipal user) {
-        return new UserSummaryResponse(user.getId(), user.getUsername(), user.getEmail(), null, null, null);
+        return new UserSummaryResponse(user.getId(), user.getUsername(), user.getEmail(), null, null, null, null);
     }
 }

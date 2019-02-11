@@ -15,6 +15,8 @@ public class UserSummaryResponse implements Serializable {
 
     private final String email;
 
+    private final String bio;
+
     private final String firstName;
 
     private final String middleName;

@@ -232,7 +232,7 @@ public class UserService {
             }
         }
 
-        User response = saveUser(partialUser);
+        User response = userDAO.save(persistentUser);
         return adaptUserToSummary(response);
     }
 
@@ -339,7 +339,7 @@ public class UserService {
      * @return A summary of the user.
      * */
     public static UserSummaryResponse adaptUserToSummary(final User user) {
-        return new UserSummaryResponse(user.getId(), user.getUsername(), user.getEmail(),
+        return new UserSummaryResponse(user.getId(), user.getUsername(), user.getEmail(), user.getBio(),
                 user.getFirstName(), user.getMiddleName(), user.getLastName());
     }
 
