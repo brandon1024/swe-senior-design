@@ -50,12 +50,12 @@ In the preferences window, you will also need to enable `Enable Annotation Proce
 This project relies on PostgreSQL, so you will need to ensure you have it installed. If you don't, here are some links to get you started:
 - [Download PostgreSQL](https://www.postgresql.org/download/)
 
-Using the PG Admin tool, you can create a new database named `before_i_go_dev`. You will also need to create a new user named `root` with password `password`.
+Using the PG Admin tool, you can create a new database named `kick_the_bucket_dev`. You will also need to create a new user named `root` with password `password`.
 
 Although it isn't necessarily required, JetBrains DataGrip is a very useful tool for managing the database users and schemas. Once you have DataGrip installed, create a new connection with the following parameters:
 - Connection Name: swe-senior-design (note: this name is irrelevant)
 - Hostname: 127.0.0.1
-- Port: 3306
+- Port: 5432
 - Username: root
 - Password: password
 

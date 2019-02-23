@@ -3,15 +3,7 @@ image: openjdk:10-jdk
 services:
   - postgres:10.5
 
-variables:
-  POSTGRES_DB: before_i_go_test
-  POSTGRES_USER: root
-  POSTGRES_PASSWORD: password
-  SPRING_PROFILES_ACTIVE: ci
-
 before_script:
-#  - echo `pwd` # debug
-#  - echo "$CI_BUILD_NAME, $CI_BUILD_REF_NAME $CI_BUILD_STAGE" # debug
 - export GRADLE_USER_HOME=`pwd`/.gradle
 
 cache:
@@ -21,12 +13,33 @@ cache:
 
 stages:
 - test
+- deploy
 
-unit_tests:
+tests-job:
+  variables:
+    POSTGRES_DB: kick_the_bucket_test
+    POSTGRES_USER: root
+    POSTGRES_PASSWORD: password
+    SPRING_PROFILES_ACTIVE: ci
   stage: test
   script:
     - ./gradlew -s docs
     - ./gradlew -s test
 
-after_script:
-  - echo "End CI"
+deploy-job:
+  script:
+    - apt-get update -qy
+    - apt-get install -y python-dev python-pip
+    - pip install -U pip
+    - pip install awscli
+    - ./gradlew build -x test -x docs -x distTar -x distZip -x bootDistTar
+    - BUILD_ARTIFACT=$(ls -1 build/distributions | tail -n 1)
+    - aws s3 cp build/distributions/$BUILD_ARTIFACT $AWS_S3_LOCATION/$BUILD_ARTIFACT
+    - aws deploy create-deployment --application-name kick-the-bucket --deployment-config-name CodeDeployDefault.OneAtATime --deployment-group-name kick-the-bucket-prod --description $BUILD_ARTIFACT --s3-location bucket=kick-the-bucket-codedeploy-deployment,bundleType=zip,key=$BUILD_ARTIFACT
+  stage: deploy
+  only:
+    # Applies only to tags matching the regex: ie: v1.0.0-My-App-Release
+    - /^v\d+\.\d+\.\d+-.*$/
+  except:
+    - branches
+    - triggers

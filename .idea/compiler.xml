@@ -4,5 +4,9 @@
     <annotationProcessing>
       <profile default="true" name="Default" enabled="true" />
     </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="com.unb.before-i-go.main" target="1.10" />
+      <module name="com.unb.before-i-go.test" target="1.10" />
+    </bytecodeTargetLevel>
   </component>
 </project>
