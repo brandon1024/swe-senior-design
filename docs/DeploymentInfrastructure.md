@@ -25,6 +25,26 @@ Shown below is a high-level diagram which describes how each service in the depl
 ```
 
 ## Project Configuration
+### Deploying a New Release to Production
+Deploying a new release to the production environment is a fairly simple task. In this section, I would outline the steps necessary to successfully deploy a new release.
+
+### Bump Version Number
+First, create a new branch off the `develop` branch with the following naming convention: `vX.Y.Z-Release`. Next, in `build.gradle`, update the version number to reflect the new release version:
+```
+version = 'X.Y.Z-SNAPSHOT'
+```
+
+Next, commit this change, push to branch, and merge to develop.
+
+### Merge to Master Branch and Tag
+Open a merge request to master. Once merged, create a new tag on the master branch:
+```
+$ git checkout master
+$ git pull --rebase
+$ git tag vX.Y.Z-SNAPSHOT
+$ git push origin vX.Y.Z-SNAPSHOT
+```
+
 ### Properties and Profiles
 Each Spring Boot application can define externalized configuration through a `application.properties` file located in `src/main/resources`. This project uses the externalized configuration to specify development and production settings, such as the database connection information, logging preferences, server port numbers, etc.
 
@@ -93,6 +113,8 @@ To execute in a production environment:
 $ unzip kick-the-bucket-boot-0.0.1-SNAPSHOT.zip
 $ ./kick-the-bucket-boot-0.0.1-SNAPSHOT/scripts/server-start-silent.sh
 ```
+
+Note: Running scripts as root user may cause prevent CodeDeploy from deploying new artifacts successfully. If the server is started as root, CodeDeploy (which runs as ec2-user user) will not be able to stop the server. Be careful when running commands as root.
 
 ## GitLab CI Pipeline
 The project uses GitLab Pipelines for CI and CD. The main purpose of the GitLab pipelines are:
