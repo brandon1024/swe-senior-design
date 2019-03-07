@@ -16,6 +16,7 @@ import ca.unb.ktb.core.model.validation.EntityValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.ExampleMatcher;
+import org.springframework.data.domain.Pageable;
 import org.springframework.lang.Nullable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -40,8 +41,8 @@ public class UserService {
     /**
      * Create a new {@link User}.
      *
-     * The user provided must be valid. The {@link User#role} field will be overwritten with the default role
-     * {@link User.Role#USER}. The {@link User#id} field is set to null to prevent this method from being used to
+     * The user provided must be valid. The {@link User} role field will be overwritten with the default role
+     * {@link User.Role#USER}. The {@link User} id field is set to null to prevent this method from being used to
      * overwrite a user already persisted.
      *
      * @param user The user to create.
@@ -102,7 +103,24 @@ public class UserService {
 
         List<User> queriedUsers = userDAO.findAll(Example.of(queryUser, ExampleMatcher.matchingAny()));
 
-        return queriedUsers.stream().map(UserService::adaptUserToSummary).collect(Collectors.toList());
+        return queriedUsers.stream()
+                .map(UserService::adaptUserToSummary)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Retrieve a list of {@link User}'s with a username given in the query string.
+     *
+     * @param queryString The username query string.
+     * @param pageable Specify how the results should be paged.
+     * @return a list of {@link UserSummaryResponse}'s for users with a username that matches the query string.
+     * */
+    public List<UserSummaryResponse> findUsersByUsernameOrRealName(final String queryString, final Pageable pageable) {
+        List<User> queriedUsers = userDAO.findAllByUsernameOrRealNameLike(queryString, pageable);
+
+        return queriedUsers.stream()
+                .map(UserService::adaptUserToSummary)
+                .collect(Collectors.toList());
     }
 
     /**

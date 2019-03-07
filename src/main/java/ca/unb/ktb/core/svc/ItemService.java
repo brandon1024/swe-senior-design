@@ -11,6 +11,7 @@ import ca.unb.ktb.core.model.Bucket;
 import ca.unb.ktb.core.model.Item;
 import ca.unb.ktb.core.model.validation.EntityValidator;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
@@ -181,6 +182,21 @@ public class ItemService {
         }
 
         return adaptItemToItemSummary(item);
+    }
+
+    /**
+     * Retrieve a list of {@link Item}'s with an item name given in the query string.
+     *
+     * @param queryString The item name query string.
+     * @param pageable Specify how the results should be paged.
+     * @return a list of {@link ItemSummaryResponse}'s for items with a item name that matches the query string.
+     * */
+    public List<ItemSummaryResponse> findItemsByName(final String queryString, final Pageable pageable) {
+        List<Item> queriedItems = itemDAO.findAllByNameLike(queryString, pageable);
+
+        return queriedItems.stream()
+                .map(ItemService::adaptItemToItemSummary)
+                .collect(Collectors.toList());
     }
 
     /**

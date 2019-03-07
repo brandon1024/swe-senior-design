@@ -2,7 +2,10 @@ package ca.unb.ktb.application.dao;
 
 import ca.unb.ktb.core.model.Bucket;
 import ca.unb.ktb.core.model.Item;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
@@ -20,4 +23,16 @@ public interface ItemDAO extends JpaRepository<Item, Long> {
      * @return A {@link List} of public items created by a given bucket.
      * */
     List<Item> findAllByParent(final Bucket parent);
+
+    /**
+     * Find all items that contain the partial item name. The search is case-insensitive.
+     *
+     * @param partialItemName The partial item name to search for.
+     * @param pageable Specify how the results should be paged.
+     * @return Items that contain with the given partial item name.
+     * */
+    @Query(value = "SELECT * FROM items WHERE items.name ILIKE %:partialItemName%",
+            countQuery = "SELECT COUNT(*) FROM items WHERE buckets.name ILIKE %:partialItemName%",
+            nativeQuery = true)
+    List<Item> findAllByNameLike(@Param("partialItemName") final String partialItemName, final Pageable pageable);
 }

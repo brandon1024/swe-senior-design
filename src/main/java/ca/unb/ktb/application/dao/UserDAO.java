@@ -1,7 +1,10 @@
 package ca.unb.ktb.application.dao;
 
 import ca.unb.ktb.core.model.User;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -55,4 +58,16 @@ public interface UserDAO extends JpaRepository<User, Long> {
      * @return Users with a given role.
      * */
     List<User> findAllByRole(final User.Role role);
+
+    /**
+     * Find all users that contain the partial username. The search is case-insensitive.
+     *
+     * @param partialUsername The partial username to search for
+     * @param pageable Specify how the results should be paged.
+     * @return Users that contain the given partial username.
+     * */
+    @Query(value = "SELECT * FROM users WHERE users.username ILIKE %:partialUsername% OR users.first_name ILIKE %:partialUsername% OR users.last_name ILIKE %:partialUsername%",
+            countQuery = "SELECT COUNT(*) FROM users WHERE users.username ILIKE %:partialUsername% OR users.first_name ILIKE %:partialUsername% OR users.last_name ILIKE %:partialUsername%",
+            nativeQuery = true)
+    List<User> findAllByUsernameOrRealNameLike(@Param("partialUsername") final String partialUsername, final Pageable pageable);
 }

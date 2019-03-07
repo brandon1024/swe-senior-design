@@ -2,7 +2,10 @@ package ca.unb.ktb.application.dao;
 
 import ca.unb.ktb.core.model.Bucket;
 import ca.unb.ktb.core.model.User;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -47,4 +50,16 @@ public interface BucketDAO extends JpaRepository<Bucket, Long> {
      * @return A {@link List} of public buckets created by a given user.
      * */
     List<Bucket> findAllByOwnerAndIsPublicTrue(final User owner);
+
+    /**
+     * Find all buckets that contain the partial bucket name. The search is case-insensitive.
+     *
+     * @param partialBucketName The partial bucket name to search for.
+     * @param pageable Specify how the results should be paged.
+     * @return Buckets that contain with the given partial bucket name.
+     * */
+    @Query(value = "SELECT * FROM buckets WHERE buckets.name ILIKE %:partialBucketName%",
+            countQuery = "SELECT COUNT(*) FROM buckets WHERE buckets.name ILIKE %:partialBucketName%",
+            nativeQuery = true)
+    List<Bucket> findAllByNameLike(@Param("partialBucketName") final String partialBucketName, final Pageable pageable);
 }
