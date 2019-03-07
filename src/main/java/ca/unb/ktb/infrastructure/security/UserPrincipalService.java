@@ -19,7 +19,7 @@ public class UserPrincipalService implements UserDetailsService {
     @Transactional
     public UserPrincipal loadUserByUsername(final String username) {
         User user = userDAO.findByUsername(username)
-                .orElseThrow(() -> new UserNotFoundException("User not found with username: " + username));
+                .orElseThrow(() -> new UserNotFoundException(String.format("user not found with username '%s'", username)));
 
         return UserPrincipal.adapt(user);
     }
@@ -27,7 +27,7 @@ public class UserPrincipalService implements UserDetailsService {
     @Transactional
     public UserPrincipal loadByEmailAddress(final String emailAddress) {
         User user = userDAO.findByEmail(emailAddress)
-                .orElseThrow(() -> new UserNotFoundException("User not found with email: " + emailAddress));
+                .orElseThrow(() -> new UserNotFoundException(String.format("user not found with email '%s'", emailAddress)));
 
         return UserPrincipal.adapt(user);
     }
@@ -35,7 +35,7 @@ public class UserPrincipalService implements UserDetailsService {
     @Transactional
     public UserPrincipal loadUserById(final Long userId) {
         User user = userDAO.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException("User not found with id: " + userId));
+                .orElseThrow(() -> new UserNotFoundException(String.format("user not found with id: '%s'", userId)));
 
         return UserPrincipal.adapt(user);
     }
