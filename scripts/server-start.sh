@@ -11,11 +11,10 @@
 ## Note: This script should be used with caution. Use of this script may cause unintended behavior.
 ##
 
-
 set -e
 
 # Just in case this is run in an environment without a proper shell
-. /etc/environment
+. /home/ec2-user/configure_shell.sh
 
 cd /home/ec2-user/server/bin
 

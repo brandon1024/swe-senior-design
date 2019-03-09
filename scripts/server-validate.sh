@@ -15,7 +15,7 @@
 set -e
 
 # Just in case this is run in an environment without a proper shell
-. /etc/environment
+. /home/ec2-user/configure_shell.sh
 
 for run in {1..60}
 do

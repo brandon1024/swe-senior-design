@@ -17,7 +17,7 @@
 set -e
 
 # Just in case this is run in an environment without a proper shell
-. /etc/environment
+. /home/ec2-user/configure_shell.sh
 
 REMOVE_INSTALL=1
 for arg in "$@"; do
@@ -28,7 +28,7 @@ for arg in "$@"; do
         ;;
         *)
         echo "Unknown option: $arg"
-        help
+        exit 1
         ;;
     esac
 done

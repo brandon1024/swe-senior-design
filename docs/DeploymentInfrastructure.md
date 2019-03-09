@@ -6,7 +6,7 @@ The purpose of this document is to provide a comprehensive overview of the deplo
 
 Continuous Integration (CI) and Continuous Deployment (CD) is provided through [GitLab Pipelines](https://docs.gitlab.com/ee/ci/pipelines.html). The project is hosted through [Amazon Web Services](https://aws.amazon.com/).
 
-Shown below is a high-level diagram which describes how each service in the deployment infrastructure interacts.
+Shown below is a high-level diagram which describes how each service in the deployment infrastructure interact.
 ```
                                 +-----------------+
          NEW                    |                 |
@@ -22,6 +22,35 @@ Shown below is a high-level diagram which describes how each service in the depl
 |     AWS EC2     +<------------+ AWS CODE DEPLOY +---------->+      AWS S3     |
 |                 |   INSTALL   |                 |   FETCH   |                 |
 +-----------------+   AND RUN   +-----------------+  FROM S3  +-----------------+
+```
+
+Shown below is a high-level diagram which describes how remote clients can interact with the server, and how their requests are routed within AWS:
+```
+                         AWS VIRTUAL PRIVATE CLOUD
+
++---------------------------------------------------------------------------+
+|                                                                           |
++-----------------------------------+  +------------------------------------+
+||             AWS EC2              |  |                                   ||
+||   +--------------------------+   |  |     AWS ELASTIC LOAD BALANCER     ||
+||   |       SPRING BOOT        |   |  |   80                              ||
+||   |           WEB            +<---------------+---------------+         ||
+||   |       APPLICATION        |   |  |         |               |         ||
+||   +--------------------------+   |  |         |               |         ||
+||                                  |  |         |               |         ||
++----------------+------------------+  +---------+---------------+----------+
+|                ^                               |               |          |
++---------------------------------------------------------------------------+
+                 |                               |               |
+                 | 22                         80 |               | 443
+                 |                               |               |
++---------------------------------------------------------------------------+
+|        +---------------+              +---------------------------------+ |
+|        |  SSH CLIENT   |              |           HTTP CLIENT           | |
+|        +---------------+              +---------------------------------+ |
++---------------------------------------------------------------------------+
+
+                               PUBLIC NETWORK
 ```
 
 ## Project Configuration
@@ -229,6 +258,30 @@ To update a parameter, simply add the `--overwrite` flag:
 $ aws ssm put-parameter --name <name> --value "<new value>" --type SecureString --region us-east-1 --overwrite
 ```
 
+## AWS RDS Instance
+Amazon Web Services provides a database hosting solution called Amazon Relational Database Service (RDS) for hosting various SQL-based databases. RDS makes it easy to set up, manage, provision, backup and restore data through the AWS platform.
+
+This project relies on a PostgreSQL database hosted through this service. It is hosted in a private RDS instance which is only made available to the EC2 instance running the Spring Boot server. This ensures that the data stored in the database is kept secure.
+
+### Instance Details
+- DB Name: `kick-the-bucket-db`
+- Region & AZ: `us-east-1a`
+- Instance Type: `db.t2.micro`
+- Endpoint: `kick-the-bucket-db.cfmacruxeb8i.us-east-1.rds.amazonaws.com`
+- Port: `3306`
+- Storage Type: `General Purpose (SSD)`
+- Storage: `20 GiB`
+- Engine Version: `10.6`
+
+### Database Users
+At the moment, only the `root` database user exists for managing the database. The root user is used by the Spring Boot server, meaning that connections to the database under the root account may disrupt the Spring Boot server. In the future, more users will be created.
+
+### Accessing Database Console
+To access the database console, first connect to the EC2 instance over SSH. First, you will need to fetch the database root user password from the parameter store. To do this, refer to the section on Parameter Store. Then, execute the following:
+```
+$ psql --host=kick-the-bucket-db.cfmacruxeb8i.us-east-1.rds.amazonaws.com --port=3306 --username=root --password --dbname=kick_the_bucket_prod
+```
+
 ## AWS EC2 Instance
 Amazon EC2 (Amazon Elastic Compute Cloud) is a web service that provides secure, resizable compute capacity in the cloud. It is designed to make web-scale cloud computing easier for developers. The Kick the Bucket project utilizes EC2 for hosting the Spring Boot backend server and making it available to the public.
 
@@ -254,29 +307,18 @@ To avoid this, AWS provides a service that allows a user to SSH into the EC2 ins
 
 To start a new session, from the AWS System Manager, click `Session Manager` from the navigation pane, and chose `Start a Session`.
 
-## AWS RDS Instance
-Amazon Web Services provides a database hosting solution called Amazon Relational Database Service (RDS) for hosting various SQL-based databases. RDS makes it easy to set up, manage, provision, backup and restore data through the AWS platform.
+### Instance Libraries and Software
+When migrating to a new EC2 instance, it is important to ensure that the new instance is configured with all the necessary software to correctly run the Spring server. At the moment, there are two important pieces of software that must be installed:
+- Java JDK 11 must be installed in `/opt`, and the JAVA_HOME environment variable must be set. The PATH variable should also be updated to include `$JAVA_HOME/bin`.
+- In the `ec2-user` home directory, a script `configure_shell.sh` should exist. This script is used by CodeDeploy to ensure that the appropriate environment variables exist. Without this, the deployment will fail.
 
-This project relies on a PostgreSQL database hosted through this service. It is hosted in a private RDS instance which is only made available to the EC2 instance running the Spring Boot server. This ensures that the data stored in the database is kept secure.
+## AWS Elastic Load Balancer
+The EC2 instance that hosts the production server is configured such that only port 22 (SSH) is open to the public network. As such, making requests to the EC2 instance IP on ports 80 or 443 will not work. Instead, traffic on ports 80 and 443 are first routed through the public-facing Elastic Load Balancer (ELB). This is to enable secured connections to the server over HTTPS. By using the load balancer to handle HTTPS connections, there is no need to configure the server to use SSL. This avoids the need to manage certificates manually, and instead rely on AWS ACM for certificate management.
 
-### Instance Details
-- DB Name: `kick-the-bucket-db`
-- Region & AZ: `us-east-1a`
-- Instance Type: `db.t2.micro`
-- Endpoint: `kick-the-bucket-db.cfmacruxeb8i.us-east-1.rds.amazonaws.com`
-- Port: `3306`
-- Storage Type: `General Purpose (SSD)`
-- Storage: `20 GiB`
-- Engine Version: `10.6`
+The load balancer is configured to redirect traffic on port 443 to port 80 of the EC2 instance. Traffic on port 80 is also routed to port 80 of the EC2 instance. The load balancer automatically handles secured HTTPS connections and unsecured HTTP connections.
 
-### Database Users
-At the moment, only the `root` database user exists for managing the database. The root user is used by the Spring Boot server, meaning that connections to the database under the root account may disrupt the Spring Boot server. In the future, more users will be created.
-
-### Accessing Database Console
-To access the database console, first connect to the EC2 instance over SSH. First, you will need to fetch the database root user password from the parameter store. To do this, refer to the section on Parameter Store. Then, execute the following:
-```
-$ psql --host=kick-the-bucket-db.cfmacruxeb8i.us-east-1.rds.amazonaws.com --port=3306 --username=root --password --dbname=kick_the_bucket_prod
-```
+## AWS ACM Certificate Management
+Amazon Web Services provides a certificate management solution which easily provisions trusted certificates for use in a production environment. This service is used to ensure that HTTPS connections to the production environment are secured with valid certificates. It also removes the need to verify ownership of the domain through a third party certificate authority.
 
 ## Appendix
 ### Manually Deploy Build Artifacts
