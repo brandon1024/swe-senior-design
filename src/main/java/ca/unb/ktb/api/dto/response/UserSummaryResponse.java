@@ -22,4 +22,6 @@ public class UserSummaryResponse implements Serializable {
     private final String middleName;
 
     private final String lastName;
+
+    private final String profileImageResourceUrl;
 }

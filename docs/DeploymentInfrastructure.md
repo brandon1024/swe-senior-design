@@ -6,22 +6,69 @@ The purpose of this document is to provide a comprehensive overview of the deplo
 
 Continuous Integration (CI) and Continuous Deployment (CD) is provided through [GitLab Pipelines](https://docs.gitlab.com/ee/ci/pipelines.html). The project is hosted through [Amazon Web Services](https://aws.amazon.com/).
 
-Shown below is a high-level diagram which describes how each service in the deployment infrastructure interact.
+## Table of Contents
+* [Project Configuration](#project-configuration)
+    * [Deploying a New Release to Production](#deploying-a-new-release-to-production)
+    * [Merge to Master Branch and Tag](#merge-to-master-branch-and-tag)
+    * [Properties and Profiles](#properties-and-profiles)
+    * [Building Distribution Artifacts](#building-distribution-artifacts)
+    * [Executing Artifacts](#executing-artifacts)
+* [GitLab CI Pipeline](#gitlab-ci-pipeline)
+    * [Pipeline Configuration](#pipeline-configuration)
+        * [Test Stage](#test-stage)
+        * [Deploy Stage](#deploy-stage)
+    * [Authentication with AWS S3](#authentication-with-aws-s3)
+* [AWS IAM and VPC Infrastructure](#aws-iam-and-vpc-infrastructure)
+    * [Users](#users)
+    * [IAM Roles](#iam-roles)
+    * [VPC](#vpc)
+* [AWS CodeDeploy](#aws-codedeploy)
+    * [Parameter Store](#parameter-store)
+* [AWS RDS Instance](#aws-rds-instance)
+    * [Instance Details](#instance-details)
+    * [Database Users](#database-users)
+    * [Accessing Database Console](#accessing-database)
+* [AWS EC2 Instance](#aws-ec2-instance)
+    * [Instance Details](#instance-details)
+    * [SSH into EC2 Instance](#ssh-into-ec2-instance)
+    * [Start SSH Session Through Systems Manager](#start-ssh-session-through-systems-manager)
+    * [Instance Libraries and Software](#instance-libraries-and-software)
+* [AWS Elastic Load Balancer](#aws-elastic-load-balancer)
+* [AWS ACM Certificate Management](#aws-acm-certificate-management)
+* [AWS Simple Storage Service (S3)](#aws-simple-storage-service-s3)
+    * [S3 Bucket Configuration](#s3-bucket-configuration)
+* [Appendix](#appendix)
+    * [Manually Deploy Build Artifacts](#manually-deploy-build-artifacts)
+    * [Updating Parameter Store Secured Strings Using AWS CLI](#updating-parameter-store-secured-strings-using-aws-cli)
+    * [IAM ParameterStorePolicy for CodeDeploy Service Role](#iam-parameterstorepolicy-for-codedeploy-service-role)
+    * [IAM S3DevAccessPolicy for S3 Access During Development](#iam-s3devaccesspolicy-for-s3-access-during-development)
+    * [Update PostgreSQL Root User Password](#update-postgresql-root-user-password)
+
+Shown below is a high-level diagram which describes how each service in the production infrastructure interact.
 ```
-                                +-----------------+
-         NEW                    |                 |
-       RELEASE  +-------------->+ GITLAB PIPELINE +--------------------+
-         TAG                    |                 |      PUSHES        |
-                                +--------+--------+     ARTIFACTS      |
-                                         |                             |
-                                CREATE   |                             |
-                              DEPLOYMENT |                             |
-                                         |                             v
-+-----------------+             +--------v--------+           +--------+--------+
-|                 |             |                 |           |                 |
-|     AWS EC2     +<------------+ AWS CODE DEPLOY +---------->+      AWS S3     |
-|                 |   INSTALL   |                 |   FETCH   |                 |
-+-----------------+   AND RUN   +-----------------+  FROM S3  +-----------------+
+                              +-----------------+
+       NEW                    |                 |
+     RELEASE  +-------------->+ GITLAB PIPELINE +--------------------+
+       TAG                    |                 |      PUSHES        |
+                              +--------+--------+     ARTIFACTS      |
+                                       |                             |
+                              CREATE   |                             |
+                            DEPLOYMENT |                             |
+                                       |                             v
+                              +--------v--------+           +--------+--------+
+                              |                 |           |                 |
+                              | AWS CODE DEPLOY +---------->+      AWS S3     |
+                              |                 |   FETCH   |                 |
+                              +--------+--------+  FROM S3  +-----------------+
+                                       |
+                               INSTALL |
+                               AND RUN |
+                                       v
++-----------------+   DATA    +--------+--------+   OBJECT  +-----------------+
+|                 |  STORAGE  |                 |  STORAGE  |                 |
+|     AWS RDS     +<----------+     AWS EC2     +---------->+      AWS S3     |
+|                 |           |                 |           |                 |
++-----------------+           +-----------------+           +-----------------+
 ```
 
 Shown below is a high-level diagram which describes how remote clients can interact with the server, and how their requests are routed within AWS:
@@ -213,8 +260,31 @@ The following environment variables are used by the aws cli during the deploy st
 - `AWS_SECRET_ACCESS_KEY`: secret access key for the AWS user.
 
 ## AWS IAM and VPC Infrastructure
-AWS IAM (identity and access management) is used to configure users, groups, rules and policies for all AWS users and services under a root account. At the moment, only one user exists. More users may be added in the future. Administrators are NOT to use the root account for managing AWS services, and instead should use a child user with the adequate privileges. New users and services should only be given minimum access.
+AWS IAM (identity and access management) is used to configure users, groups, rules and policies for all AWS users and services under a root account. Administrators are NOT to use the root account for managing AWS services, and instead should use a child user with the adequate privileges. New users and services should only be given minimum possible access.
 
+### Users
+- admin
+    - description: full administrative access to all AWS services.
+    - security groups: admin
+- ktb-dev
+    - description: use for development purposes only, with limited access to AWS services.
+    - security groups: dev
+
+### IAM Roles
+IAM roles are used primarily to control internal access between AWS services.
+
+- CodeDeployServiceRole
+    - AWS Service: CodeDeploy
+    - Description: Allows CodeDeploy to call AWS services such as Auto Scaling on your behalf.
+    - Customer Managed Policies:
+            - ParameterStorePolicy
+- kick-the-bucket-role
+    - AWS Service: EC2
+    - Description: Allows EC2 instances to call AWS services on your behalf.
+    - Customer Managed Policies:
+        - S3ProdAccessPolicy
+
+### VPC
 The VPC (virtual private cloud) infrastructure for Kick the Bucket was designed with security as a priority. All Kick the Bucket AWS services are managed under the `kick-the-bucket` VPC.
 
 Two VPC subnets were created for controlling access, `kick-the-bucket-public` and `kick-the-bucket-private`. The public subnet is used for services that are public facing, such as the EC2 instance, while the private subnet is used for internal-only services, such as RDS.
@@ -223,7 +293,8 @@ Below is a list of each security group and their function:
 - `kick-the-bucket-db-listener`: Used by RDS to allow inbound connections on port 3306 from the EC2 instance only.
 - `kick-the-bucket-ssh-listener`: Used to allow SSH access to select source IPs to port 22. Used by the EC2 instance.
 - `kick-the-bucket-db-client`: DB client group.
-- `kick-the-bucket-web-listener`: Accepts connections to ports 80 and 443. Used for the EC2 instance running the Spring Boot server.
+- `kick-the-bucket-web-listener`: Accepts connections to port 80. Used for the EC2 instance running the Spring Boot server to listen to connections from the load balancer.
+- `kick-the-bucket-balanced-web-listener`: Accepts connections to ports 80 and 443. Used by the load balancer to route traffic to the EC2 instance running the Spring Boot server.
 
 ## AWS CodeDeploy
 CodeDeploy is the most important service in the deployment cycle. CodeDeploy is responsible for fetching build artifacts from AWS S3, which were uploaded by the GitLab deployment job runner, and installs them on the production EC2 instance. CodeDeploy is responsible for stopping the Spring Boot server running in EC2, updating the server installation, and restarting the server. It does so through custom deployment scripts which are located in the project under `scripts/`.
@@ -290,6 +361,7 @@ Amazon EC2 (Amazon Elastic Compute Cloud) is a web service that provides secure,
 - Availability Zone: `us-east-1a`
 - Instance Type: `t2.micro`
 - Public IP: `34.229.100.171`
+- IAM Role: kick-the-bucket-role
 
 ### SSH into EC2 Instance
 1. First must ensure that the VPC `kick-the-bucket-ssh-listener` security group is configured with an inbound rule that accepts connections on port 22 from your current IP address.
@@ -315,10 +387,23 @@ When migrating to a new EC2 instance, it is important to ensure that the new ins
 ## AWS Elastic Load Balancer
 The EC2 instance that hosts the production server is configured such that only port 22 (SSH) is open to the public network. As such, making requests to the EC2 instance IP on ports 80 or 443 will not work. Instead, traffic on ports 80 and 443 are first routed through the public-facing Elastic Load Balancer (ELB). This is to enable secured connections to the server over HTTPS. By using the load balancer to handle HTTPS connections, there is no need to configure the server to use SSL. This avoids the need to manage certificates manually, and instead rely on AWS ACM for certificate management.
 
-The load balancer is configured to redirect traffic on port 443 to port 80 of the EC2 instance. Traffic on port 80 is also routed to port 80 of the EC2 instance. The load balancer automatically handles secured HTTPS connections and unsecured HTTP connections.
+The load balancer is configured to redirect traffic on port 443 to port 80 of the EC2 instance. Traffic on port 80 is redirected to HTTPS to ensure that only secured connections may be made to the server.
 
 ## AWS ACM Certificate Management
 Amazon Web Services provides a certificate management solution which easily provisions trusted certificates for use in a production environment. This service is used to ensure that HTTPS connections to the production environment are secured with valid certificates. It also removes the need to verify ownership of the domain through a third party certificate authority.
+
+## AWS Simple Storage Service (S3)
+The Spring server relies on AWS Simple Storage Service (S3) for general purpose object storage. At the moment, S3 is only used for storage user profile pictures, however S3 may be utilized further in the future for storing static content.
+
+For more details on configuring Spring to communicate with AWS S3 for development purposes, see project `README.md`.
+
+### S3 Bucket Configuration
+- dev.s3.ktb.brandonrichardson.ca
+    - Region: us-east-1
+    - Description: User profile picture storage for development purposes.
+- prod.s3.ktb.brandonrichardson.ca
+    - Region: us-east-1
+    - Description: User profile picture storage for production.
 
 ## Appendix
 ### Manually Deploy Build Artifacts
@@ -350,25 +435,50 @@ $ aws ssm put-parameter --name KTBJWTSecretKey --value "<new value>" --type Secu
         "Effect": "Allow",
         "Action": [
             "ssm:DescribeParameters"
-            ],
-            "Resource": "*"
-        },{
-            "Effect": "Allow",
-            "Action": [
-                "ssm:GetParameters"
-            ],
-            "Resource": [
-                "arn:aws:ssm:us-east-1:532191574896:parameter/KTBPostgreSQLDBPASS",
-                "arn:aws:ssm:us-east-1:532191574896:parameter/KTBJWTSecretKey"
-            ]
-        },{
-            "Effect": "Allow",
-            "Action": [
-                "kms:Decrypt"
-            ],
-            "Resource": "arn:aws:kms:us-east-1:532191574896:alias/aws/ssm"
-        }
-    ]
+        ],
+        "Resource": "*"
+    },{
+        "Effect": "Allow",
+        "Action": [
+            "ssm:GetParameters"
+        ],
+        "Resource": [
+            "arn:aws:ssm:us-east-1:532191574896:parameter/KTBPostgreSQLDBPASS",
+            "arn:aws:ssm:us-east-1:532191574896:parameter/KTBJWTSecretKey"
+        ]
+    },{
+        "Effect": "Allow",
+        "Action": [
+            "kms:Decrypt"
+        ],
+        "Resource": "arn:aws:kms:us-east-1:532191574896:alias/aws/ssm"
+    }]
+}
+```
+
+### IAM S3DevAccessPolicy for S3 Access During Development
+```
+{
+    "Version": "2012-10-17",
+    "Statement": [{
+        "Effect": "Allow",
+        "Action": [
+            "s3:ListBucket"
+        ],
+        "Resource": [
+            "arn:aws:s3:::dev.s3.ktb.brandonrichardson.ca"
+        ]
+    },{
+        "Effect": "Allow",
+        "Action": [
+            "s3:PutObject",
+            "s3:GetObject",
+            "s3:DeleteObject"
+        ],
+        "Resource": [
+            "arn:aws:s3:::dev.s3.ktb.brandonrichardson.ca/*"
+        ]
+    }]
 }
 ```
 

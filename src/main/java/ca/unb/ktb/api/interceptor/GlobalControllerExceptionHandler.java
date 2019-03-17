@@ -11,6 +11,7 @@ import ca.unb.ktb.api.exception.client.UnauthorizedException;
 import ca.unb.ktb.api.exception.server.InternalServerErrorException;
 import ca.unb.ktb.api.exception.server.NotImplementedException;
 import ca.unb.ktb.api.exception.server.ServiceUnavailableException;
+import ca.unb.ktb.core.svc.exception.MissingS3BucketConfigurationException;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.HibernateException;
 import org.springframework.http.HttpStatus;
@@ -63,6 +64,15 @@ public class GlobalControllerExceptionHandler {
 
         final String message = "Unable to process the request due to an unexpected authentication error.";
         return new ResponseEntity<>(message, HttpStatus.UNAUTHORIZED);
+    }
+
+    @ExceptionHandler(value = MissingS3BucketConfigurationException.class)
+    public ResponseEntity<String> handleMissingS3BucketConfigurationException(final MissingS3BucketConfigurationException e) {
+        LOG.debug("Exception intercepted by GlobalControllerExceptionHandler", e);
+        LOG.info(String.format("Misconfiguration of Spring resulted in failure to communicate with AWS S3: %s", e.getMessage()));
+
+        final String message = "Unable to process request due to an internal server error.";
+        return new ResponseEntity<>(message, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
 

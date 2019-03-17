@@ -12,4 +12,8 @@ public class InternalServerErrorException extends ServerErrorException {
     public InternalServerErrorException(String message) {
         super(message);
     }
+
+    public InternalServerErrorException(String message, Throwable throwable) {
+        super(message, throwable);
+    }
 }

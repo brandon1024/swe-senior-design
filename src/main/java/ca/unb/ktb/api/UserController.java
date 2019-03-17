@@ -2,6 +2,7 @@ package ca.unb.ktb.api;
 
 import ca.unb.ktb.api.dto.response.UserProfileSummaryResponse;
 import ca.unb.ktb.api.dto.response.UserSummaryResponse;
+import ca.unb.ktb.api.exception.client.BadRequestException;
 import ca.unb.ktb.api.exception.client.UnauthorizedException;
 import ca.unb.ktb.core.model.User;
 import ca.unb.ktb.core.svc.UserService;
@@ -19,8 +20,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.validation.Valid;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
@@ -28,6 +31,8 @@ import java.util.Objects;
 @RequestMapping("/")
 @Slf4j
 public class UserController {
+
+    private static final List<String> contentTypes = Arrays.asList("image/png", "image/jpeg", "image/gif");
 
     @Autowired private UserService userService;
 
@@ -162,9 +167,9 @@ public class UserController {
      *
      * {@link User}'s id must be provided.
      *
-     *
      * @param userId The id of the user who's profile you wish to obtain.
      * @return User profile response data. HTTP OK.
+     * @throws UnauthorizedException If the id of the currently authenticated user does not match the path variable id.
      * */
     @ApiOperation(value = "Get a user's profile.")
     @RequestMapping(value = "/users/{id}/profile", method = RequestMethod.GET)
@@ -178,4 +183,34 @@ public class UserController {
         return new ResponseEntity<>(userProfile, HttpStatus.OK);
     }
 
+    /**
+     * Upload a profile picture for a given user.
+     *
+     * @param userId The id of the user who's profile picture will be changed.
+     * @param file The name of the file uploaded
+     * @return A summary of the user. HTTP OK.
+     * @throws UnauthorizedException If the id of the currently authenticated user does not match the path variable id.
+     * @throws BadRequestException If the uploaded file is empty, or the file type is unsupported.
+     * */
+    @ApiOperation(value = "Upload a profile picture.")
+    @RequestMapping(value = "/users/{id}/profile/imageupload", method = RequestMethod.POST)
+    public ResponseEntity<UserSummaryResponse> profilePictureUpload(@PathVariable(name = "id") final Long userId,
+                                                                    @RequestParam(name = "file") final MultipartFile file,
+                                                                    @AuthenticationPrincipal final Authentication auth) {
+        UserPrincipal currentUser = (UserPrincipal) auth.getPrincipal();
+        if(!Objects.equals(currentUser.getId(), userId)) {
+            throw new UnauthorizedException("Insufficient permissions.");
+        }
+
+        if(file.isEmpty()) {
+            throw new BadRequestException("uploaded file cannot be empty");
+        }
+
+        if(!contentTypes.contains(file.getContentType())) {
+            throw new BadRequestException(String.format("unsupported content type '%s", file.getContentType()));
+        }
+
+        UserSummaryResponse updatedUser = userService.updateProfilePicture(userId, file);
+        return new ResponseEntity<>(updatedUser, HttpStatus.OK);
+    }
 }

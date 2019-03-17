@@ -1,8 +1,10 @@
 package ca.unb.ktb.core.model;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import javax.persistence.Entity;
@@ -20,7 +22,9 @@ import javax.validation.constraints.Size;
 @EntityListeners(AuditingEntityListener.class)
 @NoArgsConstructor
 @AllArgsConstructor
-@Data
+@Getter
+@Setter
+@ToString
 public class PhysicalAddress extends PersistentObject {
 
     public PhysicalAddress(final Long id) {
@@ -44,18 +48,4 @@ public class PhysicalAddress extends PersistentObject {
 
     @Size(max = 255)
     private String postalCode;
-
-    @Override
-    public boolean equals(Object object) {
-        if (object == this) {
-            return true;
-        }
-
-        if(!(object instanceof PhysicalAddress)) {
-            return false;
-        }
-
-        PhysicalAddress other = (PhysicalAddress)object;
-        return (other.getId() == null ? this.getId() == null : other.getId().equals(this.getId()));
-    }
 }

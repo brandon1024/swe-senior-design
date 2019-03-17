@@ -4,8 +4,10 @@ import ca.unb.ktb.core.model.validation.Username;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import javax.persistence.Column;
@@ -29,7 +31,9 @@ import javax.validation.constraints.Size;
 @EntityListeners(AuditingEntityListener.class)
 @NoArgsConstructor
 @AllArgsConstructor
-@Data
+@Getter
+@Setter
+@ToString
 public class User extends PersistentObject {
 
     public enum Role {
@@ -79,6 +83,9 @@ public class User extends PersistentObject {
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private Role role;
 
+    @JsonIgnore
+    private String profilePictureObjectKey;
+
     /**
      * Build the user handle string for this user. A user handle is the '@' symbol, followed by the username.
      *
@@ -86,19 +93,5 @@ public class User extends PersistentObject {
      * */
     public String getUserHandle() {
         return "@" + this.username;
-    }
-
-    @Override
-    public boolean equals(Object object) {
-        if (object == this) {
-            return true;
-        }
-
-        if(!(object instanceof User)) {
-            return false;
-        }
-
-        User other = (User)object;
-        return (other.getId() == null ? this.getId() == null : other.getId().equals(this.getId()));
     }
 }

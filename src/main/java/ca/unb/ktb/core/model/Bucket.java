@@ -1,8 +1,10 @@
 package ca.unb.ktb.core.model;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import javax.persistence.Column;
@@ -24,7 +26,9 @@ import javax.validation.constraints.Size;
 @EntityListeners(AuditingEntityListener.class)
 @NoArgsConstructor
 @AllArgsConstructor
-@Data
+@Getter
+@Setter
+@ToString
 public class Bucket extends PersistentObject {
 
     public Bucket(final Long id) {
@@ -44,18 +48,4 @@ public class Bucket extends PersistentObject {
 
     @Column(columnDefinition = "TEXT")
     private String description;
-
-    @Override
-    public boolean equals(Object object) {
-        if (object == this) {
-            return true;
-        }
-
-        if(!(object instanceof Bucket)) {
-            return false;
-        }
-
-        Bucket other = (Bucket)object;
-        return (other.getId() == null ? this.getId() == null : other.getId().equals(this.getId()));
-    }
 }

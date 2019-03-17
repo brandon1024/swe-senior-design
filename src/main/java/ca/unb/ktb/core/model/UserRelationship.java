@@ -1,8 +1,10 @@
 package ca.unb.ktb.core.model;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import javax.persistence.Entity;
@@ -24,7 +26,9 @@ import javax.validation.constraints.NotNull;
 @EntityListeners(AuditingEntityListener.class)
 @NoArgsConstructor
 @AllArgsConstructor
-@Data
+@Getter
+@Setter
+@ToString
 public class UserRelationship extends PersistentObject {
 
     public UserRelationship(final Long id) {
@@ -38,18 +42,4 @@ public class UserRelationship extends PersistentObject {
     @NotNull
     @ManyToOne
     private User following;
-
-    @Override
-    public boolean equals(Object object) {
-        if (object == this) {
-            return true;
-        }
-
-        if(!(object instanceof UserRelationship)) {
-            return false;
-        }
-
-        UserRelationship other = (UserRelationship)object;
-        return (other.getId() == null ? this.getId() == null : other.getId().equals(this.getId()));
-    }
 }

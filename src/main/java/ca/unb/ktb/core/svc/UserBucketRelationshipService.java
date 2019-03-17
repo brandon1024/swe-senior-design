@@ -54,7 +54,7 @@ public class UserBucketRelationshipService {
 
         UserBucketRelationship relationship = new UserBucketRelationship(follower, following);
         relationship = saveUserBucketRelationship(relationship);
-        return adaptUserToSummary(relationship);
+        return adaptUserBucketRelationshipToSummary(relationship);
     }
 
     /**
@@ -107,7 +107,7 @@ public class UserBucketRelationshipService {
      * @param userBucketRelationship The relationship to be used to build a UserBucketRelationshipSummaryResponse.
      * @return A summary of the relationship.
      * */
-    public static UserBucketRelationshipSummaryResponse adaptUserToSummary(final UserBucketRelationship userBucketRelationship) {
+    public static UserBucketRelationshipSummaryResponse adaptUserBucketRelationshipToSummary(final UserBucketRelationship userBucketRelationship) {
         return new UserBucketRelationshipSummaryResponse(userBucketRelationship.getFollower().getId(),
                 userBucketRelationship.getFollowing().getId());
     }

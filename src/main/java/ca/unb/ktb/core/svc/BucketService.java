@@ -25,6 +25,8 @@ public class BucketService {
 
     @Autowired private ItemService itemService;
 
+    @Autowired private UserService userService;
+
     @Autowired private UserDAO userDAO;
 
     @Autowired private BucketDAO bucketDAO;
@@ -172,7 +174,7 @@ public class BucketService {
 
         return userBucketRelationshipDAO.findAllByFollowing(bucket).stream()
                 .map(UserBucketRelationship::getFollower)
-                .map(UserService::adaptUserToSummary)
+                .map(userService::adaptUserToSummary)
                 .collect(Collectors.toList());
     }
 

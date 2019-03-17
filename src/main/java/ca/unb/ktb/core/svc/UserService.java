@@ -5,6 +5,7 @@ import ca.unb.ktb.api.dto.response.UserProfileSummaryResponse;
 import ca.unb.ktb.api.dto.response.UserRelationshipSummaryResponse;
 import ca.unb.ktb.api.dto.response.UserSummaryResponse;
 import ca.unb.ktb.api.exception.client.BadRequestException;
+import ca.unb.ktb.api.exception.server.InternalServerErrorException;
 import ca.unb.ktb.application.dao.PhysicalAddressDAO;
 import ca.unb.ktb.application.dao.UserBucketRelationshipDAO;
 import ca.unb.ktb.application.dao.UserDAO;
@@ -13,6 +14,11 @@ import ca.unb.ktb.core.model.PhysicalAddress;
 import ca.unb.ktb.core.model.User;
 import ca.unb.ktb.core.model.UserRelationship;
 import ca.unb.ktb.core.model.validation.EntityValidator;
+import ca.unb.ktb.core.svc.exception.MissingS3BucketConfigurationException;
+import ca.unb.ktb.infrastructure.AmazonS3Bucket;
+import ca.unb.ktb.infrastructure.AmazonS3BucketConfiguration;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.ExampleMatcher;
@@ -20,12 +26,16 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.lang.Nullable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class UserService {
 
     @Autowired private UserDAO userDAO;
@@ -37,6 +47,10 @@ public class UserService {
     @Autowired private PhysicalAddressDAO physicalAddressDAO;
 
     @Autowired private PasswordEncoder passwordEncoder;
+
+    @Autowired private AmazonS3ClientService s3ClientService;
+
+    @Autowired private AmazonS3BucketConfiguration bucketConfiguration;
 
     /**
      * Create a new {@link User}.
@@ -104,7 +118,7 @@ public class UserService {
         List<User> queriedUsers = userDAO.findAll(Example.of(queryUser, ExampleMatcher.matchingAny()));
 
         return queriedUsers.stream()
-                .map(UserService::adaptUserToSummary)
+                .map(this::adaptUserToSummary)
                 .collect(Collectors.toList());
     }
 
@@ -119,7 +133,7 @@ public class UserService {
         List<User> queriedUsers = userDAO.findAllByUsernameOrRealNameLike(queryString, pageable);
 
         return queriedUsers.stream()
-                .map(UserService::adaptUserToSummary)
+                .map(this::adaptUserToSummary)
                 .collect(Collectors.toList());
     }
 
@@ -150,7 +164,7 @@ public class UserService {
 
         return relationships.stream()
                 .map(UserRelationship::getFollower)
-                .map(UserService::adaptUserToSummary)
+                .map(this::adaptUserToSummary)
                 .collect(Collectors.toList());
     }
 
@@ -167,7 +181,7 @@ public class UserService {
 
         return relationships.stream()
                 .map(UserRelationship::getFollowing)
-                .map(UserService::adaptUserToSummary)
+                .map(this::adaptUserToSummary)
                 .collect(Collectors.toList());
     }
 
@@ -270,6 +284,60 @@ public class UserService {
         return adaptUserToSummary(response);
     }
 
+
+    /**
+     * Update a user's profile image with a new image, and return a summary of the user with a presigned URL for
+     * retrieving their new profile picture.
+     *
+     * Images are stored in the bucket under the following path:
+     * s3://{bucket name}/{user id}/{file md5 hash}.{original filename}
+     *
+     * Images are uploaded to the bucket configured through the Spring environment. The key to the new object is stored
+     * under the User's model.
+     *
+     * The following image metadata is attached to the object before upload:
+     * - username: the name of the user
+     * - original-filename: the original name of the file
+     *
+     * @param userId The id of the user which will receive the new profile picture.
+     * @param file The new profile picture.
+     * @return A summary of the updated user.
+     * @throws MissingS3BucketConfigurationException If the USER_PROFILE bucket could not be found in the spring configuration.
+     * @throws InternalServerErrorException If an unexpected exception occurred.
+     * */
+    public UserSummaryResponse updateProfilePicture(final Long userId, final MultipartFile file) {
+        User user = userDAO.findById(userId)
+                .orElseThrow(() -> new BadRequestException("Unable to find user with id " + userId));
+
+        AmazonS3Bucket bucket = bucketConfiguration.getBuckets().get(AmazonS3BucketConfiguration.userProfileImageBucket);
+        if(Objects.isNull(bucket)) {
+            LOG.warn("Attempted to retrieve an S3 Bucket configuration that could not be found." +
+                    "Perhaps a misconfiguration of Spring?");
+            throw new MissingS3BucketConfigurationException(String.format("Missing AWS S3 configuration; could not" +
+                            "retrieve bucket configuration with key %s.",
+                    AmazonS3BucketConfiguration.userProfileImageBucket));
+        }
+
+        ObjectMetadata imageMetadata = new ObjectMetadata();
+        imageMetadata.addUserMetadata("username", user.getUsername());
+        imageMetadata.addUserMetadata("original-filename", file.getOriginalFilename());
+
+        try {
+            String objectId = s3ClientService.multipartFileUpload(file, imageMetadata, bucket, userId.toString());
+            user.setProfilePictureObjectKey(objectId);
+        } catch (InterruptedException e) {
+            throw new InternalServerErrorException("Image upload interrupted unexpectedly.", e);
+        } catch (IOException e) {
+            throw new InternalServerErrorException("Image upload failed due to unexpected exception.", e);
+        } catch (NoSuchAlgorithmException e) {
+            throw new InternalServerErrorException("Could not compute MD5 checksum of uploaded file.", e);
+        }
+
+        userDAO.save(user);
+
+        return adaptUserToSummary(user);
+    }
+
     /**
      * Delete a {@link User}, along with its user relationships.
      *
@@ -355,9 +423,12 @@ public class UserService {
      * @param user The user to be used to build a UserSummaryResponse.
      * @return A summary of the user.
      * */
-    public static UserSummaryResponse adaptUserToSummary(final User user) {
+    public UserSummaryResponse adaptUserToSummary(final User user) {
+        AmazonS3Bucket bucket = bucketConfiguration.getBucket(AmazonS3BucketConfiguration.userProfileImageBucket);
+        String presignedUrl = s3ClientService.generatePresignedObjectURL(bucket, user.getProfilePictureObjectKey());
+
         return new UserSummaryResponse(user.getId(), user.getUsername(), user.getEmail(), user.getBio(),
-                user.getFirstName(), user.getMiddleName(), user.getLastName());
+                user.getFirstName(), user.getMiddleName(), user.getLastName(), presignedUrl);
     }
 
     /**
@@ -378,19 +449,18 @@ public class UserService {
      * @throws BadRequestException if the user cannot be found with the specific id.
      * */
     public UserProfileSummaryResponse constructProfileSummary(final Long userId, final Long initiatorId) {
-
-        User user = userDAO.findById(userId).orElseThrow(() -> new BadRequestException("Unable to find user with id " +
-                userId));
-        UserSummaryResponse userSummary = adaptUserToSummary(user);
+        User user = userDAO.findById(userId).orElseThrow(() ->
+                new BadRequestException("Unable to find user with id " + userId));
 
         int bucketCount;
         if(Objects.equals(userId, initiatorId)){
             bucketCount = userBucketRelationshipDAO.findPublicBucketCount(user) +
                     userBucketRelationshipDAO.findPrivateBucketCount(user);
-        }else{
+        } else{
             bucketCount = userBucketRelationshipDAO.findPublicBucketCount(user);
         }
 
+        UserSummaryResponse userSummary = adaptUserToSummary(user);
         return new UserProfileSummaryResponse(userSummary, userRelationshipDAO.findFollowerCount(user),
                 userRelationshipDAO.findFollowingCount(user), bucketCount, user.getCreatedAt());
     }

@@ -1,8 +1,10 @@
 package ca.unb.ktb.core.model;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import javax.persistence.Column;
@@ -24,7 +26,9 @@ import javax.validation.constraints.Size;
 @EntityListeners(AuditingEntityListener.class)
 @NoArgsConstructor
 @AllArgsConstructor
-@Data
+@Getter
+@Setter
+@ToString
 public class Item extends PersistentObject {
 
     public Item(final Long id) {
@@ -48,18 +52,4 @@ public class Item extends PersistentObject {
 
     @NotNull
     private Boolean isComplete;
-
-    @Override
-    public boolean equals(Object object) {
-        if (object == this) {
-            return true;
-        }
-
-        if(!(object instanceof Item)) {
-            return false;
-        }
-
-        Item other = (Item)object;
-        return (other.getId() == null ? this.getId() == null : other.getId().equals(this.getId()));
-    }
 }

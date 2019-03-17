@@ -61,6 +61,18 @@ Although it isn't necessarily required, JetBrains DataGrip is a very useful tool
 
 Click the `Test Connection` to ensure you're able to connect to the PostgreSQL server.
 
+## Spring Configuration
+If you plan to use the Amazon S3 integration through the user profile picture upload API, you will need to configure your local development environment with the necessary credentials for communicating with AWS S3.
+
+First, you will need to obtain the `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` for the development IAM user. This provides programmatic access to the S3 buckets for development.
+
+Next, configure your IDE Run Configuration with the credentials provided as environment variables, of if you are executing the server from the command line, you will need to export the environment variables:
+```
+export AWS_ACCESS_KEY_ID=<your access key>
+export AWS_SECRET_ACCESS_KEY=<your secret key>
+./gradlew bootRun
+```
+
 ## Running the Server
 Run the following at the command line from the root of the project.
 ```

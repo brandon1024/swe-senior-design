@@ -7,4 +7,8 @@ abstract class ServerErrorException extends HttpException {
     ServerErrorException(String message) {
         super(message);
     }
+
+    ServerErrorException(String message, Throwable throwable) {
+        super(message, throwable);
+    }
 }

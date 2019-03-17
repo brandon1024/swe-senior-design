@@ -42,4 +42,23 @@ public abstract class PersistentObject implements Serializable {
     @Temporal(TemporalType.TIMESTAMP)
     @LastModifiedDate
     private Date updatedAt;
+
+    @Override
+    public boolean equals(Object object) {
+        if (object == this) {
+            return true;
+        }
+
+        if(!(object instanceof PersistentObject)) {
+            return false;
+        }
+
+        PersistentObject other = (PersistentObject)object;
+        return (other.getId() == null ? this.getId() == null : other.getId().equals(this.getId()));
+    }
+
+    @Override
+    public int hashCode() {
+        return this.id == null ? super.hashCode() : this.id.intValue();
+    }
 }

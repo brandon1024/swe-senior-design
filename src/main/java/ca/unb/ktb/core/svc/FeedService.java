@@ -5,7 +5,6 @@ import ca.unb.ktb.api.dto.response.ItemSummaryResponse;
 import ca.unb.ktb.api.dto.response.UserFeedResponse;
 import ca.unb.ktb.api.dto.response.UserSummaryResponse;
 import ca.unb.ktb.api.exception.client.BadRequestException;
-import ca.unb.ktb.api.exception.server.InternalServerErrorException;
 import ca.unb.ktb.application.dao.BucketDAO;
 import ca.unb.ktb.application.dao.ItemDAO;
 import ca.unb.ktb.application.dao.UserBucketRelationshipDAO;
@@ -13,7 +12,6 @@ import ca.unb.ktb.application.dao.UserDAO;
 import ca.unb.ktb.application.dao.UserRelationshipDAO;
 import ca.unb.ktb.core.model.Bucket;
 import ca.unb.ktb.core.model.Item;
-import ca.unb.ktb.core.model.PersistentObject;
 import ca.unb.ktb.core.model.User;
 import ca.unb.ktb.core.model.UserBucketRelationship;
 import ca.unb.ktb.core.model.UserRelationship;
@@ -39,6 +37,8 @@ public class FeedService {
     @Autowired private UserRelationshipDAO userRelationshipDAO;
 
     @Autowired private UserBucketRelationshipDAO userBucketRelationshipDAO;
+
+    @Autowired private UserService userService;
 
     /**
      * Retrieve a map of users who are followed by the user with the given user id and have recently created buckets.
@@ -67,7 +67,7 @@ public class FeedService {
 
         List<UserFeedResponse.UserBucketPair> response = new ArrayList<>();
         for(Map.Entry<User, List<Bucket>> entry : followedUserBuckets.entrySet()) {
-            UserSummaryResponse userSummary = UserService.adaptUserToSummary(entry.getKey());
+            UserSummaryResponse userSummary = userService.adaptUserToSummary(entry.getKey());
             List<BucketSummaryResponse> bucketSummaryResponses = entry.getValue().stream()
                     .map(BucketService::adaptBucketToBucketSummary)
                     .collect(Collectors.toList());
@@ -104,7 +104,7 @@ public class FeedService {
 
         List<UserFeedResponse.UserItemPair> response = new ArrayList<>();
         for(Map.Entry<User, List<Item>> entry : followedUserItems.entrySet()) {
-            UserSummaryResponse userSummary = UserService.adaptUserToSummary(entry.getKey());
+            UserSummaryResponse userSummary = userService.adaptUserToSummary(entry.getKey());
             List<ItemSummaryResponse> itemSummaryResponses = entry.getValue().stream()
                     .map(ItemService::adaptItemToItemSummary)
                     .collect(Collectors.toList());
@@ -142,9 +142,9 @@ public class FeedService {
 
         List<UserFeedResponse.UserUserPair> response = new ArrayList<>();
         for(Map.Entry<User, List<User>> entry : followedUserNewRelationships.entrySet()) {
-            UserSummaryResponse followerSummary = UserService.adaptUserToSummary(entry.getKey());
+            UserSummaryResponse followerSummary = userService.adaptUserToSummary(entry.getKey());
             List<UserSummaryResponse> followingSummaries = entry.getValue().stream()
-                    .map(UserService::adaptUserToSummary)
+                    .map(userService::adaptUserToSummary)
                     .collect(Collectors.toList());
 
             response.add(new UserFeedResponse.UserUserPair(followerSummary, followingSummaries));
@@ -181,7 +181,7 @@ public class FeedService {
 
         List<UserFeedResponse.UserBucketPair> response = new ArrayList<>();
         for(Map.Entry<User, List<Bucket>> entry : followedUserNewBucketRelationships.entrySet()) {
-            UserSummaryResponse followerSummary = UserService.adaptUserToSummary(entry.getKey());
+            UserSummaryResponse followerSummary = userService.adaptUserToSummary(entry.getKey());
             List<BucketSummaryResponse> followingSummaries = entry.getValue().stream()
                     .map(BucketService::adaptBucketToBucketSummary)
                     .collect(Collectors.toList());
@@ -240,7 +240,7 @@ public class FeedService {
 
         List<UserRelationship> relationships = userRelationshipDAO.retrieveUsersFollowedByUser(userId, pageable);
         List<UserSummaryResponse> userSummaryResponses = relationships.stream()
-                .map(r -> UserService.adaptUserToSummary(r.getFollowing()))
+                .map(r -> userService.adaptUserToSummary(r.getFollowing()))
                 .collect(Collectors.toList());
 
         return new UserFeedResponse(null, null, userSummaryResponses, null, null, null, null, null);
