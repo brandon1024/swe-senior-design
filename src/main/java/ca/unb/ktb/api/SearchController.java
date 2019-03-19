@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.validation.constraints.Size;
 import java.util.List;
 
-import static org.springframework.data.domain.Sort.Direction.ASC;
+import static org.springframework.data.domain.Sort.Direction;
 
 @RestController
 @Slf4j
@@ -46,16 +46,20 @@ public class SearchController {
      * */
     @ApiOperation(value = "Search for users, buckets, and items by query string.", response = SearchQueryResponse.class)
     @RequestMapping(value = "/search", method = RequestMethod.GET)
-    public ResponseEntity<SearchQueryResponse> search(@Size(min = 3, message = "Search query must be at least 3 characters in length") @RequestParam(name = "query") final String query,
-                                                      @RequestParam(name = "page", defaultValue = "0", required = false) final Integer page,
-                                                      @RequestParam(name = "size", defaultValue = "20", required = false) final Integer size,
-                                                      @RequestParam(name = "userSort", defaultValue = "username", required = false) final String userSort,
-                                                      @RequestParam(name = "bucketSort", defaultValue = "name", required = false) final String bucketSort,
-                                                      @RequestParam(name = "itemSort", defaultValue = "name", required = false) final String itemSort) {
-
-        List<UserSummaryResponse> users = userService.findUsersByUsernameOrRealName(query, PageRequest.of(page, size, ASC, userSort));
-        List<BucketSummaryResponse> buckets = bucketService.findBucketsByName(query, PageRequest.of(page, size, ASC, bucketSort));
-        List<ItemSummaryResponse> items = itemService.findItemsByName(query,  PageRequest.of(page, size, ASC, itemSort));
+    public ResponseEntity<SearchQueryResponse> search(
+            @Size(min = 3, message = "Search query must be at least 3 characters in length")
+            @RequestParam(name = "query") final String query,
+            @RequestParam(name = "page", defaultValue = "0", required = false) final Integer page,
+            @RequestParam(name = "size", defaultValue = "20", required = false) final Integer size,
+            @RequestParam(name = "userSort", defaultValue = "username", required = false) final String userSort,
+            @RequestParam(name = "bucketSort", defaultValue = "name", required = false) final String bucketSort,
+            @RequestParam(name = "itemSort", defaultValue = "name", required = false) final String itemSort) {
+        List<UserSummaryResponse> users =
+                userService.findUsersByUsernameOrRealName(query, PageRequest.of(page, size, Direction.ASC, userSort));
+        List<BucketSummaryResponse> buckets =
+                bucketService.findBucketsByName(query, PageRequest.of(page, size, Direction.ASC, bucketSort));
+        List<ItemSummaryResponse> items =
+                itemService.findItemsByName(query, PageRequest.of(page, size, Direction.ASC, itemSort));
 
         return new ResponseEntity<>(new SearchQueryResponse(users, buckets, items), HttpStatus.OK);
     }

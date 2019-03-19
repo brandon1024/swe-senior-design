@@ -38,4 +38,17 @@ public class UserBucketRelationship extends PersistentObject {
     @ManyToOne
     private Bucket following;
 
+    @Override
+    public boolean equals(Object object) {
+        if (object == this) {
+            return true;
+        }
+
+        if(!(object instanceof UserBucketRelationship)) {
+            return false;
+        }
+
+        UserBucketRelationship other = (UserBucketRelationship)object;
+        return (other.getId() == null ? this.getId() == null : other.getId().equals(this.getId()));
+    }
 }

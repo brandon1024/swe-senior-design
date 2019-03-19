@@ -3,6 +3,7 @@ package ca.unb.ktb.application.dao;
 import ca.unb.ktb.core.model.Bucket;
 import ca.unb.ktb.core.model.User;
 import ca.unb.ktb.core.model.UserBucketRelationship;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -62,4 +63,45 @@ public interface UserBucketRelationshipDAO extends JpaRepository<UserBucketRelat
     @Query("SELECT COUNT(owner) FROM Bucket b WHERE b.owner = :owner AND b.isPublic = false")
     int findPrivateBucketCount(@Param("owner") User owner);
 
+    /**
+     * Retrieve a list of buckets which were recently followed by users who are followed by a given user.
+     *
+     * Results are sorted by the user_relationship created_at field. As such, the pageable should be unsorted.
+     *
+     * @param followerId the id of the current user.
+     * @param pageable pagination details.
+     * @return list of UserBucketRelationships, sorted by their relationship created_at date, for relationships between
+     * buckets and the followers of a given user.
+     */
+    @Query(value = "SELECT ubr.* FROM users_relationships ur " +
+            "INNER JOIN users_bucket_relationships ubr ON (ur.following_id = ubr.follower_id) " +
+            "WHERE ur.follower_id = :followerId " +
+            "ORDER BY ubr.created_at DESC",
+            countQuery = "SELECT COUNT(ubr.*) FROM users_relationships ur " +
+                    "INNER JOIN users_bucket_relationships ubr ON (ur.following_id = ubr.follower_id) " +
+                    "WHERE ur.follower_id = :followerId " +
+                    "ORDER BY ubr.created_at DESC",
+            nativeQuery = true)
+    List<UserBucketRelationship> retrieveBucketsFollowedByFollowedUsers(@Param("followerId") final Long followerId,
+                                                                        final Pageable pageable);
+
+    /**
+     * Retrieve a list of buckets which were recently followed by a given user.
+     *
+     * Results are sorted by the user_relationship created_at field. As such, the pageable should be unsorted.
+     *
+     * @param userId the id of the current user.
+     * @param pageable pagination details.
+     * @return list of UserBucketRelationships, sorted by their relationship created_at date, for relationships between
+     * a given user and buckets they are following.
+     */
+    @Query(value = "SELECT users_bucket_relationships.* FROM users_bucket_relationships " +
+            "WHERE users_bucket_relationships.follower_id = :userId " +
+            "ORDER BY users_bucket_relationships.created_at DESC",
+            countQuery = "SELECT users_bucket_relationships.* FROM users_bucket_relationships " +
+                    "WHERE users_bucket_relationships.follower_id = :userId " +
+                    "ORDER BY users_bucket_relationships.created_at DESC",
+            nativeQuery = true)
+    List<UserBucketRelationship> retrieveBucketsFollowedByUser(@Param("userId") final Long userId,
+                                                               final Pageable pageable);
 }

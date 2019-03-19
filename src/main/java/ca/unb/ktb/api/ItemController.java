@@ -1,10 +1,10 @@
 package ca.unb.ktb.api;
 
+import ca.unb.ktb.api.dto.response.ItemSummaryResponse;
 import ca.unb.ktb.api.exception.client.UnauthorizedException;
 import ca.unb.ktb.core.model.Item;
 import ca.unb.ktb.core.svc.ItemService;
 import ca.unb.ktb.infrastructure.security.UserPrincipal;
-import ca.unb.ktb.api.dto.response.ItemSummaryResponse;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,7 +12,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Objects;
@@ -35,7 +40,9 @@ public class ItemController {
      * @throws UnauthorizedException If the authenticated principal user does not match the user in the path variable.
      * */
     @ApiOperation(value = "Create a new item.", response = ItemSummaryResponse.class)
-    @RequestMapping(value = "/users/{ownerId}/buckets/{bucketId}/items", method = RequestMethod.POST, consumes = "application/json")
+    @RequestMapping(value = "/users/{ownerId}/buckets/{bucketId}/items",
+            method = RequestMethod.POST,
+            consumes = "application/json")
     public ResponseEntity<ItemSummaryResponse> createItem(@PathVariable(name = "ownerId") final Long ownerId,
                                                           @PathVariable(name = "bucketId") final Long bucketId,
                                                           @RequestBody final Item item,
@@ -57,7 +64,9 @@ public class ItemController {
      * @param auth The authentication token.
      * @return A list of buckets associated to a given user. HTTP OK.
      * */
-    @ApiOperation(value = "Retrieve a list of items associated to a specific bucket.", response = ItemSummaryResponse.class, responseContainer = "List")
+    @ApiOperation(value = "Retrieve a list of items associated to a specific bucket.",
+            response = ItemSummaryResponse.class,
+            responseContainer = "List")
     @RequestMapping(value = "/users/{userId}/buckets/{bucketId}/items", method = RequestMethod.GET)
     public ResponseEntity<List<ItemSummaryResponse>> findItems(@PathVariable(name = "userId") final Long ownerId,
                                                                @PathVariable(name = "bucketId") final Long bucketId,
@@ -80,7 +89,8 @@ public class ItemController {
      * may be returned, otherwise only returns a public bucket. HTTP OK.
      * @see ItemService#findItemById(Long, Long, boolean)
      * */
-    @ApiOperation(value = "Retrieve a specific item associated to a specific bucket and user.", response = ItemSummaryResponse.class)
+    @ApiOperation(value = "Retrieve a specific item associated to a specific bucket and user.",
+            response = ItemSummaryResponse.class)
     @RequestMapping(value = "/users/{ownerId}/buckets/{bucketId}/items/{itemId}", method = RequestMethod.GET)
     public ResponseEntity<ItemSummaryResponse> findItemById(@PathVariable(name = "ownerId") final Long ownerId,
                                                             @PathVariable(name = "bucketId") final Long bucketId,
@@ -102,8 +112,11 @@ public class ItemController {
      * @return The patched item. HTTP OK.
      * @throws UnauthorizedException If the authenticated principal user does not match the user in the path variable.
      * */
-    @ApiOperation(value = "Update fields in an item that is currently persisted in the database.", response = ItemSummaryResponse.class)
-    @RequestMapping(value = "/users/{ownerId}/buckets/{bucketId}/items/{itemId}", method = RequestMethod.PATCH, consumes = "application/json")
+    @ApiOperation(value = "Update fields in an item that is currently persisted in the database.",
+            response = ItemSummaryResponse.class)
+    @RequestMapping(value = "/users/{ownerId}/buckets/{bucketId}/items/{itemId}",
+            method = RequestMethod.PATCH,
+            consumes = "application/json")
     public ResponseEntity<ItemSummaryResponse> patchItem(@PathVariable(name = "ownerId") final Long ownerId,
                                                          @PathVariable(name = "bucketId") final Long bucketId,
                                                          @PathVariable(name = "itemId") final Long itemId,
@@ -129,8 +142,11 @@ public class ItemController {
      * @return The updated item. HTTP OK.
      * @throws UnauthorizedException If the authenticated principal user does not match the user in the path variable.
      * */
-    @ApiOperation(value = "Completely update an item that is currently persisted in the database.", response = ItemSummaryResponse.class)
-    @RequestMapping(value = "/users/{ownerId}/buckets/{bucketId}/items/{itemId}", method = RequestMethod.PUT, consumes = "application/json")
+    @ApiOperation(value = "Completely update an item that is currently persisted in the database.",
+            response = ItemSummaryResponse.class)
+    @RequestMapping(value = "/users/{ownerId}/buckets/{bucketId}/items/{itemId}",
+            method = RequestMethod.PUT,
+            consumes = "application/json")
     public ResponseEntity<ItemSummaryResponse> updateItem(@PathVariable(name = "ownerId") final Long ownerId,
                                                           @PathVariable(name = "bucketId") final Long bucketId,
                                                           @PathVariable(name = "itemId") final Long itemId,
@@ -183,7 +199,10 @@ public class ItemController {
      * @see ItemService#duplicateItem(Long, Long, Long, Long)
      * */
     @ApiOperation(value = "Create a new item from an existing item.", response = ItemSummaryResponse.class)
-    @RequestMapping(value = "/users/{id}/buckets/{bucketId}/items/{itemId}", method = RequestMethod.POST, consumes = "application/json", params = {"from"})
+    @RequestMapping(value = "/users/{id}/buckets/{bucketId}/items/{itemId}",
+            method = RequestMethod.POST,
+            consumes = "application/json",
+            params = {"from"})
     public ResponseEntity<ItemSummaryResponse> duplicateItem(@PathVariable(name = "id") final Long ownerId,
                                                              @PathVariable(name = "bucketId") final Long toBucket,
                                                              @PathVariable(name = "itemId") final Long itemId,

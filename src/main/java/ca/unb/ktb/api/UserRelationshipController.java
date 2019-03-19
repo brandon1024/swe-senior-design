@@ -1,13 +1,13 @@
 package ca.unb.ktb.api;
 
+import ca.unb.ktb.api.dto.response.UserRelationshipSummaryResponse;
+import ca.unb.ktb.api.dto.response.UserSummaryResponse;
 import ca.unb.ktb.api.exception.client.BadRequestException;
 import ca.unb.ktb.api.exception.client.UnauthorizedException;
 import ca.unb.ktb.core.model.User;
 import ca.unb.ktb.core.model.UserRelationship;
 import ca.unb.ktb.core.svc.UserService;
 import ca.unb.ktb.infrastructure.security.UserPrincipal;
-import ca.unb.ktb.api.dto.response.UserRelationshipSummaryResponse;
-import ca.unb.ktb.api.dto.response.UserSummaryResponse;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,9 +47,10 @@ public class UserRelationshipController {
      * */
     @ApiOperation(value = "Create a new user relationship.", response = UserRelationshipSummaryResponse.class)
     @RequestMapping(value = "/{id}/following", method = RequestMethod.POST)
-    public ResponseEntity<UserRelationshipSummaryResponse> createUserRelationship(@PathVariable(name = "id") final Long initiatorId,
-                                                                                  @RequestParam(name = "id") final Long subjectId,
-                                                                                  @AuthenticationPrincipal final Authentication auth) {
+    public ResponseEntity<UserRelationshipSummaryResponse> createUserRelationship(
+            @PathVariable(name = "id") final Long initiatorId,
+            @RequestParam(name = "id") final Long subjectId,
+            @AuthenticationPrincipal final Authentication auth) {
         UserPrincipal currentUser = (UserPrincipal) auth.getPrincipal();
         if(!Objects.equals(currentUser.getId(), initiatorId)) {
             throw new UnauthorizedException("Insufficient permissions.");
@@ -69,7 +70,9 @@ public class UserRelationshipController {
      * @param subjectId The id of the user to be used in the query.
      * @return A list of users that are following the user with the given id. HTTP OK.
      * */
-    @ApiOperation(value = "Retrieve a list of users that are following a given user.", response = UserSummaryResponse.class, responseContainer = "List")
+    @ApiOperation(value = "Retrieve a list of users that are following a given user.",
+            response = UserSummaryResponse.class,
+            responseContainer = "List")
     @RequestMapping(value = "/{id}/followers", method = RequestMethod.GET)
     public ResponseEntity<List<UserSummaryResponse>> findFollowers(@PathVariable(name = "id") final Long subjectId) {
         List<UserSummaryResponse> response = userService.findFollowers(subjectId);
@@ -82,7 +85,9 @@ public class UserRelationshipController {
      * @param subjectId The id of the user to be used in the query.
      * @return A list of users that are followed by the user with the given id. HTTP OK.
      * */
-    @ApiOperation(value = "Retrieve a list of users that are followed by a given user.", response = UserSummaryResponse.class, responseContainer = "List")
+    @ApiOperation(value = "Retrieve a list of users that are followed by a given user.",
+            response = UserSummaryResponse.class,
+            responseContainer = "List")
     @RequestMapping(value = "/{id}/following", method = RequestMethod.GET)
     public ResponseEntity<List<UserSummaryResponse>> findFollowing(@PathVariable(name = "id") final Long subjectId) {
         List<UserSummaryResponse> response = userService.findFollowing(subjectId);

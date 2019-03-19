@@ -1,10 +1,10 @@
 package ca.unb.ktb.api;
 
+import ca.unb.ktb.api.dto.response.BucketSummaryResponse;
+import ca.unb.ktb.api.dto.response.UserBucketRelationshipSummaryResponse;
 import ca.unb.ktb.api.exception.client.UnauthorizedException;
 import ca.unb.ktb.core.svc.UserBucketRelationshipService;
 import ca.unb.ktb.infrastructure.security.UserPrincipal;
-import ca.unb.ktb.api.dto.response.BucketSummaryResponse;
-import ca.unb.ktb.api.dto.response.UserBucketRelationshipSummaryResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -37,9 +37,10 @@ public class UserBucketRelationshipController {
      * @throws UnauthorizedException If the principal user does not match the initiator.
      * */
     @RequestMapping(value = "/users/{id}/following_bucket", method = RequestMethod.POST)
-    public ResponseEntity<UserBucketRelationshipSummaryResponse> createUserBucketRelationship(@PathVariable(name = "id") final Long initiatorId,
-                                                                                              @RequestParam(name = "id") final Long bucketId,
-                                                                                              @AuthenticationPrincipal final Authentication auth) {
+    public ResponseEntity<UserBucketRelationshipSummaryResponse> createUserBucketRelationship(
+            @PathVariable(name = "id") final Long initiatorId,
+            @RequestParam(name = "id") final Long bucketId,
+            @AuthenticationPrincipal final Authentication auth) {
         UserPrincipal currentUser = (UserPrincipal) auth.getPrincipal();
         if(!Objects.equals(currentUser.getId(), initiatorId)) {
             throw new UnauthorizedException("Insufficient permissions.");
@@ -56,7 +57,8 @@ public class UserBucketRelationshipController {
      * @return A list of bucket summaries representing all the buckets the user is following. HTTP OK.
      * */
     @RequestMapping(value = "/users/{id}/following_bucket", method = RequestMethod.GET)
-    public ResponseEntity<List<BucketSummaryResponse>> findUsersFollowingBucket(@PathVariable(name = "id") final Long subjectId) {
+    public ResponseEntity<List<BucketSummaryResponse>> findUsersFollowingBucket(
+            @PathVariable(name = "id") final Long subjectId) {
         List<BucketSummaryResponse> response = userBucketRelationshipService.findBucketsFollowedByUser(subjectId);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
@@ -71,9 +73,10 @@ public class UserBucketRelationshipController {
      * @throws UnauthorizedException If the principal user does not match the initiator.
      * */
     @RequestMapping(value = "/users/{id}/following_bucket", method = RequestMethod.DELETE)
-    public ResponseEntity<?> deleteUserBucketRelationship(@PathVariable(value = "id") final Long initiatorId,
-                                                    @RequestParam(value = "id") final Long subjectId,
-                                                    @AuthenticationPrincipal final Authentication auth) {
+    public ResponseEntity<?> deleteUserBucketRelationship(
+            @PathVariable(value = "id") final Long initiatorId,
+            @RequestParam(value = "id") final Long subjectId,
+            @AuthenticationPrincipal final Authentication auth) {
         UserPrincipal currentUser = (UserPrincipal) auth.getPrincipal();
         if(!Objects.equals(currentUser.getId(), initiatorId)) {
             throw new UnauthorizedException("Insufficient permissions.");

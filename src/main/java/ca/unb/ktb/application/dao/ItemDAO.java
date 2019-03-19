@@ -35,4 +35,47 @@ public interface ItemDAO extends JpaRepository<Item, Long> {
             countQuery = "SELECT COUNT(*) FROM items WHERE buckets.name ILIKE %:partialItemName%",
             nativeQuery = true)
     List<Item> findAllByNameLike(@Param("partialItemName") final String partialItemName, final Pageable pageable);
+
+    /**
+     * Retrieve a list of items which were recently created by users who are follwed by a given user.
+     *
+     * Results are sorted by the item created_at field. As such, the pageable should be unsorted.
+     *
+     * @param followerId the id of the current user.
+     * @param pageable pagination details.
+     * @return list of items, sorted by created_at, recently created by the followers of a given user.
+     * */
+    @Query(value = "SELECT items.* FROM users_relationships " +
+            "INNER JOIN buckets ON (users_relationships.following_id = buckets.owner_id) " +
+            "INNER JOIN items ON (buckets.id = items.parent_id) " +
+            "WHERE users_relationships.follower_id = :followerId " +
+            "ORDER BY items.created_at DESC",
+            countQuery = "SELECT count(items.*) FROM users_relationships " +
+                    "INNER JOIN buckets ON (users_relationships.following_id = buckets.owner_id) " +
+                    "INNER JOIN items ON (buckets.id = items.parent_id) " +
+                    "WHERE users_relationships.follower_id = :followerId " +
+                    "ORDER BY items.created_at DESC",
+            nativeQuery = true)
+    List<Item> retrieveItemsCreatedByFollowedUsers(@Param("followerId") final Long followerId,
+                                                   final Pageable pageable);
+
+    /**
+     * Retrieve a list of items which were recently created by a given user.
+     *
+     * Results are sorted by the item created_at field. As such, the pageable should be unsorted.
+     *
+     * @param userId the id of the current user.
+     * @param pageable pagination details.
+     * @return list of items, sorted by created_at, recently created by a given user.
+     * */
+    @Query(value = "SELECT items.* FROM items " +
+            "INNER JOIN buckets ON (buckets.id = items.parent_id) " +
+            "WHERE buckets.owner_id = :userId " +
+            "ORDER BY buckets.created_at DESC",
+            countQuery = "SELECT COUNT(items.*) FROM items " +
+                    "INNER JOIN buckets ON (buckets.id = items.parent_id) " +
+                    "WHERE buckets.owner_id = :userId " +
+                    "ORDER BY buckets.created_at DESC",
+            nativeQuery = true)
+    List<Item> retrieveItemsCreatedByUser(@Param("userId") final Long userId, final Pageable pageable);
 }

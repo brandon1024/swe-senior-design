@@ -44,4 +44,18 @@ public class PhysicalAddress extends PersistentObject {
 
     @Size(max = 255)
     private String postalCode;
+
+    @Override
+    public boolean equals(Object object) {
+        if (object == this) {
+            return true;
+        }
+
+        if(!(object instanceof PhysicalAddress)) {
+            return false;
+        }
+
+        PhysicalAddress other = (PhysicalAddress)object;
+        return (other.getId() == null ? this.getId() == null : other.getId().equals(this.getId()));
+    }
 }

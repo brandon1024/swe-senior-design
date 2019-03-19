@@ -2,6 +2,7 @@ package ca.unb.ktb.application.dao;
 
 import ca.unb.ktb.core.model.User;
 import ca.unb.ktb.core.model.UserRelationship;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -49,4 +50,42 @@ public interface UserRelationshipDAO extends JpaRepository<UserRelationship, Lon
     @Query("SELECT COUNT(follower) FROM UserRelationship u WHERE u.follower = :user")
     int findFollowingCount(@Param("user") User user);
 
+    /**
+     * Retrieve a list of users which were recently followed by users who are followed by a given user.
+     *
+     * Results are sorted by the user_relationship created_at field. As such, the pageable should be unsorted.
+     *
+     * @param followerId the id of the current user.
+     * @param pageable pagination details.
+     * @return list of users, sorted by their relationship created_at date, followed by the followers of a given user.
+     */
+    @Query(value = "SELECT iur.* FROM users_relationships ur " +
+            "INNER JOIN users_relationships iur ON (ur.following_id = iur.follower_id) " +
+            "WHERE ur.follower_id = :followerId " +
+            "ORDER BY iur.created_at DESC",
+            countQuery = "SELECT COUNT(iur.*) FROM users_relationships ur " +
+                    "INNER JOIN users_relationships iur ON (ur.following_id = iur.follower_id) " +
+                    "WHERE ur.follower_id = :followerId " +
+                    "ORDER BY iur.created_at DESC",
+            nativeQuery = true)
+    List<UserRelationship> retrieveUsersFollowedByFollowedUsers(@Param("followerId") final Long followerId,
+                                                                final Pageable pageable);
+
+    /**
+     * Retrieve a list of users which were recently followed by a given user.
+     *
+     * Results are sorted by the user_relationship created_at field. As such, the pageable should be unsorted.
+     *
+     * @param userId the id of the current user.
+     * @param pageable pagination details.
+     * @return list of users, sorted by their relationship created_at date, followed by a given user.
+     */
+    @Query(value = "SELECT users_relationships.* FROM users_relationships " +
+            "WHERE users_relationships.follower_id = :userId " +
+            "ORDER BY users_relationships.created_at DESC",
+            countQuery = "SELECT COUNT(users_relationships.*) FROM users_relationships " +
+                    "WHERE users_relationships.follower_id = :userId " +
+                    "ORDER BY users_relationships.created_at DESC",
+            nativeQuery = true)
+    List<UserRelationship> retrieveUsersFollowedByUser(@Param("userId") final Long userId, final Pageable pageable);
 }

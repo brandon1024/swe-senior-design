@@ -1,8 +1,8 @@
 package ca.unb.ktb.infrastructure.security;
 
+import ca.unb.ktb.api.dto.response.UserSummaryResponse;
 import ca.unb.ktb.application.dao.UserDAO;
 import ca.unb.ktb.core.model.User;
-import ca.unb.ktb.api.dto.response.UserSummaryResponse;
 import ca.unb.ktb.infrastructure.security.exception.UserNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetailsService;

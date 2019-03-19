@@ -1,10 +1,10 @@
 package ca.unb.ktb.core.svc;
 
 import ca.unb.ktb.api.BucketController;
-import ca.unb.ktb.api.exception.client.BadRequestException;
-import ca.unb.ktb.api.exception.client.UnauthorizedException;
 import ca.unb.ktb.api.dto.response.BucketSummaryResponse;
 import ca.unb.ktb.api.dto.response.UserSummaryResponse;
+import ca.unb.ktb.api.exception.client.BadRequestException;
+import ca.unb.ktb.api.exception.client.UnauthorizedException;
 import ca.unb.ktb.application.dao.BucketDAO;
 import ca.unb.ktb.application.dao.UserBucketRelationshipDAO;
 import ca.unb.ktb.application.dao.UserDAO;
@@ -13,8 +13,8 @@ import ca.unb.ktb.core.model.User;
 import ca.unb.ktb.core.model.UserBucketRelationship;
 import ca.unb.ktb.core.model.validation.EntityValidator;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Objects;

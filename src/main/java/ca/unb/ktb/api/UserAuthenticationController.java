@@ -1,5 +1,10 @@
 package ca.unb.ktb.api;
 
+import ca.unb.ktb.api.dto.request.UserAuthenticationRequest;
+import ca.unb.ktb.api.dto.request.UserRegistrationRequest;
+import ca.unb.ktb.api.dto.response.UserAuthenticationResponse;
+import ca.unb.ktb.api.dto.response.UserIdentityAvailabilityResponse;
+import ca.unb.ktb.api.dto.response.UserSummaryResponse;
 import ca.unb.ktb.api.exception.client.BadRequestException;
 import ca.unb.ktb.api.exception.client.UnauthorizedException;
 import ca.unb.ktb.application.dao.UserDAO;
@@ -9,11 +14,6 @@ import ca.unb.ktb.core.svc.UserService;
 import ca.unb.ktb.infrastructure.security.JSONWebTokenUtil;
 import ca.unb.ktb.infrastructure.security.UserPrincipal;
 import ca.unb.ktb.infrastructure.security.UserPrincipalService;
-import ca.unb.ktb.api.dto.request.UserAuthenticationRequest;
-import ca.unb.ktb.api.dto.request.UserRegistrationRequest;
-import ca.unb.ktb.api.dto.response.UserAuthenticationResponse;
-import ca.unb.ktb.api.dto.response.UserIdentityAvailabilityResponse;
-import ca.unb.ktb.api.dto.response.UserSummaryResponse;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;

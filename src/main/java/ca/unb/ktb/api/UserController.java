@@ -1,11 +1,11 @@
 package ca.unb.ktb.api;
 
+import ca.unb.ktb.api.dto.response.UserProfileSummaryResponse;
+import ca.unb.ktb.api.dto.response.UserSummaryResponse;
 import ca.unb.ktb.api.exception.client.UnauthorizedException;
 import ca.unb.ktb.core.model.User;
 import ca.unb.ktb.core.svc.UserService;
 import ca.unb.ktb.infrastructure.security.UserPrincipal;
-import ca.unb.ktb.api.dto.response.UserProfileSummaryResponse;
-import ca.unb.ktb.api.dto.response.UserSummaryResponse;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,14 +54,17 @@ public class UserController {
      * @param lastName An optional last name to use in the query.
      * @return A list of users found matching any of the request parameters. HTTP OK.
      * */
-    @ApiOperation(value = "Retrieve a list of users by various fields.", response = UserSummaryResponse.class, responseContainer = "List")
+    @ApiOperation(value = "Retrieve a list of users by various fields.",
+            response = UserSummaryResponse.class,
+            responseContainer = "List")
     @RequestMapping(value = "/users", method = RequestMethod.GET)
-    public ResponseEntity<List<UserSummaryResponse>> findUsers(@RequestParam(name = "id", required = false) final Long userId,
-                                                               @RequestParam(name = "username", required = false) final String username,
-                                                               @RequestParam(name = "email", required = false) final String email,
-                                                               @RequestParam(name = "firstname", required = false) final String firstName,
-                                                               @RequestParam(name = "middlename", required = false) final String middleName,
-                                                               @RequestParam(name = "lastname", required = false) final String lastName) {
+    public ResponseEntity<List<UserSummaryResponse>> findUsers(
+            @RequestParam(name = "id", required = false) final Long userId,
+            @RequestParam(name = "username", required = false) final String username,
+            @RequestParam(name = "email", required = false) final String email,
+            @RequestParam(name = "firstname", required = false) final String firstName,
+            @RequestParam(name = "middlename", required = false) final String middleName,
+            @RequestParam(name = "lastname", required = false) final String lastName) {
         List<UserSummaryResponse> users = userService.findUsers(userId, username, email, firstName, middleName, lastName);
         return new ResponseEntity<>(users, HttpStatus.OK);
     }
@@ -90,7 +93,8 @@ public class UserController {
      * @return The updated user. HTTP OK.
      * @throws UnauthorizedException If the id of the currently authenticated user does not match the path variable id.
      * */
-    @ApiOperation(value = "Update fields in a user that is currently persisted in the database.", response = UserSummaryResponse.class)
+    @ApiOperation(value = "Update fields in a user that is currently persisted in the database.",
+            response = UserSummaryResponse.class)
     @RequestMapping(value = "/users/{id}", method = RequestMethod.PATCH, consumes = "application/json")
     public ResponseEntity<UserSummaryResponse> patchUser(@PathVariable(name = "id") final Long userId,
                                                          @RequestBody final User user,
@@ -115,7 +119,8 @@ public class UserController {
      * @return The updated user. HTTP OK.
      * @throws UnauthorizedException If the id of the currently authenticated user does not match the path variable id.
      * */
-    @ApiOperation(value = "Completely update a user that is currently persisted in the database.", response = UserSummaryResponse.class)
+    @ApiOperation(value = "Completely update a user that is currently persisted in the database.",
+            response = UserSummaryResponse.class)
     @RequestMapping(value = "/users/{id}", method = RequestMethod.PUT, consumes = "application/json")
     public ResponseEntity<UserSummaryResponse> updateUser(@PathVariable(name = "id") final Long userId,
                                                           @Valid @RequestBody final User user,

@@ -1,7 +1,5 @@
 package ca.unb.ktb.infrastructure.security;
 
-import ca.unb.ktb.infrastructure.security.JSONWebTokenUtil;
-import ca.unb.ktb.infrastructure.security.UserPrincipal;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;

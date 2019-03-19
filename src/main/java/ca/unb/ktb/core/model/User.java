@@ -1,8 +1,8 @@
 package ca.unb.ktb.core.model;
 
+import ca.unb.ktb.core.model.validation.Username;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import ca.unb.ktb.core.model.validation.Username;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -86,5 +86,19 @@ public class User extends PersistentObject {
      * */
     public String getUserHandle() {
         return "@" + this.username;
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        if (object == this) {
+            return true;
+        }
+
+        if(!(object instanceof User)) {
+            return false;
+        }
+
+        User other = (User)object;
+        return (other.getId() == null ? this.getId() == null : other.getId().equals(this.getId()));
     }
 }

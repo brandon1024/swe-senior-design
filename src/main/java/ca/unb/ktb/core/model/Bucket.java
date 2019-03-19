@@ -44,4 +44,18 @@ public class Bucket extends PersistentObject {
 
     @Column(columnDefinition = "TEXT")
     private String description;
+
+    @Override
+    public boolean equals(Object object) {
+        if (object == this) {
+            return true;
+        }
+
+        if(!(object instanceof Bucket)) {
+            return false;
+        }
+
+        Bucket other = (Bucket)object;
+        return (other.getId() == null ? this.getId() == null : other.getId().equals(this.getId()));
+    }
 }

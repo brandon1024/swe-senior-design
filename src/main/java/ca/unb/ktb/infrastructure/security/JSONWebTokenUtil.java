@@ -1,5 +1,7 @@
 package ca.unb.ktb.infrastructure.security;
 
+import ca.unb.ktb.infrastructure.security.exception.MalformedAuthTokenException;
+import ca.unb.ktb.infrastructure.security.exception.SignatureGenerationException;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -11,8 +13,6 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTParser;
 import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.jwt.util.DateUtils;
-import ca.unb.ktb.infrastructure.security.exception.MalformedAuthTokenException;
-import ca.unb.ktb.infrastructure.security.exception.SignatureGenerationException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 

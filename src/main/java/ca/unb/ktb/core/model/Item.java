@@ -5,7 +5,11 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import javax.persistence.*;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.EntityListeners;
+import javax.persistence.ManyToOne;
+import javax.persistence.Table;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
@@ -44,4 +48,18 @@ public class Item extends PersistentObject {
 
     @NotNull
     private Boolean isComplete;
+
+    @Override
+    public boolean equals(Object object) {
+        if (object == this) {
+            return true;
+        }
+
+        if(!(object instanceof Item)) {
+            return false;
+        }
+
+        Item other = (Item)object;
+        return (other.getId() == null ? this.getId() == null : other.getId().equals(this.getId()));
+    }
 }

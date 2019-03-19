@@ -38,4 +38,18 @@ public class UserRelationship extends PersistentObject {
     @NotNull
     @ManyToOne
     private User following;
+
+    @Override
+    public boolean equals(Object object) {
+        if (object == this) {
+            return true;
+        }
+
+        if(!(object instanceof UserRelationship)) {
+            return false;
+        }
+
+        UserRelationship other = (UserRelationship)object;
+        return (other.getId() == null ? this.getId() == null : other.getId().equals(this.getId()));
+    }
 }

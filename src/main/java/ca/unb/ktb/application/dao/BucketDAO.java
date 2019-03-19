@@ -62,4 +62,43 @@ public interface BucketDAO extends JpaRepository<Bucket, Long> {
             countQuery = "SELECT COUNT(*) FROM buckets WHERE buckets.name ILIKE %:partialBucketName%",
             nativeQuery = true)
     List<Bucket> findAllByNameLike(@Param("partialBucketName") final String partialBucketName, final Pageable pageable);
+
+    /**
+     * Retrieve a list of buckets which were recently created by users who are followed by a given user.
+     *
+     * Results are sorted by the bucket created_at field. As such, the pageable should be unsorted.
+     *
+     * @param followerId the id of the current user.
+     * @param pageable pagination details.
+     * @return list of buckets, sorted by created_at, recently created by the followers of a given user.
+     * */
+    @Query(value = "SELECT buckets.* FROM users_relationships " +
+            "INNER JOIN buckets ON (users_relationships.following_id = buckets.owner_id) " +
+            "WHERE users_relationships.follower_id = :followerId " +
+            "ORDER BY buckets.created_at DESC",
+            countQuery = "SELECT COUNT(buckets.*) FROM users_relationships " +
+                    "INNER JOIN buckets ON (users_relationships.following_id = buckets.owner_id) " +
+                    "WHERE users_relationships.follower_id = :followerId " +
+                    "ORDER BY buckets.created_at DESC",
+            nativeQuery = true)
+    List<Bucket> retrieveBucketsRecentlyCreatedByFollowedUsers(@Param("followerId") final Long followerId,
+                                                               final Pageable pageable);
+
+    /**
+     * Retrieve a list of buckets which were recently created by a given user.
+     *
+     * Results are sorted by the bucket created_at field. As such, the pageable should be unsorted.
+     *
+     * @param userId the id of the current user.
+     * @param pageable pagination details.
+     * @return list of buckets, sorted by created_at, recently created by the given user.
+     * */
+    @Query(value = "SELECT buckets.* FROM buckets " +
+            "WHERE buckets.owner_id = :userId " +
+            "ORDER BY buckets.created_at DESC",
+            countQuery = "SELECT COUNT(buckets.*) FROM buckets " +
+                    "WHERE buckets.owner_id = :userId " +
+                    "ORDER BY buckets.created_at DESC",
+            nativeQuery = true)
+    List<Bucket> retrieveBucketsCreatedByUser(@Param("userId") final Long userId, final Pageable pageable);
 }

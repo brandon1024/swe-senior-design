@@ -27,7 +27,7 @@ import java.util.Date;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-abstract class PersistentObject implements Serializable {
+public abstract class PersistentObject implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)

@@ -11,7 +11,6 @@ import ca.unb.ktb.api.exception.client.UnauthorizedException;
 import ca.unb.ktb.api.exception.server.InternalServerErrorException;
 import ca.unb.ktb.api.exception.server.NotImplementedException;
 import ca.unb.ktb.api.exception.server.ServiceUnavailableException;
-import ca.unb.ktb.infrastructure.security.exception.UserNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.HibernateException;
 import org.springframework.http.HttpStatus;

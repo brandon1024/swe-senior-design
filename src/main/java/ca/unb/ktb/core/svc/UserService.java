@@ -1,10 +1,10 @@
 package ca.unb.ktb.core.svc;
 
-import ca.unb.ktb.api.exception.client.BadRequestException;
 import ca.unb.ktb.api.dto.request.UserRegistrationRequest;
 import ca.unb.ktb.api.dto.response.UserProfileSummaryResponse;
 import ca.unb.ktb.api.dto.response.UserRelationshipSummaryResponse;
 import ca.unb.ktb.api.dto.response.UserSummaryResponse;
+import ca.unb.ktb.api.exception.client.BadRequestException;
 import ca.unb.ktb.application.dao.PhysicalAddressDAO;
 import ca.unb.ktb.application.dao.UserBucketRelationshipDAO;
 import ca.unb.ktb.application.dao.UserDAO;
