@@ -22,6 +22,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -83,15 +84,20 @@ public class AmazonS3ClientService {
      *
      * @param bucket The AmazonS3Bucket from which to generate a pre-signed URL.
      * @param objectKey The key to the object in the bucket.
-     * @return A presigned url to the object with the given key.
+     * @return A {@link Optional} containing the pre-signed {@link URL} to the object with the given key, or an empty
+     * Optional if no such object exists.
      * @throws SdkClientException If there were any problems pre-signing the request for the Amazon S3 resource.
      * */
-    public String generatePresignedObjectURL(final AmazonS3Bucket bucket, final String objectKey) {
+    public Optional<URL> generatePreSignedObjectURL(final AmazonS3Bucket bucket, final String objectKey) {
         AmazonS3 s3Client = AmazonS3ClientBuilder.standard()
                 .withRegion(bucket.getRegion())
                 .withCredentials(new EnvironmentVariableCredentialsProvider())
                 .withPathStyleAccessEnabled(true)
                 .build();
+
+        if(!s3Client.doesObjectExist(bucket.getName(), objectKey)) {
+            return Optional.empty();
+        }
 
         Date expiration = new Date();
         Calendar cal = Calendar.getInstance();
@@ -102,8 +108,8 @@ public class AmazonS3ClientService {
                 new GeneratePresignedUrlRequest(bucket.getName(), objectKey)
                         .withMethod(HttpMethod.GET)
                         .withExpiration(cal.getTime());
-        URL url = s3Client.generatePresignedUrl(generatePresignedUrlRequest);
 
-        return url.toString();
+        URL url = s3Client.generatePresignedUrl(generatePresignedUrlRequest);
+        return Optional.of(url);
     }
 }

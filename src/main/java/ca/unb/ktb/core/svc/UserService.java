@@ -29,9 +29,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.net.URL;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -417,11 +419,21 @@ public class UserService {
      * @return A summary of the user.
      * */
     public UserSummaryResponse adaptUserToSummary(final User user) {
-        AmazonS3Bucket bucket = bucketConfiguration.getBucket(AmazonS3BucketConfiguration.userProfileImageBucket);
-        String presignedUrl = s3ClientService.generatePresignedObjectURL(bucket, user.getProfilePictureObjectKey());
+        String url = null;
+
+        if(Objects.nonNull(user.getProfilePictureObjectKey())) {
+            AmazonS3Bucket bucket = bucketConfiguration.getBucket(AmazonS3BucketConfiguration.userProfileImageBucket);
+            Optional<URL> presignedUrl = s3ClientService.generatePreSignedObjectURL(bucket, user.getProfilePictureObjectKey());
+            url = presignedUrl.map(URL::toString).orElse(null);
+
+            if(Objects.isNull(url)) {
+                LOG.warn("Could not generate pre-signed url for profile picture with user id {} and object key {}; no such object exists in bucket {}.",
+                        user.getId(), user.getProfilePictureObjectKey(), bucket.getName());
+            }
+        }
 
         return new UserSummaryResponse(user.getId(), user.getUsername(), user.getEmail(), user.getBio(),
-                user.getFirstName(), user.getMiddleName(), user.getLastName(), presignedUrl);
+                user.getFirstName(), user.getMiddleName(), user.getLastName(), url);
     }
 
     /**
