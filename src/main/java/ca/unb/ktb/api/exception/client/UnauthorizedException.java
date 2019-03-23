@@ -12,4 +12,8 @@ public class UnauthorizedException extends ClientErrorException {
     public UnauthorizedException(String message) {
         super(message);
     }
+
+    public UnauthorizedException(String message, Throwable throwable) {
+        super(message, throwable);
+    }
 }

@@ -60,7 +60,7 @@ public class GlobalControllerExceptionHandler {
     @ExceptionHandler(value = AuthenticationException.class)
     public ResponseEntity<String> handleAuthenticationException(final AuthenticationException e) {
         LOG.debug("Exception intercepted by GlobalControllerExceptionHandler", e);
-        LOG.info(String.format("User authentication failed: %s", e.getMessage()));
+        LOG.info("User authentication failed: {}", e.getMessage());
 
         final String message = "Unable to process the request due to an unexpected authentication error.";
         return new ResponseEntity<>(message, HttpStatus.UNAUTHORIZED);
@@ -69,7 +69,7 @@ public class GlobalControllerExceptionHandler {
     @ExceptionHandler(value = MissingS3BucketConfigurationException.class)
     public ResponseEntity<String> handleMissingS3BucketConfigurationException(final MissingS3BucketConfigurationException e) {
         LOG.debug("Exception intercepted by GlobalControllerExceptionHandler", e);
-        LOG.info(String.format("Misconfiguration of Spring resulted in failure to communicate with AWS S3: %s", e.getMessage()));
+        LOG.info("Misconfiguration of Spring resulted in failure to communicate with AWS S3: {}", e.getMessage());
 
         final String message = "Unable to process request due to an internal server error.";
         return new ResponseEntity<>(message, HttpStatus.INTERNAL_SERVER_ERROR);

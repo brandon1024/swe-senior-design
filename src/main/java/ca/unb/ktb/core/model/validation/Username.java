@@ -12,8 +12,6 @@ import static java.lang.annotation.ElementType.*;
 /**
  * The string has to be a well-formed username. Exact semantics of what makes up a valid
  * username is left to {@link UsernameValidator}
- *
- * @author Brandon Richardson
  * */
 @Constraint(validatedBy = UsernameValidator.class)
 @Target({ METHOD, FIELD, ANNOTATION_TYPE, CONSTRUCTOR, PARAMETER, TYPE_USE })

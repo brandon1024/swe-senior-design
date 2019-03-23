@@ -13,8 +13,6 @@ import java.nio.charset.Charset;
  *  - Usernames can't contain an ampersand (&amp;), equal sign (=), brackets (&lt;,&gt;), plus sign (+), comma (,), or
  *  more than one period (.) in a row.
  *  - Usernames can't begin with non-alphanumeric characters, with a maximum of 64 characters.
- *
- * @author Brandon Richardson
  * */
 public class UsernameValidator implements ConstraintValidator<Username, String> {
 

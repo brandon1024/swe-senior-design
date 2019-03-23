@@ -13,4 +13,8 @@ public class ConflictException extends ClientErrorException {
     public ConflictException(String message) {
         super(message);
     }
+
+    public ConflictException(String message, Throwable throwable) {
+        super(message, throwable);
+    }
 }

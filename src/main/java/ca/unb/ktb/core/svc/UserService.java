@@ -310,13 +310,6 @@ public class UserService {
                 .orElseThrow(() -> new BadRequestException("Unable to find user with id " + userId));
 
         AmazonS3Bucket bucket = bucketConfiguration.getBuckets().get(AmazonS3BucketConfiguration.userProfileImageBucket);
-        if(Objects.isNull(bucket)) {
-            LOG.warn("Attempted to retrieve an S3 Bucket configuration that could not be found." +
-                    "Perhaps a misconfiguration of Spring?");
-            throw new MissingS3BucketConfigurationException(String.format("Missing AWS S3 configuration; could not" +
-                            "retrieve bucket configuration with key %s.",
-                    AmazonS3BucketConfiguration.userProfileImageBucket));
-        }
 
         ObjectMetadata imageMetadata = new ObjectMetadata();
         imageMetadata.addUserMetadata("username", user.getUsername());

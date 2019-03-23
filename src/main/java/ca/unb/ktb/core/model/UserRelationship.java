@@ -17,9 +17,8 @@ import javax.validation.constraints.NotNull;
 /**
  * User friendship Hibernate entity. An instance of this class represents a persistent friendship record in the
  * database.
- *
- * @author Brandon Richardson
  * */
+
 @Entity
 @Table(name = "users_relationships",
         uniqueConstraints = {@UniqueConstraint(columnNames = {"follower_id", "following_id"})})

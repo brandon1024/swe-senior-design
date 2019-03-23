@@ -23,9 +23,8 @@ import javax.validation.constraints.Size;
 
 /**
  * User Hibernate entity. An instance of this class represents a persistent user record in the database.
- *
- * @author Brandon Richardson
  * */
+
 @Entity
 @Table(name = "users")
 @EntityListeners(AuditingEntityListener.class)

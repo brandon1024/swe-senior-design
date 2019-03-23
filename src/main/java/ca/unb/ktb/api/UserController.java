@@ -8,7 +8,6 @@ import ca.unb.ktb.core.model.User;
 import ca.unb.ktb.core.svc.UserService;
 import ca.unb.ktb.infrastructure.security.UserPrincipal;
 import io.swagger.annotations.ApiOperation;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -29,7 +28,6 @@ import java.util.Objects;
 
 @RestController
 @RequestMapping("/")
-@Slf4j
 public class UserController {
 
     private static final List<String> contentTypes = Arrays.asList("image/png", "image/jpeg", "image/gif");
@@ -37,7 +35,7 @@ public class UserController {
     @Autowired private UserService userService;
 
     /**
-     * Retrieve a list of {@link User}'s with a given id, username or email address, first, middle or last name.
+     * Retrieve a list of {@link User}s with a given id, username or email address, first, middle or last name.
      *
      * If no request parameters are provided, all users are returned. If more than one request parameter is specified,
      * users are queried and selected if they match any of the parameters.
@@ -57,7 +55,7 @@ public class UserController {
      * @param firstName An optional first name to use in the query.
      * @param middleName An optional middle name to use in the query.
      * @param lastName An optional last name to use in the query.
-     * @return A list of users found matching any of the request parameters. HTTP OK.
+     * @return A list of {@link User}s found matching any of the request parameters. HTTP OK.
      * */
     @ApiOperation(value = "Retrieve a list of users by various fields.",
             response = UserSummaryResponse.class,
@@ -77,8 +75,8 @@ public class UserController {
     /**
      * Retrieve a specific {@link User} by id.
      *
-     * @param userId The id of the user.
-     * @return The user with the given id. HTTP OK.
+     * @param userId The id of the {@link User}.
+     * @return The {@link User} with the given id. HTTP OK.
      * */
     @ApiOperation(value = "Retrieve a specific user by id.", response = UserSummaryResponse.class)
     @RequestMapping(value = "/users/{id}", method = RequestMethod.GET)
@@ -92,11 +90,11 @@ public class UserController {
      *
      * Only non-null user fields are updated. The id of the currently authenticated user must match the path variable id.
      *
-     * @param userId The id of the user to update.
-     * @param user The user to update.
+     * @param userId The id of the {@link User} to update.
+     * @param user The {@link User} to update.
      * @param auth The authentication token.
-     * @return The updated user. HTTP OK.
-     * @throws UnauthorizedException If the id of the currently authenticated user does not match the path variable id.
+     * @return The updated {@link User}. HTTP OK.
+     * @throws UnauthorizedException If the id of the {@link User} currently authenticated does not match the path variable id.
      * */
     @ApiOperation(value = "Update fields in a user that is currently persisted in the database.",
             response = UserSummaryResponse.class)
@@ -118,11 +116,11 @@ public class UserController {
      *
      * The id of the currently authenticated user must match the path variable id.
      *
-     * @param userId The id of the user to update.
-     * @param user The user to update.
+     * @param userId The id of the {@link User} to update.
+     * @param user The {@link User} to update.
      * @param auth The authentication token.
      * @return The updated user. HTTP OK.
-     * @throws UnauthorizedException If the id of the currently authenticated user does not match the path variable id.
+     * @throws UnauthorizedException If the id of the {@link User} currently authenticated does not match the path variable id.
      * */
     @ApiOperation(value = "Completely update a user that is currently persisted in the database.",
             response = UserSummaryResponse.class)
@@ -144,10 +142,10 @@ public class UserController {
      *
      * The id of the currently authenticated user must match the path variable id.
      *
-     * @param userId The id of the user to be deleted.
+     * @param userId The id of the {@link User} to be deleted.
      * @param auth The authentication token.
      * @return HTTP OK.
-     * @throws UnauthorizedException If the id of the currently authenticated user does not match the path variable id.
+     * @throws UnauthorizedException If the id of the {@link User} currently authenticated does not match the path variable id.
      * */
     @ApiOperation(value = "Delete a user.")
     @RequestMapping(value = "/users/{id}", method = RequestMethod.DELETE)
@@ -165,11 +163,9 @@ public class UserController {
     /**
      * Get a {@link User}'s profile information.
      *
-     * {@link User}'s id must be provided.
-     *
-     * @param userId The id of the user who's profile you wish to obtain.
+     * @param userId The id of the {@link User} whose profile you wish to obtain.
      * @return User profile response data. HTTP OK.
-     * @throws UnauthorizedException If the id of the currently authenticated user does not match the path variable id.
+     * @throws UnauthorizedException If the id of the {@link User} currently authenticated does not match the path variable id.
      * */
     @ApiOperation(value = "Get a user's profile.")
     @RequestMapping(value = "/users/{id}/profile", method = RequestMethod.GET)
@@ -184,12 +180,12 @@ public class UserController {
     }
 
     /**
-     * Upload a profile picture for a given user.
+     * Upload a profile picture for a given {@link User}.
      *
-     * @param userId The id of the user who's profile picture will be changed.
-     * @param file The name of the file uploaded
+     * @param userId The id of the {@link User} whose profile picture will be changed.
+     * @param file The name of the file uploaded.
      * @return A summary of the user. HTTP OK.
-     * @throws UnauthorizedException If the id of the currently authenticated user does not match the path variable id.
+     * @throws UnauthorizedException If the id of the {@link User} currently authenticated does not match the path variable id.
      * @throws BadRequestException If the uploaded file is empty, or the file type is unsupported.
      * */
     @ApiOperation(value = "Upload a profile picture.")

@@ -12,4 +12,8 @@ public class ForbiddenException extends ClientErrorException {
     public ForbiddenException(String message) {
         super(message);
     }
+
+    public ForbiddenException(String message, Throwable throwable) {
+        super(message, throwable);
+    }
 }

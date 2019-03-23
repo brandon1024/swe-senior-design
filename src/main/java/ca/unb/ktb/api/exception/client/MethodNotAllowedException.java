@@ -12,4 +12,8 @@ public class MethodNotAllowedException extends ClientErrorException {
     public MethodNotAllowedException(String message) {
         super(message);
     }
+
+    public MethodNotAllowedException(String message, Throwable throwable) {
+        super(message, throwable);
+    }
 }

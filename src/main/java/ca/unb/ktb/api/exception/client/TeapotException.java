@@ -12,4 +12,8 @@ public class TeapotException extends ClientErrorException {
     public TeapotException(String message) {
         super(message);
     }
+
+    public TeapotException(String message, Throwable throwable) {
+        super(message, throwable);
+    }
 }

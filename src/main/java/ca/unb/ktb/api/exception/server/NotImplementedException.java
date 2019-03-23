@@ -13,4 +13,8 @@ public class NotImplementedException extends ServerErrorException {
     public NotImplementedException(String message) {
         super(message);
     }
+
+    public NotImplementedException(String message, Throwable throwable) {
+        super(message, throwable);
+    }
 }

@@ -1,12 +1,16 @@
 package ca.unb.ktb.core.svc.exception;
 
-public abstract class ServiceException extends RuntimeException {
+/**
+ * Generic service-layer exception.
+ * */
 
-    public ServiceException(String message) {
+abstract class ServiceException extends RuntimeException {
+
+    ServiceException(String message) {
         super(message);
     }
 
-    public ServiceException(String message, Throwable throwable) {
+    ServiceException(String message, Throwable throwable) {
         super(message, throwable);
     }
 }

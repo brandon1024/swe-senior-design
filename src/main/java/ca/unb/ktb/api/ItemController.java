@@ -6,7 +6,6 @@ import ca.unb.ktb.core.model.Item;
 import ca.unb.ktb.core.svc.ItemService;
 import ca.unb.ktb.infrastructure.security.UserPrincipal;
 import io.swagger.annotations.ApiOperation;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,7 +23,6 @@ import java.util.Objects;
 
 @RestController
 @RequestMapping("/")
-@Slf4j
 public class ItemController {
 
     @Autowired private ItemService itemService;
@@ -32,12 +30,12 @@ public class ItemController {
     /**
      * Create a new {@link Item}.
      *
-     * @param ownerId The id of the user that owns the bucket.
-     * @param bucketId The id of the bucket that owns the item.
-     * @param item A valid item with all necessary fields.
+     * @param ownerId The id of the {@link ca.unb.ktb.core.model.User} that owns the {@link ca.unb.ktb.core.model.Bucket}.
+     * @param bucketId The id of the {@link ca.unb.ktb.core.model.Bucket} that owns the {@link Item}.
+     * @param item A valid {@link Item} with all necessary fields.
      * @param auth The authentication token.
-     * @return A new item once persisted in the database. HTTP CREATED.
-     * @throws UnauthorizedException If the authenticated principal user does not match the user in the path variable.
+     * @return A new {@link Item} once persisted in the database. HTTP CREATED.
+     * @throws UnauthorizedException If the authenticated principal {@link ca.unb.ktb.core.model.User} does not match the user in the path variable.
      * */
     @ApiOperation(value = "Create a new item.", response = ItemSummaryResponse.class)
     @RequestMapping(value = "/users/{ownerId}/buckets/{bucketId}/items",
@@ -57,12 +55,12 @@ public class ItemController {
     }
 
     /**
-     * Retrieve a list of {@link Item}'s associated to a specific bucket.
+     * Retrieve a list of {@link Item}'s associated to a specific {@link ca.unb.ktb.core.model.Bucket}.
      *
-     * @param ownerId Id of the user that owns the buckets.
-     * @param bucketId Id of the bucket.
+     * @param ownerId Id of the {@link ca.unb.ktb.core.model.User} that owns the {@link ca.unb.ktb.core.model.Bucket}s.
+     * @param bucketId Id of the {@link ca.unb.ktb.core.model.Bucket} that owns the {@link Item}.
      * @param auth The authentication token.
-     * @return A list of buckets associated to a given user. HTTP OK.
+     * @return A list of {@link Item}s associated to a given user. HTTP OK.
      * */
     @ApiOperation(value = "Retrieve a list of items associated to a specific bucket.",
             response = ItemSummaryResponse.class,
@@ -77,16 +75,17 @@ public class ItemController {
     }
 
     /**
-     * Retrieve a specific {@link Item} associated to a specific bucket and user.
+     * Retrieve a specific {@link Item} associated to a specific {@link ca.unb.ktb.core.model.Bucket} and user.
      *
      * If the owner id does not match the id of the principal user, the item is only returned if public.
      *
-     * @param ownerId Id of the user that owns the buckets.
-     * @param bucketId Id of the bucket.
-     * @param itemId Id of the item.
+     * @param ownerId Id of the {@link ca.unb.ktb.core.model.User} that owns the {@link ca.unb.ktb.core.model.Bucket}s.
+     * @param bucketId Id of the {@link ca.unb.ktb.core.model.Bucket} that owns the {@link Item}.
+     * @param itemId Id of the {@link Item}.
      * @param auth The authentication token.
-     * @return Item associated to a given user. If the user and principal have matching ids, public or private bucket
-     * may be returned, otherwise only returns a public bucket. HTTP OK.
+     * @return {@link Item} associated to a given {@link ca.unb.ktb.core.model.User}. If the user and principal have
+     * matching ids, public or private {@link ca.unb.ktb.core.model.Bucket} may be returned, otherwise only returns a
+     * public bucket. HTTP OK.
      * @see ItemService#findItemById(Long, Long, boolean)
      * */
     @ApiOperation(value = "Retrieve a specific item associated to a specific bucket and user.",
@@ -102,15 +101,16 @@ public class ItemController {
     }
 
     /**
-     * Update fields in a {@link Item} that is currently persisted in the database. Only non-null bucket fields are updated.
+     * Update fields in a {@link Item} that is currently persisted in the database. Only non-null item fields are updated.
      *
-     * @param ownerId Id of the user that owns the bucket.
-     * @param bucketId Id of the bucket that owns the item.
-     * @param itemId Id of the item to patch.
-     * @param item An item to patch.
+     * @param ownerId Id of the {@link ca.unb.ktb.core.model.User} that owns the {@link ca.unb.ktb.core.model.Bucket}.
+     * @param bucketId Id of the {@link ca.unb.ktb.core.model.Bucket} that owns the {@link Item}.
+     * @param itemId Id of the {@link Item} to patch.
+     * @param item An {@link Item} to patch.
      * @param auth The authentication token.
-     * @return The patched item. HTTP OK.
-     * @throws UnauthorizedException If the authenticated principal user does not match the user in the path variable.
+     * @return The patched {@link Item}. HTTP OK.
+     * @throws UnauthorizedException If the authenticated principal {@link ca.unb.ktb.core.model.User} does not match
+     * the user in the path variable.
      * */
     @ApiOperation(value = "Update fields in an item that is currently persisted in the database.",
             response = ItemSummaryResponse.class)
@@ -134,13 +134,14 @@ public class ItemController {
     /**
      * Completely update a {@link Item} that is currently persisted in the database. All item fields are updated.
      *
-     * @param ownerId Id of the user that owns the bucket.
-     * @param bucketId Id of the bucket that will be updated.
-     * @param itemId Id of the item that will be updated.
-     * @param item An item to update.
+     * @param ownerId Id of the {@link ca.unb.ktb.core.model.User} that owns the {@link ca.unb.ktb.core.model.Bucket}.
+     * @param bucketId Id of the {@link ca.unb.ktb.core.model.Bucket} that owns the {@link Item}.
+     * @param itemId Id of the {@link Item} that will be updated.
+     * @param item An {@link Item} to update.
      * @param auth The authentication token.
-     * @return The updated item. HTTP OK.
-     * @throws UnauthorizedException If the authenticated principal user does not match the user in the path variable.
+     * @return The updated {@link Item}. HTTP OK.
+     * @throws UnauthorizedException If the authenticated principal {@link ca.unb.ktb.core.model.User} does not match
+     * the user in the path variable.
      * */
     @ApiOperation(value = "Completely update an item that is currently persisted in the database.",
             response = ItemSummaryResponse.class)
@@ -162,14 +163,15 @@ public class ItemController {
     }
 
     /**
-     * Delete an item.
+     * Delete an {@link Item}.
      *
-     * @param ownerId Id of the user that owns the bucket.
-     * @param bucketId Id of the bucket that owns the item.
-     * @param itemId Id of the item that will be deleted.
+     * @param ownerId Id of the {@link ca.unb.ktb.core.model.User} that owns the {@link ca.unb.ktb.core.model.Bucket}.
+     * @param bucketId Id of the {@link ca.unb.ktb.core.model.Bucket} that owns the {@link Item}.
+     * @param itemId Id of the {@link Item} that will be deleted.
      * @param auth The authentication token.
      * @return HTTP OK.
-     * @throws UnauthorizedException If the authenticated principal user does not match the user in the path variable.
+     * @throws UnauthorizedException If the authenticated principal {@link ca.unb.ktb.core.model.User} does not match
+     * the user in the path variable.
      * */
     @ApiOperation(value = "Delete an item.")
     @RequestMapping(value = "/users/{ownerId}/buckets/{bucketId}/items/{itemId}", method = RequestMethod.DELETE)
@@ -189,13 +191,14 @@ public class ItemController {
     /**
      * Create a new {@link Item} from an existing item.
      *
-     * @param ownerId The id of the user that owns the bucket.
-     * @param toBucket The id of the bucket that will own the newly created item.
-     * @param itemId The id of the item to be duplicated.
-     * @param fromBucket The id of the bucket that currently owns the bucket.
+     * @param ownerId The id of the {@link ca.unb.ktb.core.model.User} that owns the {@link ca.unb.ktb.core.model.Bucket}.
+     * @param toBucket The id of the {@link ca.unb.ktb.core.model.Bucket} that will own the newly created {@link Item}.
+     * @param itemId The id of the {@link Item} to be duplicated.
+     * @param fromBucket The id of the {@link ca.unb.ktb.core.model.Bucket} that currently owns the {@link Item}.
      * @param auth The authentication token.
-     * @return A new item once persisted in the database. HTTP OK.
-     * @throws UnauthorizedException If the id of the currently authenticated user does not match the path variable id.
+     * @return A new {@link Item} once persisted in the database. HTTP OK.
+     * @throws UnauthorizedException If the authenticated principal {@link ca.unb.ktb.core.model.User} does not match
+     * the user in the path variable.
      * @see ItemService#duplicateItem(Long, Long, Long, Long)
      * */
     @ApiOperation(value = "Create a new item from an existing item.", response = ItemSummaryResponse.class)

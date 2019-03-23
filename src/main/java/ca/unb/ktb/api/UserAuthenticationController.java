@@ -15,7 +15,6 @@ import ca.unb.ktb.infrastructure.security.JSONWebTokenUtil;
 import ca.unb.ktb.infrastructure.security.UserPrincipal;
 import ca.unb.ktb.infrastructure.security.UserPrincipalService;
 import io.swagger.annotations.ApiOperation;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -35,7 +34,6 @@ import java.util.Objects;
 
 @RestController
 @RequestMapping("/auth")
-@Slf4j
 public class UserAuthenticationController {
 
     @Autowired private UserPrincipalService userPrincipalService;
@@ -47,7 +45,7 @@ public class UserAuthenticationController {
     @Autowired private UserService userService;
 
     /**
-     * Issue token to user.
+     * Issue token to {@link User}.
      *
      * @param request A valid authentication request.
      * @return The token. HTTP CREATED.
@@ -78,12 +76,12 @@ public class UserAuthenticationController {
     }
 
     /**
-     * Register a new user and issue a new token.
+     * Register a new {@link User} and issue a new token.
      *
      * @param registrationRequest A valid authentication request.
      * @return The token. HTTP OK.
      * @throws AuthenticationException If authentication fails.
-     * @throws BadRequestException If the new user does not meet validation constraints.
+     * @throws BadRequestException If the new {@link User} does not meet validation constraints.
      * */
     @ApiOperation(value = "Register a new user and issue a new token.", response = UserAuthenticationResponse.class)
     @RequestMapping(value = "/signup", method = RequestMethod.POST)
@@ -139,7 +137,7 @@ public class UserAuthenticationController {
      *
      * @param username Optional request parameter for the email address.
      * @param email Optional request parameter for the username.
-     * @return UserIdentityAvailabilityResponse. HTTP OK.
+     * @return {@link UserIdentityAvailabilityResponse}. HTTP OK.
      * */
     @ApiOperation(value = "Check if a given identity is available.", response = UserAuthenticationResponse.class)
     @RequestMapping(value = "/identity_available", method = RequestMethod.GET)

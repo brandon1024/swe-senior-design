@@ -18,9 +18,8 @@ import javax.validation.constraints.Size;
 
 /**
  * DTO representing an item.
- *
- * @author Tyler Sargent
  * */
+
 @Entity
 @Table(name = "items")
 @EntityListeners(AuditingEntityListener.class)

@@ -18,9 +18,8 @@ import javax.validation.constraints.Size;
 
 /**
  * Hibernate entity representing a bucket.
- *
- * @author Brandon Richardson
  * */
+
 @Entity
 @Table(name = "buckets")
 @EntityListeners(AuditingEntityListener.class)

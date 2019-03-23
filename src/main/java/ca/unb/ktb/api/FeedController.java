@@ -5,7 +5,6 @@ import ca.unb.ktb.api.exception.client.UnauthorizedException;
 import ca.unb.ktb.core.svc.FeedService;
 import ca.unb.ktb.infrastructure.security.UserPrincipal;
 import io.swagger.annotations.ApiOperation;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
@@ -22,20 +21,22 @@ import java.util.Objects;
 
 @RestController
 @RequestMapping("/feed")
-@Slf4j
 public class FeedController {
 
     @Autowired private FeedService feedService;
 
     /**
-     * Retrieve feed data for a user. Retrieve a map of users who are followed by the user with the given user id and
-     * have recently created buckets. Results are sorted in reverse chronological order.
+     * Retrieve feed data for a {@link ca.unb.ktb.core.model.User}. Retrieve a map of users who are followed by the user
+     * with the given user id and have recently created {@link ca.unb.ktb.core.model.Bucket}. Results are sorted in
+     * reverse chronological order.
      *
-     * @param userId id of the current user.
-     * @param page the page number of the search.
-     * @param size how many items are displayed per page.
-     * @param auth authentication principal
-     * @return the feed results
+     * @param userId Id of the current {@link ca.unb.ktb.core.model.User}.
+     * @param page The page number of the search.
+     * @param size How many items are displayed per page.
+     * @param auth Authentication principal.
+     * @return The feed results.
+     * @throws UnauthorizedException If the id of the {@link ca.unb.ktb.core.model.User} currently authenticated does
+     * not match the path variable id.
      * */
     @ApiOperation(value = "Retrieve users who are followed by user with given user id and have recently created buckets.",
             response = UserFeedResponse.class)
@@ -55,14 +56,16 @@ public class FeedController {
     }
 
     /**
-     * Retrieve feed data for a user. Retrieve a map of users who are followed by the user with the given user id and
-     * have recently created items. Results are sorted in reverse chronological order.
+     * Retrieve feed data for a {@link ca.unb.ktb.core.model.User}. Retrieve a map of users who are followed by the user
+     * with the given user id and have recently created items. Results are sorted in reverse chronological order.
      *
-     * @param userId id of the current user.
-     * @param page the page number of the search.
-     * @param size how many items are displayed per page.
-     * @param auth authentication principal
-     * @return the feed results
+     * @param userId Id of the current {@link ca.unb.ktb.core.model.User}.
+     * @param page The page number of the search.
+     * @param size How many items are displayed per page.
+     * @param auth Authentication principal.
+     * @return The feed results.
+     * @throws UnauthorizedException If the id of the {@link ca.unb.ktb.core.model.User} currently authenticated does
+     * not match the path variable id.
      * */
     @ApiOperation(value = "Retrieve users who are followed by user with given user id and have recently created items.",
             response = UserFeedResponse.class)
@@ -82,14 +85,16 @@ public class FeedController {
     }
 
     /**
-     * Retrieve feed data for a user. Retrieve a map of users who are followed by the user with the given user id and
-     * have recently followed other users. Results are sorted in reverse chronological order.
+     * Retrieve feed data for a {@link ca.unb.ktb.core.model.User}. Retrieve a map of users who are followed by the user
+     * with the given user id and have recently followed other users. Results are sorted in reverse chronological order.
      *
-     * @param userId id of the current user.
-     * @param page the page number of the search.
-     * @param size how many items are displayed per page.
-     * @param auth authentication principal
-     * @return the feed results
+     * @param userId Id of the current {@link ca.unb.ktb.core.model.User}.
+     * @param page The page number of the search.
+     * @param size How many items are displayed per page.
+     * @param auth Authentication principal.
+     * @return The feed results.
+     * @throws UnauthorizedException If the id of the {@link ca.unb.ktb.core.model.User} currently authenticated does
+     * not match the path variable id.
      * */
     @ApiOperation(value = "Retrieve users who are followed by user with given user id and have recently followed other users.",
             response = UserFeedResponse.class)
@@ -109,14 +114,16 @@ public class FeedController {
     }
 
     /**
-     * Retrieve feed data for a user. Retrieve a map of users who are followed by the user with the given user id and
-     * have recently followed other buckets. Results are sorted in reverse chronological order.
+     * Retrieve feed data for a {@link ca.unb.ktb.core.model.User}. Retrieve a map of users who are followed by the user
+     * with the given user id and have recently followed other buckets. Results are sorted in reverse chronological order.
      *
-     * @param userId id of the current user.
-     * @param page the page number of the search.
-     * @param size how many items are displayed per page.
-     * @param auth authentication principal
-     * @return the feed results
+     * @param userId Id of the current {@link ca.unb.ktb.core.model.User}.
+     * @param page The page number of the search.
+     * @param size How many items are displayed per page.
+     * @param auth Authentication principal.
+     * @return The feed results.
+     * @throws UnauthorizedException If the id of the {@link ca.unb.ktb.core.model.User} currently authenticated user
+     * does not match the path variable id.
      * */
     @ApiOperation(value = "Retrieve users who are followed by user with given user id and have recently followed other buckets.",
             response = UserFeedResponse.class)
@@ -136,14 +143,16 @@ public class FeedController {
     }
 
     /**
-     * Retrieve feed data for a user. Retrieve a list of buckets recently created by the user with the given user id.
-     * Results are sorted in reverse chronological order.
+     * Retrieve feed data for a {@link ca.unb.ktb.core.model.User}. Retrieve a list of buckets recently created by the
+     * user with the given user id. Results are sorted in reverse chronological order.
      *
-     * @param userId id of the current user.
-     * @param page the page number of the search.
-     * @param size how many items are displayed per page.
-     * @param auth authentication principal
-     * @return the feed results
+     * @param userId Id of the current {@link ca.unb.ktb.core.model.User}.
+     * @param page The page number of the search.
+     * @param size How many items are displayed per page.
+     * @param auth Authentication principal.
+     * @return The feed results.
+     * @throws UnauthorizedException If the id of the {@link ca.unb.ktb.core.model.User} currently authenticated user
+     * does not match the path variable id.
      * */
     @ApiOperation(value = "Retrieve a list of buckets recently created by the user with the given user id.",
             response = UserFeedResponse.class)
@@ -163,14 +172,16 @@ public class FeedController {
     }
 
     /**
-     * Retrieve feed data for a user. Retrieve a list of items recently created by the user with the given user id.
-     * Results are sorted in reverse chronological order.
+     * Retrieve feed data for a {@link ca.unb.ktb.core.model.User}. Retrieve a list of items recently created by the
+     * user with the given user id. Results are sorted in reverse chronological order.
      *
-     * @param userId id of the current user.
-     * @param page the page number of the search.
-     * @param size how many items are displayed per page.
-     * @param auth authentication principal
-     * @return the feed results
+     * @param userId Id of the current {@link ca.unb.ktb.core.model.User}.
+     * @param page The page number of the search.
+     * @param size How many items are displayed per page.
+     * @param auth Authentication principal.
+     * @return The feed results.
+     * @throws UnauthorizedException If the id of the {@link ca.unb.ktb.core.model.User} currently authenticated does
+     * not match the path variable id.
      * */
     @ApiOperation(value = "Retrieve a list of items recently created by the user with the given user id.",
             response = UserFeedResponse.class)
@@ -190,14 +201,16 @@ public class FeedController {
     }
 
     /**
-     * Retrieve feed data for a user. Retrieve a list of users recently followed by the user with the given user id.
-     * Results are sorted in reverse chronological order.
+     * Retrieve feed data for a {@link ca.unb.ktb.core.model.User}. Retrieve a list of users recently followed by the
+     * user with the given user id. Results are sorted in reverse chronological order.
      *
-     * @param userId id of the current user.
-     * @param page the page number of the search.
-     * @param size how many items are displayed per page.
-     * @param auth authentication principal
-     * @return the feed results
+     * @param userId Id of the current {@link ca.unb.ktb.core.model.User}.
+     * @param page The page number of the search.
+     * @param size How many items are displayed per page.
+     * @param auth Authentication principal.
+     * @return The feed results.
+     * @throws UnauthorizedException If the id of the {@link ca.unb.ktb.core.model.User} currently authenticated does
+     * not match the path variable id.
      * */
     @ApiOperation(value = "Retrieve a list of users recently followed by the user with the given user id.",
             response = UserFeedResponse.class)
@@ -217,14 +230,16 @@ public class FeedController {
     }
 
     /**
-     * Retrieve feed data for a user. Retrieve a list of buckets recently followed by the user with the given user id.
-     * Results are sorted in reverse chronological order.
+     * Retrieve feed data for a {@link ca.unb.ktb.core.model.User}. Retrieve a list of buckets recently followed by the
+     * user with the given user id. Results are sorted in reverse chronological order.
      *
-     * @param userId id of the current user.
-     * @param page the page number of the search.
-     * @param size how many items are displayed per page.
-     * @param auth authentication principal
-     * @return the feed results
+     * @param userId Id of the current {@link ca.unb.ktb.core.model.User}.
+     * @param page The page number of the search.
+     * @param size How many items are displayed per page.
+     * @param auth Authentication principal.
+     * @return The feed results.
+     * @throws UnauthorizedException If the id of the {@link ca.unb.ktb.core.model.User} currently authenticated does
+     * not match the path variable id.
      * */
     @ApiOperation(value = "Retrieve a list of buckets recently followed by the user with the given user id.",
             response = UserFeedResponse.class)

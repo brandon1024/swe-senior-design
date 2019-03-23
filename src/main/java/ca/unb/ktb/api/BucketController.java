@@ -8,7 +8,6 @@ import ca.unb.ktb.core.model.User;
 import ca.unb.ktb.core.svc.BucketService;
 import ca.unb.ktb.infrastructure.security.UserPrincipal;
 import io.swagger.annotations.ApiOperation;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -26,7 +25,6 @@ import java.util.Objects;
 
 @RestController
 @RequestMapping("/")
-@Slf4j
 public class BucketController {
 
     @Autowired private BucketService bucketService;
@@ -34,11 +32,11 @@ public class BucketController {
     /**
      * Create a new {@link Bucket}.
      *
-     * @param ownerId The id of the user that owns the bucket.
-     * @param bucket A valid bucket with all necessary fields.
+     * @param ownerId The id of the {@link User} that owns the {@link Bucket}.
+     * @param bucket A valid {@link Bucket} with all necessary fields.
      * @param auth The authentication token.
-     * @return A new bucket once persisted in the database.
-     * @throws UnauthorizedException If the id of the currently authenticated user does not match the path variable id.
+     * @return A new {@link Bucket} once persisted in the database.
+     * @throws UnauthorizedException If the id of the {@link User} currently authenticated does not match the path variable id.
      * @see BucketService#createBucket(Long, Bucket)
      * */
     @ApiOperation(value = "Create a new bucket.", response = BucketSummaryResponse.class)
@@ -58,11 +56,11 @@ public class BucketController {
     /**
      * Create a new {@link Bucket} from an existing bucket.
      *
-     * @param ownerId The id of the user that owns the bucket.
-     * @param parentBucketId The id of the bucket that is to be duplicated.
+     * @param ownerId The id of the {@link User} that owns the {@link Bucket}.
+     * @param parentBucketId The id of the {@link Bucket} that is to be duplicated.
      * @param auth The authentication token.
-     * @return a new bucket once persisted in the database. HTTP CREATED.
-     * @throws UnauthorizedException If the id of the currently authenticated user does not match the path variable id.
+     * @return a new {@link Bucket} once persisted in the database. HTTP CREATED.
+     * @throws UnauthorizedException If the id of the {@link User} currently authenticated does not match the path variable id.
      * @see BucketService#duplicateBucket(Long, Long)
      * */
     @ApiOperation(value = "Create a new bucket from an existing bucket.", response = BucketSummaryResponse.class)
@@ -87,10 +85,10 @@ public class BucketController {
      *
      * If the owner id does not match the id of the principal user, only public buckets are returned.
      *
-     * @param ownerId Id of the user that owns the buckets.
+     * @param ownerId Id of the {@link User} that owns the {@link Bucket}s.
      * @param auth The authentication token.
-     * @return A list of all buckets associated to a given user. If the user and principal have matching ids, public and
-     * private buckets are returned, otherwise only returns public buckets. HTTP OK.
+     * @return A list of all {@link Bucket} associated to a given {@link User}. If the user and principal have matching
+     * ids, public and private buckets are returned, otherwise only returns public buckets. HTTP OK.
      * @see BucketService#findBuckets(Long, boolean)
      * */
     @ApiOperation(value = "Retrieve a list of buckets associated to a specific user.",
@@ -106,15 +104,15 @@ public class BucketController {
     }
 
     /**
-     * Retrieve a specific {@link Bucket} associated to a specific user.
+     * Retrieve a specific {@link Bucket} associated to a specific {@link User}.
      *
      * If the owner id does not match the id of the principal user, the bucket is only returned if public.
      *
-     * @param ownerId Id of the user that owns the buckets.
-     * @param bucketId Id of the bucket.
+     * @param ownerId Id of the {@link User} that owns the {@link Bucket}s.
+     * @param bucketId Id of the {@link Bucket}.
      * @param auth The authentication token.
-     * @return Bucket associated to a given user. If the user and principal have matching ids, public or private bucket
-     * may be returned, otherwise only returns a public bucket. HTTP OK.
+     * @return {@link Bucket} associated to a given {@link User}. If the user and principal have matching ids, public or
+     * private bucket may be returned, otherwise only returns a public bucket. HTTP OK.
      * @see BucketService#findBucketById(Long, boolean)
      * */
     @ApiOperation(value = "Retrieve a specific bucket associated to a specific user.",
@@ -130,12 +128,12 @@ public class BucketController {
     }
 
     /**
-     * Retrieve a list of users that are following the given bucket.
+     * Retrieve a list of {@link User}s that are following the given {@link Bucket}.
      *
-     * @param ownerId The owner of the bucket.
-     * @param bucketId The id of the bucket.
+     * @param ownerId The owner of the {@link Bucket}.
+     * @param bucketId The id of the {@link Bucket}.
      * @param auth The authentication token.
-     * @return List of user summaries for users that are following the given bucket. HTTP OK.
+     * @return List of {@link UserSummaryResponse}es for {@link User}s that are following the given {@link Bucket}. HTTP OK.
      * */
     @ApiOperation(value = "Retrieve a list of users that are following the given bucket.",
             response = BucketSummaryResponse.class,
@@ -157,12 +155,12 @@ public class BucketController {
      * The id of the authenticated principal must match the path variable ownerId. The id of the owner of the bucket
      * must also match the path variable ownerId.
      *
-     * @param ownerId Id of the user that owns the bucket.
-     * @param bucketId Id of the bucket that will be patched.
-     * @param bucket A partial bucket used to patch a persisted bucket.
+     * @param ownerId Id of the {@link User} that owns the bucket.
+     * @param bucketId Id of the {@link Bucket} that will be patched.
+     * @param bucket A partial {@link Bucket} used to patch a persisted bucket.
      * @param auth The authentication token.
-     * @return The patched bucket. HTTP OK.
-     * @throws UnauthorizedException If the id of the currently authenticated user does not match the path variable id.
+     * @return The patched {@link Bucket}. HTTP OK.
+     * @throws UnauthorizedException If the id of the {@link User} currently authenticated does not match the path variable id.
      * @see BucketService#patchBucket(Bucket, Long)
      * */
     @ApiOperation(value = "Update fields in a bucket that is currently persisted in the database.",
@@ -191,12 +189,12 @@ public class BucketController {
      * The id of the authenticated principal must match the path variable ownerId. The id of the owner of the bucket
      * must also match the path variable ownerId.
      *
-     * @param ownerId Id of the user that owns the bucket.
-     * @param bucketId Id of the bucket that will be updated.
-     * @param bucket A bucket to update.
+     * @param ownerId Id of the {@link User} that owns the {@link Bucket}.
+     * @param bucketId Id of the {@link Bucket} that will be updated.
+     * @param bucket A {@link Bucket} to update.
      * @param auth The authentication token.
-     * @return The updated bucket. HTTP OK.
-     * @throws UnauthorizedException If the id of the currently authenticated user does not match the path variable id.
+     * @return The {@link Bucket} bucket. HTTP OK.
+     * @throws UnauthorizedException If the id of the {@link User} currently authenticated does not match the path variable id.
      * @see BucketService#updateBucket(Bucket, Long)
      * */
     @ApiOperation(value = "Completely update a bucket that currently persisted in the database.",
@@ -220,16 +218,16 @@ public class BucketController {
     }
 
     /**
-     * Delete a bucket.
+     * Delete a {@link Bucket}.
      *
      * The id of the authenticated principal must match the path variable ownerId. The id of the owner of the bucket
      * must also match the path variable ownerId.
      *
-     * @param ownerId Id of the user that owns the bucket.
-     * @param bucketId Id of the bucket that will be patched.
+     * @param ownerId Id of the {@link User} that owns the {@link Bucket}.
+     * @param bucketId Id of the {@link Bucket} that will be patched.
      * @param auth The authentication token.
      * @return HTTP OK.
-     * @throws UnauthorizedException If the id of the currently authenticated user does not match the path variable id.
+     * @throws UnauthorizedException If the id of the {@link User} currently authenticated does not match the path variable id.
      * @see BucketService#deleteBucket(Bucket)
      * */
     @ApiOperation(value = "Delete a bucket.")

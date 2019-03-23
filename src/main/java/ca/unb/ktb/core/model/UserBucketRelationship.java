@@ -16,9 +16,8 @@ import javax.validation.constraints.NotNull;
 
 /**
  * Hibernate entity representing a bucket.
- *
- * @author Brandon Richardson
  * */
+
 @Entity
 @Table(name = "users_bucket_relationships",
         uniqueConstraints = {@UniqueConstraint(columnNames = {"follower_id", "following_id"})})

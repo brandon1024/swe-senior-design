@@ -14,9 +14,8 @@ import javax.validation.constraints.Size;
 
 /**
  * Hibernate entity that is used to represent a physical/mailing address.
- *
- * @author Brandon Richardson
  * */
+
 @Entity
 @Table(name = "physical_addresses")
 @EntityListeners(AuditingEntityListener.class)

@@ -5,7 +5,6 @@ import ca.unb.ktb.api.dto.response.UserBucketRelationshipSummaryResponse;
 import ca.unb.ktb.api.exception.client.UnauthorizedException;
 import ca.unb.ktb.core.svc.UserBucketRelationshipService;
 import ca.unb.ktb.infrastructure.security.UserPrincipal;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,17 +20,19 @@ import java.util.List;
 import java.util.Objects;
 
 @RestController
-@Slf4j
+@RequestMapping("/")
 public class UserBucketRelationshipController {
 
-    @Autowired
-    UserBucketRelationshipService userBucketRelationshipService;
+    @Autowired private UserBucketRelationshipService userBucketRelationshipService;
 
     /**
-     *  Create a user-bucket relationship. Once persisted, the user will be following the bucket.
+     *  Create a {@link ca.unb.ktb.core.model.User}-{@link ca.unb.ktb.core.model.Bucket} relationship. Once persisted,
+     *  the user will be following the bucket.
      *
-     * @param initiatorId The id of the user that is following the bucket.
-     * @param bucketId The id of the bucket that the user is following.
+     * @param initiatorId The id of the {@link ca.unb.ktb.core.model.User} that is following the
+     * {@link ca.unb.ktb.core.model.Bucket}.
+     * @param bucketId The id of the {@link ca.unb.ktb.core.model.Bucket} that the {@link ca.unb.ktb.core.model.User}
+     * is following.
      * @param auth The authentication token.
      * @return A summary of the relationship. HTTP CREATED.
      * @throws UnauthorizedException If the principal user does not match the initiator.
@@ -51,10 +52,11 @@ public class UserBucketRelationshipController {
     }
 
     /**
-     * Get a list of buckets that the given user is following.
+     * Get a list of {@link ca.unb.ktb.core.model.Bucket}s that the given {@link ca.unb.ktb.core.model.User} is following.
      *
-     * @param subjectId The id of the user.
-     * @return A list of bucket summaries representing all the buckets the user is following. HTTP OK.
+     * @param subjectId The id of the {@link ca.unb.ktb.core.model.User}.
+     * @return A list of {@link BucketSummaryResponse} representing all the {@link ca.unb.ktb.core.model.Bucket} the
+     * {@link ca.unb.ktb.core.model.User} is following. HTTP OK.
      * */
     @RequestMapping(value = "/users/{id}/following_bucket", method = RequestMethod.GET)
     public ResponseEntity<List<BucketSummaryResponse>> findUsersFollowingBucket(
@@ -64,10 +66,12 @@ public class UserBucketRelationshipController {
     }
 
     /**
-     * Delete a user-bucket relationship.
+     * Delete a {@link ca.unb.ktb.core.model.User}-{@link ca.unb.ktb.core.model.Bucket} relationship.
      *
-     * @param initiatorId The id of the user is following the bucket.
-     * @param subjectId The id of the bucket that the user is following.
+     * @param initiatorId The id of the {@link ca.unb.ktb.core.model.User} is following the
+     * {@link ca.unb.ktb.core.model.Bucket}.
+     * @param subjectId The id of the {@link ca.unb.ktb.core.model.Bucket} that the{@link ca.unb.ktb.core.model.User}
+     * is following.
      * @param auth The authentication token.
      * @return HTTP OK.
      * @throws UnauthorizedException If the principal user does not match the initiator.

@@ -13,4 +13,8 @@ public class ServiceUnavailableException extends ServerErrorException {
     public ServiceUnavailableException(String message) {
         super(message);
     }
+
+    public ServiceUnavailableException(String message, Throwable throwable) {
+        super(message, throwable);
+    }
 }

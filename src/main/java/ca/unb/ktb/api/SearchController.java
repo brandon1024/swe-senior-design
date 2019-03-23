@@ -8,7 +8,6 @@ import ca.unb.ktb.core.svc.BucketService;
 import ca.unb.ktb.core.svc.ItemService;
 import ca.unb.ktb.core.svc.UserService;
 import io.swagger.annotations.ApiOperation;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
@@ -24,7 +23,7 @@ import java.util.List;
 import static org.springframework.data.domain.Sort.Direction;
 
 @RestController
-@Slf4j
+@RequestMapping("/")
 public class SearchController {
 
     @Autowired private BucketService bucketService;
@@ -34,15 +33,16 @@ public class SearchController {
     @Autowired private ItemService itemService;
 
     /**
-     * Search for users, buckets and items by search query, returning at most 10 results of each type.
+     * Search for {@link ca.unb.ktb.core.model.User}s, {@link ca.unb.ktb.core.model.Bucket}s and
+     * {@link ca.unb.ktb.core.model.Item}s by search query, returning at most 10 results of each type.
      *
      * @param query The search query string.
      * @param page The page number of the search.
-     * @param size How many items to be displayed per page.
-     * @param userSort What value to sort the user results by.
-     * @param bucketSort What value to sort the bucket results by.
-     * @param itemSort What value to sort the item results by.
-     * @return a SearchQueryResponse containing the search results.
+     * @param size How many {@link ca.unb.ktb.core.model.Item}s to be displayed per page.
+     * @param userSort What value to sort the {@link ca.unb.ktb.core.model.User} results by.
+     * @param bucketSort What value to sort the {@link ca.unb.ktb.core.model.Bucket} results by.
+     * @param itemSort What value to sort the {@link ca.unb.ktb.core.model.Item} results by.
+     * @return A {@link SearchQueryResponse} containing the search results.
      * */
     @ApiOperation(value = "Search for users, buckets, and items by query string.", response = SearchQueryResponse.class)
     @RequestMapping(value = "/search", method = RequestMethod.GET)

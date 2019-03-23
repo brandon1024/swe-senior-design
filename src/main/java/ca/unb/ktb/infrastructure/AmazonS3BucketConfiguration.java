@@ -20,7 +20,7 @@ public class AmazonS3BucketConfiguration {
     private Map<String, AmazonS3Bucket> buckets;
 
     /**
-     * Retrieve a AmazonS3Bucket configuration using the provided key for the bucket.
+     * Retrieve a {@link AmazonS3Bucket} configuration using the provided key for the bucket.
      *
      * @param bucketkey The bucket key.
      * @return The AmazonS3Bucket configuration POJO.

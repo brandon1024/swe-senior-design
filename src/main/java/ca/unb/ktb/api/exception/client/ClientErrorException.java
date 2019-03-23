@@ -7,4 +7,8 @@ abstract class ClientErrorException extends HttpException {
     ClientErrorException(String message) {
         super(message);
     }
+
+    ClientErrorException(String message, Throwable throwable) {
+        super(message, throwable);
+    }
 }

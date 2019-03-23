@@ -19,9 +19,8 @@ import java.util.Date;
 
 /**
  * Top level class whose fields are applied to all entities that inherit from it.
- *
- * @author Brandon Richardson
  * */
+
 @MappedSuperclass
 @JsonIgnoreProperties(value = {"createdAt", "updatedAt"}, allowGetters = true)
 @NoArgsConstructor

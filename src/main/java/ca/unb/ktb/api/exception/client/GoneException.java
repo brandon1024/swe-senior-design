@@ -12,4 +12,8 @@ public class GoneException extends ClientErrorException {
     public GoneException(String message) {
         super(message);
     }
+
+    public GoneException(String message, Throwable throwable) {
+        super(message, throwable);
+    }
 }

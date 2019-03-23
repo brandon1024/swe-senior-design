@@ -41,15 +41,16 @@ public class FeedService {
     @Autowired private UserService userService;
 
     /**
-     * Retrieve a map of users who are followed by the user with the given user id and have recently created buckets.
+     * Retrieve a map of {@link User}s who are followed by the user with the given user id and have recently created
+     * {@link Bucket}s.
      *
-     * @param userId the id of the current user.
-     * @param pageable pagination details.
+     * @param userId The id of the current {@link User}.
+     * @param pageable Pagination details.
+     * @return A {@link UserFeedResponse}.
      * */
-    public UserFeedResponse retrieveBucketsCreatedByFollowedUsers(final Long userId,
-                                                                  final Pageable pageable) {
-        userDAO.findById(userId)
-                .orElseThrow(() -> new BadRequestException("Unable to find user with id " + userId));
+    public UserFeedResponse retrieveBucketsCreatedByFollowedUsers(final Long userId, final Pageable pageable) {
+        userDAO.findById(userId).orElseThrow(() ->
+                new BadRequestException("Unable to find user with id " + userId));
 
         List<Bucket> buckets = bucketDAO.retrieveBucketsRecentlyCreatedByFollowedUsers(userId, pageable);
         Map<User, List<Bucket>> followedUserBuckets = new HashMap<>();
@@ -79,10 +80,12 @@ public class FeedService {
     }
 
     /**
-     * Retrieve a map of users who are followed by the user with the given user id and have recently created items.
+     * Retrieve a map of {@link User} who are followed by the user with the given user id and have recently created
+     * {@link Item}s.
      *
-     * @param userId the id of the current user.
+     * @param userId the id of the current {@link User}.
      * @param pageable pagination details.
+     * @return A {@link UserFeedResponse}.
      * */
     public UserFeedResponse retrieveItemsCreatedByFollowedUsers(final Long userId, final Pageable pageable) {
         userDAO.findById(userId)
@@ -116,10 +119,12 @@ public class FeedService {
     }
 
     /**
-     * Retrieve a map of users who are followed by the user with the given user id and have recently followed other users.
+     * Retrieve a map of {@link User}s who are followed by the user with the given user id and have recently followed
+     * other users.
      *
-     * @param userId the id of the current user.
+     * @param userId the id of the current {@link User}.
      * @param pageable pagination details.
+     * @return A {@link UserFeedResponse}.
      * */
     public UserFeedResponse retrieveUsersFollowedByFollowedUsers(final Long userId, final Pageable pageable) {
         userDAO.findById(userId)
@@ -154,10 +159,12 @@ public class FeedService {
     }
 
     /**
-     * Retrieve a map of users who are followed by the user with the given user id and have recently followed other buckets.
+     * Retrieve a map of {@link User} who are followed by the user with the given user id and have recently followed
+     * other {@link Bucket}s.
      *
-     * @param userId the id of the current user.
+     * @param userId the id of the current {@link User}.
      * @param pageable pagination details.
+     * @return A {@link UserFeedResponse}.
      * */
     public UserFeedResponse retrieveBucketsFollowedByFollowedUsers(final Long userId, final Pageable pageable) {
         userDAO.findById(userId)
@@ -193,10 +200,11 @@ public class FeedService {
     }
 
     /**
-     * Retrieve a list of buckets recently created by the user with the given user id.
+     * Retrieve a list of {@link Bucket}s recently created by the {@link User} with the given user id.
      *
-     * @param userId the id of the current user.
+     * @param userId the id of the current {@link User}.
      * @param pageable pagination details.
+     * @return A {@link UserFeedResponse}.
      * */
     public UserFeedResponse retrieveBucketsCreatedByUser(final Long userId, final Pageable pageable) {
         userDAO.findById(userId)
@@ -211,10 +219,11 @@ public class FeedService {
     }
 
     /**
-     * Retrieve a list of items recently created by the user with the given user id.
+     * Retrieve a list of {@link Item}s recently created by the {@link User} with the given user id.
      *
      * @param userId the id of the current user.
      * @param pageable pagination details.
+     * @return A {@link UserFeedResponse}.
      * */
     public UserFeedResponse retrieveItemsCreatedByUser(final Long userId, final Pageable pageable) {
         userDAO.findById(userId)
@@ -229,10 +238,11 @@ public class FeedService {
     }
 
     /**
-     * Retrieve a list of users recently followed by the user with the given user id.
+     * Retrieve a list of {@link User}s recently followed by the user with the given user id.
      *
-     * @param userId the id of the current user.
+     * @param userId the id of the current {@link User}.
      * @param pageable pagination details.
+     * @return A {@link UserFeedResponse}.
      * */
     public UserFeedResponse retrieveUsersFollowedByUser(final Long userId, final Pageable pageable) {
         userDAO.findById(userId)
@@ -247,10 +257,11 @@ public class FeedService {
     }
 
     /**
-     * Retrieve a list of buckets recently followed by the user with the given user id.
+     * Retrieve a list of {@link Bucket}s recently followed by the {@link User} with the given user id.
      *
-     * @param userId the id of the current user.
+     * @param userId the id of the current {@link User}.
      * @param pageable pagination details.
+     * @return A {@link UserFeedResponse}.
      * */
     public UserFeedResponse retrieveBucketsFollowedByUser(final Long userId, final Pageable pageable) {
         userDAO.findById(userId)
