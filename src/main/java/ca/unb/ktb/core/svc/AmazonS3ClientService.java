@@ -29,9 +29,9 @@ import java.util.Optional;
 public class AmazonS3ClientService {
 
     /**
-     * Upload a multipart file to AWS S3.
+     * Upload a {@link MultipartFile} to AWS S3.
      *
-     * Files are uploaded with the provided ObjectMetadata to the S3 bucket represented by the AmazonS3Bucket
+     * Files are uploaded with the provided {@link ObjectMetadata} to the S3 bucket represented by the {@link AmazonS3Bucket}
      * configuration.
      *
      * Files are stored in the bucket using the provided path, the MD5 hash of the file content, and the original
@@ -40,9 +40,9 @@ public class AmazonS3ClientService {
      *
      * File are uploaded synchronously, and this function will return the key for the object.
      *
-     * @param file The multipart file to upload to S3.
+     * @param file The {@link MultipartFile} to upload to S3.
      * @param fileMetadata Metadata to attach to the object in S3.
-     * @param bucket Details of the bucket which will receive the new file.
+     * @param bucket Details of the S3 bucket which will receive the new file.
      * @param objectPath Path to the new file within the bucket.
      * @return The object key.
      * @throws com.amazonaws.AmazonServiceException If the request was correctly submitted, but AWS was unable to process the request.
@@ -75,14 +75,14 @@ public class AmazonS3ClientService {
     }
 
     /**
-     * Generate a pre-signed URL which allows public read access for the object stored in the given AmazonS3Bucket.
+     * Generate a pre-signed URL which allows public read access for the object stored in the given {@link AmazonS3Bucket}.
      *
      * Generated URLs have a TTL of 30 minutes.
      *
      * URLs are generated with path style enabled to ensure that bucket's with dots '.' do not result in invalid
      * certificate errors in the client.
      *
-     * @param bucket The AmazonS3Bucket from which to generate a pre-signed URL.
+     * @param bucket The {@link AmazonS3Bucket} from which to generate a pre-signed URL.
      * @param objectKey The key to the object in the bucket.
      * @return A {@link Optional} containing the pre-signed {@link URL} to the object with the given key, or an empty
      * Optional if no such object exists.

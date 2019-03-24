@@ -1,175 +1,194 @@
 package ca.unb.ktb.core.svc;
 
-import ca.unb.ktb.api.BucketController;
 import ca.unb.ktb.api.dto.response.BucketSummaryResponse;
-import ca.unb.ktb.api.dto.response.UserSummaryResponse;
 import ca.unb.ktb.api.exception.client.BadRequestException;
 import ca.unb.ktb.api.exception.client.UnauthorizedException;
 import ca.unb.ktb.application.dao.BucketDAO;
-import ca.unb.ktb.application.dao.UserBucketRelationshipDAO;
-import ca.unb.ktb.application.dao.UserDAO;
 import ca.unb.ktb.core.model.Bucket;
+import ca.unb.ktb.core.model.Item;
 import ca.unb.ktb.core.model.User;
 import ca.unb.ktb.core.model.UserBucketRelationship;
 import ca.unb.ktb.core.model.validation.EntityValidator;
+import ca.unb.ktb.infrastructure.security.UserPrincipal;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 @Service
 public class BucketService {
 
-    @Autowired private ItemService itemService;
-
-    @Autowired private UserService userService;
-
-    @Autowired private UserDAO userDAO;
-
     @Autowired private BucketDAO bucketDAO;
 
-    @Autowired private UserBucketRelationshipDAO userBucketRelationshipDAO;
+    @Autowired private ItemService itemService;
+
+    @Autowired private UserBucketRelationshipService userBucketRelationshipService;
 
     /**
-     * Create a new {@link Bucket} that is associated to a given user.
+     * Create a new {@link Bucket}. The principal user will take ownership of the new bucket.
      *
-     * The bucket provided must be valid. The {@link Bucket}'s owner field will be overwritten with the {@link User}
-     * found using the ownerId parameter. The id field is set to null to prevent this method from being used to
-     * overwrite a bucket already persisted.
-     *
-     * @param ownerId The id of the {@link User} that will own the {@link Bucket}.
      * @param bucket The {@link Bucket} to create.
-     * @return A summary of the {@link Bucket} once persisted in the database.
-     * @throws BadRequestException If a {@link User} with the provided id cannot be found.
+     * @return The {@link Bucket} once persisted in the database.
      * */
-    public BucketSummaryResponse createBucket(final Long ownerId, final Bucket bucket) {
-        User bucketOwner = userDAO.findById(ownerId).orElseThrow(() ->
-                new BadRequestException(String.format("Unable to find a record with id %d.", ownerId)));
-
-        bucket.setOwner(bucketOwner);
+    public Bucket createBucket(final Bucket bucket) {
+        UserPrincipal currentUser = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        bucket.setOwner(new User(currentUser.getId()));
         bucket.setId(null);
 
-        Bucket savedBucket = saveBucket(bucket);
-        return adaptBucketToBucketSummary(savedBucket);
+        return saveBucket(bucket);
     }
 
     /**
-     * Create a new {@link Bucket} that is associated to a given {@link User}, that is duplicated from an existing bucket.
+     * Create a new {@link Bucket} that is duplicated from an existing bucket. The principal user will take ownership of
+     * the new bucket.
      *
      * Duplicated buckets will inherit all fields from the parent bucket (except bucket owner).
      *
-     * If the bucket with the id provided is private, the bucket will only be duplicated if the owner of the bucket
-     * matches the id of the childBucketOwnerId param. Conversely, if the childBucketOwnerId param matches the owner of
-     * the bucket, the bucket may be duplicated regardless of whether it is private or public.
+     * The bucket will only be duplicated if:
+     * - the bucket is public, or
+     * - the principal user owns the bucket.
      *
-     * @param newBucketOwnerId The id of the new owner of the {@link Bucket}.
-     * @param bucketId The id of the {@link Bucket} that is to be duplicated.
-     * @return A summary of the duplicated {@link Bucket} once persisted in the database.
-     * @throws BadRequestException If a {@link User} with childBucketOwnerId does not exist.
-     * @throws BadRequestException If a {@link Bucket} with parentBucketId does not exist.
-     * @throws UnauthorizedException If the {@link Bucket} is private but owners do not match.
+     * If the conditions above are not satisfied, an exception will be thrown.
+     *
+     * @param bucketId The id of the {@link Bucket} that will be duplicated.
+     * @return The duplicated {@link Bucket} once persisted in the database.
+     * @see BucketService#findBucketById(Long)
+     * @see ItemService#duplicateBucketItems(Long, Long)
      * */
-    public BucketSummaryResponse duplicateBucket(final Long newBucketOwnerId, final Long bucketId) {
-        User childBucketOwner = userDAO.findById(newBucketOwnerId).orElseThrow(() ->
-                new BadRequestException(String.format("Unable to find a record with id %d.", newBucketOwnerId)));
+    public Bucket duplicateBucket(final Long bucketId) {
+        UserPrincipal currentUser = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Bucket originalBucket = findBucketById(bucketId);
 
-        Bucket parentBucket = bucketDAO.findById(bucketId).orElseThrow(() ->
-                new BadRequestException(String.format("Unable to find a record with id %d.", bucketId)));
+        originalBucket.setOwner(new User(currentUser.getId()));
+        originalBucket.setId(null);
 
-        if(!parentBucket.getIsPublic() && !Objects.equals(parentBucket.getOwner().getId(), newBucketOwnerId)) {
-            throw new UnauthorizedException("Insufficient permissions.");
-        }
+        Bucket newBucket = saveBucket(originalBucket);
+        itemService.duplicateBucketItems(originalBucket.getId(), newBucket.getId());
 
-        parentBucket.setOwner(childBucketOwner);
-        parentBucket.setId(null);
-
-        Bucket newBucket = saveBucket(parentBucket);
-        itemService.duplicateBucketItems(newBucketOwnerId, parentBucket.getId(), newBucket.getId());
-
-        return adaptBucketToBucketSummary(newBucket);
+        return newBucket;
     }
 
     /**
-     * Retrieve a list of {@link Bucket}'s associated to a given {@link User}.
+     * Retrieve a list of {@link Bucket}s owned by a given {@link User}.
+     *
+     * If the owner id does not match the id of the principal user, only public buckets are returned.
      *
      * @param ownerId The id of the {@link User} that owns the {@link Bucket}.
-     * @param publicOnly Returns only {@link Bucket} that are public.
-     * @return A list of {@link Bucket} summaries.
-     * @throws BadRequestException If a {@link User} with the given ownerId does not exist.
+     * @return A list of {@link Bucket}s.
+     * @see BucketDAO#findAllByOwner(User)
+     * @see BucketDAO#findAllByOwnerAndIsPublicTrue(User)
      * */
-    public List<BucketSummaryResponse> findBuckets(final Long ownerId, final boolean publicOnly) {
-        User bucketOwner = userDAO.findById(ownerId).orElseThrow(() ->
-                new BadRequestException(String.format("Unable to find a record with id %d.", ownerId)));
+    public List<Bucket> findBucketsByOwner(final Long ownerId) {
+        UserPrincipal currentUser = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if(Objects.equals(ownerId, currentUser.getId())) {
+            return bucketDAO.findAllByOwner(new User(currentUser.getId()));
+        }
 
-        List<Bucket> buckets = publicOnly ? bucketDAO.findAllByOwnerAndIsPublicTrue(bucketOwner) :
-                bucketDAO.findAllByOwner(bucketOwner);
-
-        return buckets.stream()
-                .map(BucketService::adaptBucketToBucketSummary)
-                .collect(Collectors.toList());
+        return bucketDAO.findAllByOwnerAndIsPublicTrue(new User(currentUser.getId()));
     }
 
     /**
-     * Retrieve a specific {@link Bucket} by bucket id.
+     * Retrieve a specific {@link Bucket} by id.
      *
-     * If the bucket is private and the publicOnly parameter is true (i.e. the bucket with the given id is private),
-     * then an {@link UnauthorizedException} is thrown.
+     * If the bucket is private and the principal user is not the owner of the bucket, then an
+     * {@link UnauthorizedException} is thrown.
      *
-     * @param bucketId The id of the {@link Bucket} to retrieve.
-     * @param publicOnly Specify whether {@link Bucket} is retrieved only if it is public.
-     * @return A summary of a {@link Bucket}, if found.
+     * @param bucketId The id of the {@link Bucket}.
+     * @return A {@link Bucket}, if found.
      * @throws BadRequestException If a {@link Bucket} with the given id cannot be found.
-     * @throws UnauthorizedException If the {@link Bucket} with the given id is private, but the publicOnly param is true.
+     * @throws UnauthorizedException If the {@link Bucket} with the given id is private, bucket the principal user is
+     * not the owner of the bucket.
      * */
-    public BucketSummaryResponse findBucketById(final Long bucketId, final boolean publicOnly) {
+    public Bucket findBucketById(final Long bucketId) {
+        UserPrincipal currentUser = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         Bucket bucket = bucketDAO.findById(bucketId).orElseThrow(() ->
                 new BadRequestException(String.format("Unable to find a record with id %d.", bucketId)));
 
-        if(publicOnly && !bucket.getIsPublic()) {
+        /* if bucket is private and principal user does not own the bucket */
+        if(!Objects.equals(currentUser.getId(), bucket.getOwner().getId()) && !bucket.getIsPublic()) {
             throw new UnauthorizedException("Insufficient permissions.");
         }
 
-        return adaptBucketToBucketSummary(bucket);
+        return bucket;
     }
 
     /**
-     * Retrieve a list of {@link Bucket}'s with a bucket name given in the query string.
+     * Retrieve a list of {@link Bucket}s with a bucket name that partially matches a given query string.
+     *
+     * Buckets with names that partially match the query string will only be returned if:
+     * - the bucket is public, or
+     * - the principal user owns the bucket.
      *
      * @param queryString The {@link Bucket} name query string.
      * @param pageable Specify how the results should be paged.
-     * @return a list of {@link BucketSummaryResponse}'s for buckets with a bucket name that matches the query string.
+     * @return List of {@link Bucket}s with a bucket name that partially matches a given query string.
+     * @see BucketDAO#findAllByNameLike(String, Long, Pageable)
      * */
-    public List<BucketSummaryResponse> findBucketsByName(final String queryString, final Pageable pageable) {
-        List<Bucket> queriedBuckets = bucketDAO.findAllByNameLike(queryString, pageable);
+    public List<Bucket> findBucketsByName(final String queryString, final Pageable pageable) {
+        UserPrincipal currentUser = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        return queriedBuckets.stream()
-                .map(BucketService::adaptBucketToBucketSummary)
-                .collect(Collectors.toList());
+        return bucketDAO.findAllByNameLike(queryString, currentUser.getId(), pageable);
     }
 
     /**
      * Retrieve a list of {@link User}s that are following a given {@link Bucket}.
      *
      * @param bucketId The id of the {@link Bucket} used in the query.
-     * @param publicOnly Specify whether the {@link Bucket} is visible.
-     * @return List of bucket summaries.
-     * @throws UnauthorizedException If the {@link Bucket} is not public but publicOnly flag is true.
+     * @return List of {@link User}s that are following a given {@link Bucket}.
+     * @see UserBucketRelationshipService#findAllUsersFollowingBucket(Bucket)
      * */
-    public List<UserSummaryResponse> findFollowers(final Long bucketId, final boolean publicOnly) {
-        Bucket bucket = bucketDAO.findById(bucketId).orElseThrow(() ->
-                new BadRequestException(String.format("Unable to find a record with id %d.", bucketId)));
+    public List<User> findFollowers(final Long bucketId) {
+        Bucket persistedBucket = findBucketById(bucketId);
 
-        if(publicOnly && !bucket.getIsPublic()) {
-            throw new UnauthorizedException("Insufficient permissions.");
+        return userBucketRelationshipService.findAllUsersFollowingBucket(persistedBucket);
+    }
+
+    /**
+     * Retrieve a list of {@link Bucket}s that were recently created by {@link User}s that are followed by the user
+     * with the given user id.
+     *
+     * @param userId The {@link User}.
+     * @param pageable Specify how the results should be paged.
+     * @return A list of {@link Bucket}s that were recently created by {@link User}s that are followed by the user
+     * with the given user id.
+     * @see BucketDAO#retrieveBucketsRecentlyCreatedByFollowedUsers(Long, Pageable)
+     * */
+    public List<Bucket> findBucketsRecentlyCreatedByFollowedUsers(final Long userId, final Pageable pageable) {
+        return bucketDAO.retrieveBucketsRecentlyCreatedByFollowedUsers(userId, pageable);
+    }
+
+    /**
+     * Retrieve a list of {@link Bucket}s that were recently created by the {@link User} with the given id.
+     *
+     * @param userId The {@link User}.
+     * @param pageable Specify how the results should be paged.
+     * @return A list of {@link Bucket}s that were recently created by the {@link User} that the given id.
+     * */
+    public List<Bucket> findBucketsRecentlyCreatedByUser(final Long userId, final Pageable pageable) {
+        return bucketDAO.retrieveBucketsCreatedByUser(userId, pageable);
+    }
+
+    /**
+     * Retrieve a count of the number of {@link Bucket}s owned by a {@link User} with a given user id.
+     *
+     * If userId matches the id of the principal user, then a count of public and private buckets are returned.
+     * Otherwise, only a count of public buckets are returned.
+     *
+     * @param userId The id of the {@link User}.
+     * @return The number of {@link Bucket}s owned by the {@link User}.
+     * @see BucketDAO#countAllByOwner(User)
+     * @see BucketDAO#countAllByOwnerAndIsPublicIsTrue(User)
+     * */
+    public Long getBucketCount(final Long userId) {
+        UserPrincipal currentUser = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if(Objects.equals(userId, currentUser.getId())) {
+            return bucketDAO.countAllByOwner(new User(userId));
         }
 
-        return userBucketRelationshipDAO.findAllByFollowing(bucket).stream()
-                .map(UserBucketRelationship::getFollower)
-                .map(userService::adaptUserToSummary)
-                .collect(Collectors.toList());
+        return bucketDAO.countAllByOwnerAndIsPublicIsTrue(new User(userId));
     }
 
     /**
@@ -178,28 +197,15 @@ public class BucketService {
      * All non-null fields in the partialBucket are used to overwrite the same fields in the bucket currently persisted
      * in the database.
      *
-     * Partial bucket owner field is ignored, because the bucket ownership cannot be transferred to a new {@link User}.
-     *
-     * The partial bucket provided must have the owner field specified. Although it is not used to update
-     * the persisted bucket, it is used to verify the user that owns the partial bucket matches the user that owns the
-     * bucket with the given id. Specifically, this is used by the {@link BucketController} to verify that the user id
-     * provided as a path variable matches the owner of the bucket with the id provided as a path variable.
+     * The bucket owner field is ignored, because the bucket ownership cannot be transferred to a new {@link User}.
      *
      * @param partialBucket The partial {@link Bucket} used to update the bucket.
      * @param bucketId The id of the {@link Bucket} to patch.
-     * @return A summary of the patched {@link Bucket}, once persisted in the database.
-     * @throws BadRequestException If a {@link Bucket} with the given bucketId cannot be found.
-     * @throws BadRequestException If the owner of the partial {@link Bucket} does not match the owner of the bucket with the
-     * given id.
+     * @return The patched {@link Bucket}, once persisted in the database.
+     * @see BucketService#findBucketByIdOwnedByPrincipal(Long)
      * */
-    public BucketSummaryResponse patchBucket(final Bucket partialBucket, final Long bucketId) {
-        Bucket persistedBucket = bucketDAO.findById(bucketId).orElseThrow(() ->
-                        new BadRequestException(String.format("Unable to find a record with id %d.", bucketId)));
-
-        if(!Objects.equals(persistedBucket.getOwner().getId(), partialBucket.getOwner().getId())) {
-            throw new BadRequestException(String.format("Owner of bucket with id %d does not match url path variable for user id %d.",
-                    persistedBucket.getOwner().getId(), bucketId));
-        }
+    public Bucket patchBucket(final Bucket partialBucket, final Long bucketId) {
+        Bucket persistedBucket = findBucketByIdOwnedByPrincipal(bucketId);
 
         if(Objects.nonNull(partialBucket.getName())) {
             persistedBucket.setName(partialBucket.getName());
@@ -213,64 +219,67 @@ public class BucketService {
             persistedBucket.setDescription(partialBucket.getDescription());
         }
 
-        Bucket childBucket = saveBucket(persistedBucket);
-        return adaptBucketToBucketSummary(childBucket);
+        return saveBucket(persistedBucket);
     }
 
     /**
-     * Completely update a {@link Bucket} with a given id.
+     * Completely overwrite a {@link Bucket} that is currently persisted in the database. All bucket fields are updated.
      *
-     * All fields in the bucket parameter are used to overwrite the fields in the bucket currently persisted
-     * in the database.
-     *
-     * The bucket provided must have the owner field specified. It is used to verify the user that owns the
-     * bucket provided matches the user that owns the bucket with the given id. Specifically, this is used by the
-     * {@link BucketController} to verify that the user id provided as a path variable matches the
-     * owner of the bucket with the id provided as a path variable.
+     * The bucket owner field is ignored, because the bucket ownership cannot be transferred to a new {@link User}.
      *
      * @param bucket The {@link Bucket} used to update the persisted bucket.
      * @param bucketId The id of the {@link Bucket} to patch.
-     * @return A summary of the updated {@link Bucket}, once persisted in the database.
-     * @throws BadRequestException If a {@link Bucket} with the given bucketId cannot be found.
-     * @throws BadRequestException If the owner of the partial {@link Bucket} does not match the owner of the bucket with the
-     * given id.
+     * @return The updated {@link Bucket}, once persisted in the database.
+     * @see BucketService#findBucketByIdOwnedByPrincipal(Long)
      * */
-    public BucketSummaryResponse updateBucket(final Bucket bucket, final Long bucketId) {
-        Bucket persistedBucket = bucketDAO.findById(bucketId).orElseThrow(() ->
-                new BadRequestException(String.format("Unable to find a record with id %d.", bucketId)));
-
-        if(!Objects.equals(persistedBucket.getOwner().getId(), bucket.getOwner().getId())) {
-            throw new BadRequestException(String.format("Owner of bucket with id %d does not match url path variable for user id %d.",
-                    persistedBucket.getOwner().getId(), bucket.getOwner().getId()));
-        }
+    public Bucket updateBucket(final Bucket bucket, final Long bucketId) {
+        Bucket persistedBucket = findBucketByIdOwnedByPrincipal(bucketId);
 
         bucket.setId(persistedBucket.getId());
+        bucket.setOwner(persistedBucket.getOwner());
 
-        Bucket childBucket = saveBucket(persistedBucket);
-        return adaptBucketToBucketSummary(childBucket);
+        return saveBucket(persistedBucket);
     }
 
     /**
-     * Delete a bucket. The {@link Bucket}'s id field must be non-null.
+     * Delete a {@link Bucket}.
      *
-     * The bucket provided must have the owner field specified. It is used to verify the user that owns the
-     * bucket provided matches the user that owns the bucket with the given id. Specifically, this is used by the
-     * {@link BucketController} to verify that the user id provided as a path variable matches the
-     * owner of the bucket with the id provided as a path variable.
+     * All {@link UserBucketRelationship}s with the bucket are also removed, along with all the {@link Item}s contained
+     * by the bucket.
      *
      * @param bucket The {@link Bucket} to delete.
-     * @throws BadRequestException If the owner of the {@link Bucket} does not match the owner of the bucket with the given id.
+     * @throws UnauthorizedException If the principal user does not own the bucket.
+     * @see UserBucketRelationshipService#deleteUserBucketRelationships(Bucket)
+     * @see ItemService#deleteItems(Bucket)
      * */
     public void deleteBucket(final Bucket bucket) {
-        Bucket persistedBucket = bucketDAO.findById(bucket.getId()).orElseThrow(() ->
-                new BadRequestException(String.format("Unable to find a record with id %d.", bucket.getId())));
-
-        if(!Objects.equals(persistedBucket.getOwner().getId(), bucket.getOwner().getId())) {
-            throw new BadRequestException(String.format("Owner of bucket with id %d does not match url path variable for user id %d.",
-                    persistedBucket.getOwner().getId(), bucket.getOwner().getId()));
+        UserPrincipal currentUser = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if(!Objects.equals(currentUser.getId(), bucket.getOwner().getId())) {
+            throw new UnauthorizedException("Insufficient permissions.");
         }
 
-        bucketDAO.delete(persistedBucket);
+        userBucketRelationshipService.deleteUserBucketRelationships(bucket);
+        itemService.deleteItems(bucket);
+        bucketDAO.delete(bucket);
+    }
+
+    /**
+     * Find a {@link Bucket} by id and verify that it is owned by the principal user.
+     *
+     * @param bucketId The id of the {@link Bucket} to fetch.
+     * @return The {@link Bucket} with the given id that is owned by the principal user.
+     * @throws UnauthorizedException If the principal user does not own the bucket.
+     * @see BucketService#findBucketById(Long)
+     * */
+    private Bucket findBucketByIdOwnedByPrincipal(final Long bucketId) {
+        UserPrincipal currentUser = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Bucket persistedBucket = findBucketById(bucketId);
+
+        if(!Objects.equals(currentUser.getId(), persistedBucket.getOwner().getId())) {
+            throw new UnauthorizedException("Insufficient permissions.");
+        }
+
+        return persistedBucket;
     }
 
     /**
@@ -290,7 +299,7 @@ public class BucketService {
         }
 
         EntityValidator.validateEntity(bucket, () ->
-                new BadRequestException("cannot save bucket that does not meet validation constraints"));
+                new BadRequestException("Cannot save bucket that does not meet validation constraints"));
         return bucketDAO.save(bucket);
     }
 
@@ -298,9 +307,9 @@ public class BucketService {
      * Build a {@link BucketSummaryResponse} DTO of a {@link Bucket} entity.
      *
      * @param bucket The {@link Bucket} to be used to build a {@link BucketSummaryResponse}.
-     * @return A summary of the bucket.
+     * @return A summary of the {@link Bucket}.
      * */
-    public static BucketSummaryResponse adaptBucketToBucketSummary(final Bucket bucket) {
+    public BucketSummaryResponse adaptBucketToBucketSummary(final Bucket bucket) {
         Long ownerId = Objects.nonNull(bucket.getOwner()) ? bucket.getOwner().getId() : null;
         return new BucketSummaryResponse(bucket.getId(),
                 ownerId,

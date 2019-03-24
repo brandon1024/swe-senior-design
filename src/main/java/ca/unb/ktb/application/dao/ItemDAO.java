@@ -31,10 +31,18 @@ public interface ItemDAO extends JpaRepository<Item, Long> {
      * @param pageable Specify how the results should be paged.
      * @return Items that contain with the given partial item name.
      * */
-    @Query(value = "SELECT * FROM items WHERE items.name ILIKE %:partialItemName%",
-            countQuery = "SELECT COUNT(*) FROM items WHERE buckets.name ILIKE %:partialItemName%",
+    @Query(value = "SELECT * FROM items " +
+            "INNER JOIN buckets ON items.parent_id = buckets.id " +
+            "WHERE (items.name ILIKE %:partialItemName%) " +
+            "AND (buckets.is_public OR buckets.owner_id = :initiatorId)",
+            countQuery = "SELECT COUNT(*) FROM items " +
+                    "INNER JOIN buckets ON items.parent_id = buckets.id " +
+                    "WHERE (items.name ILIKE %:partialItemName%) " +
+                    "AND (buckets.is_public OR buckets.owner_id = :initiatorId)",
             nativeQuery = true)
-    List<Item> findAllByNameLike(@Param("partialItemName") final String partialItemName, final Pageable pageable);
+    List<Item> findAllByNameLike(@Param("partialItemName") final String partialItemName,
+                                 @Param("initiatorId") final Long initiatorId,
+                                 final Pageable pageable);
 
     /**
      * Retrieve a list of items which were recently created by users who are follwed by a given user.

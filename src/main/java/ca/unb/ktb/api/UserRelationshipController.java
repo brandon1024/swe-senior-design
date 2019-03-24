@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/users")
@@ -39,12 +40,18 @@ public class UserRelationshipController {
      * @param initiatorId The id of the {@link User} that wishes to follow the subject.
      * @param subjectId The id of the {@link User} that is to be followed by the initiator.
      * @param auth The authentication token.
-     * @return A {@link UserRelationshipSummaryResponse}, once persisted in the database. HTTP CREATED.
+     * @return A {@link UserRelationshipSummaryResponse}, once persisted in the database.
      * @throws UnauthorizedException If the id of the {@link User} currently authenticated does not match the path variable id.
      * @throws BadRequestException If the subjectId and initiatorId are equal.
      * */
-    @ApiOperation(value = "Create a new user relationship.", response = UserRelationshipSummaryResponse.class)
-    @RequestMapping(value = "/{id}/following", method = RequestMethod.POST)
+    @ApiOperation(
+            value = "Create a new user relationship.",
+            response = UserRelationshipSummaryResponse.class
+    )
+    @RequestMapping(
+            value = "/{id}/following",
+            method = RequestMethod.POST
+    )
     public ResponseEntity<UserRelationshipSummaryResponse> createUserRelationship(
             @PathVariable(name = "id") final Long initiatorId,
             @RequestParam(name = "id") final Long subjectId,
@@ -58,7 +65,8 @@ public class UserRelationshipController {
             throw new BadRequestException("Initiator cannot follow themselves.");
         }
 
-        UserRelationshipSummaryResponse response = userService.createUserRelationship(initiatorId, subjectId);
+        UserRelationship relationship = userService.createUserRelationship(subjectId);
+        UserRelationshipSummaryResponse response = userService.adaptUserRelationshipToSummary(relationship);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
@@ -66,14 +74,23 @@ public class UserRelationshipController {
      * Retrieve a list of {@link User}'s that are following a given user.
      *
      * @param subjectId The id of the {@link User} to be used in the query.
-     * @return A list of {@link User}s that are following the user with the given id. HTTP OK.
+     * @return A list of {@link User}s that are following the user with the given id.
      * */
-    @ApiOperation(value = "Retrieve a list of users that are following a given user.",
+    @ApiOperation(
+            value = "Retrieve a list of users that are following a given user.",
             response = UserSummaryResponse.class,
-            responseContainer = "List")
-    @RequestMapping(value = "/{id}/followers", method = RequestMethod.GET)
+            responseContainer = "List"
+    )
+    @RequestMapping(
+            value = "/{id}/followers",
+            method = RequestMethod.GET
+    )
     public ResponseEntity<List<UserSummaryResponse>> findFollowers(@PathVariable(name = "id") final Long subjectId) {
-        List<UserSummaryResponse> response = userService.findFollowers(subjectId);
+        List<User> followers = userService.findFollowers(subjectId);
+        List<UserSummaryResponse> response = followers.parallelStream()
+                .map(userService::adaptUserToSummary)
+                .collect(Collectors.toList());
+
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
@@ -81,14 +98,23 @@ public class UserRelationshipController {
      * Retrieve a list of {@link User}'s that are followed by a given user.
      *
      * @param subjectId The id of the {@link User} to be used in the query.
-     * @return A list of {@link User}s that are followed by the user with the given id. HTTP OK.
+     * @return A list of {@link User}s that are followed by the user with the given id.
      * */
-    @ApiOperation(value = "Retrieve a list of users that are followed by a given user.",
+    @ApiOperation(
+            value = "Retrieve a list of users that are followed by a given user.",
             response = UserSummaryResponse.class,
-            responseContainer = "List")
-    @RequestMapping(value = "/{id}/following", method = RequestMethod.GET)
+            responseContainer = "List"
+    )
+    @RequestMapping(
+            value = "/{id}/following",
+            method = RequestMethod.GET
+    )
     public ResponseEntity<List<UserSummaryResponse>> findFollowing(@PathVariable(name = "id") final Long subjectId) {
-        List<UserSummaryResponse> response = userService.findFollowing(subjectId);
+        List<User> following = userService.findFollowing(subjectId);
+        List<UserSummaryResponse> response = following.parallelStream()
+                .map(userService::adaptUserToSummary)
+                .collect(Collectors.toList());
+
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
@@ -103,11 +129,16 @@ public class UserRelationshipController {
      * @param subjectId The id of the {@link User}.
      * @param initiatorId The id of the {@link User}.
      * @param auth The authentication token.
-     * @return HTTP OK.
+     * @return Empty Response.
      * @throws UnauthorizedException If the id of the {@link User} currently authenticated does not match the path variable id.
      * */
-    @ApiOperation(value = "Delete a user relationship.")
-    @RequestMapping(value = "/{id}/following", method = RequestMethod.DELETE)
+    @ApiOperation(
+            value = "Delete a user relationship."
+    )
+    @RequestMapping(
+            value = "/{id}/following",
+            method = RequestMethod.DELETE
+    )
     public ResponseEntity<?> deleteUserRelationship(@PathVariable(value = "id") final Long initiatorId,
                                                     @RequestParam(value = "id") final Long subjectId,
                                                     @AuthenticationPrincipal final Authentication auth) {

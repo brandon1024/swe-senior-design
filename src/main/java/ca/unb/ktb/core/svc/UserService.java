@@ -5,18 +5,19 @@ import ca.unb.ktb.api.dto.response.UserProfileSummaryResponse;
 import ca.unb.ktb.api.dto.response.UserRelationshipSummaryResponse;
 import ca.unb.ktb.api.dto.response.UserSummaryResponse;
 import ca.unb.ktb.api.exception.client.BadRequestException;
+import ca.unb.ktb.api.exception.client.UnauthorizedException;
 import ca.unb.ktb.api.exception.server.InternalServerErrorException;
 import ca.unb.ktb.application.dao.PhysicalAddressDAO;
-import ca.unb.ktb.application.dao.UserBucketRelationshipDAO;
 import ca.unb.ktb.application.dao.UserDAO;
 import ca.unb.ktb.application.dao.UserRelationshipDAO;
+import ca.unb.ktb.core.model.Bucket;
 import ca.unb.ktb.core.model.PhysicalAddress;
 import ca.unb.ktb.core.model.User;
 import ca.unb.ktb.core.model.UserRelationship;
 import ca.unb.ktb.core.model.validation.EntityValidator;
-import ca.unb.ktb.core.svc.exception.MissingS3BucketConfigurationException;
 import ca.unb.ktb.infrastructure.AmazonS3Bucket;
 import ca.unb.ktb.infrastructure.AmazonS3BucketConfiguration;
+import ca.unb.ktb.infrastructure.security.UserPrincipal;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +25,7 @@ import org.springframework.data.domain.Example;
 import org.springframework.data.domain.ExampleMatcher;
 import org.springframework.data.domain.Pageable;
 import org.springframework.lang.Nullable;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -42,73 +44,67 @@ public class UserService {
 
     @Autowired private UserDAO userDAO;
 
-    @Autowired private UserRelationshipDAO userRelationshipDAO;
-
-    @Autowired private UserBucketRelationshipDAO userBucketRelationshipDAO;
-
     @Autowired private PhysicalAddressDAO physicalAddressDAO;
 
-    @Autowired private PasswordEncoder passwordEncoder;
+    @Autowired private UserRelationshipDAO userRelationshipDAO;
+
+    @Autowired private BucketService bucketService;
 
     @Autowired private AmazonS3ClientService s3ClientService;
 
-    @Autowired private AmazonS3BucketConfiguration bucketConfiguration;
+    @Autowired private AmazonS3BucketConfiguration awsBucketConfiguration;
+
+    @Autowired private PasswordEncoder passwordEncoder;
 
     /**
      * Create a new {@link User}.
      *
-     * The user provided must be valid. The {@link User} role field will be overwritten with the default role
-     * {@link User.Role#USER}. The {@link User} id field is set to null to prevent this method from being used to
-     * overwrite a user already persisted.
-     *
-     * @param user The user to create.
-     * @return A summary of the user once persisted in the database.
+     * @param user The {@link User} to create.
+     * @return The {@link User}, once persisted in the database.
+     * @see UserService#saveUser(User)
      * */
-    public UserSummaryResponse createUser(final User user) {
+    public User createUser(final User user) {
         user.setId(null);
 
-        User response = saveUser(user);
-        return adaptUserToSummary(response);
+        return saveUser(user);
     }
 
     /**
-     * Create a {@link UserRelationship}.
+     * Create a {@link UserRelationship}. If successful, the principal user will now be following the {@link User} with
+     * the given id.
      *
-     * @param initiatorId The id of the user that is the 'follower'.
-     * @param subjectId The id of the user that is being 'followed'.
-     * @return A summary of the user relationship, once persisted in the database.
-     * @throws BadRequestException If a user with id initiatorId or subjectId cannot be found.
+     * @param userId The id of the {@link User} that is being 'followed'.
+     * @return The {@link UserRelationship}, once persisted in the database.
+     * @throws BadRequestException If the {@link User} does not exist.
+     * @see UserService#findPrincipalUser(Long)
+     * @see UserService#findUserById(Long)
      * */
-    public UserRelationshipSummaryResponse createUserRelationship(final Long initiatorId, final Long subjectId) {
-        User follower = userDAO.findById(initiatorId)
-                .orElseThrow(() -> new BadRequestException("Unable to find user with id " + initiatorId));
-        User following = userDAO.findById(subjectId)
-                .orElseThrow(() -> new BadRequestException("Unable to find user with id " + subjectId));
+    public UserRelationship createUserRelationship(final Long userId) {
+        UserPrincipal currentUser = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        User follower = findPrincipalUser(currentUser.getId());
+        User following = findUserById(userId);
 
-        UserRelationship response = userRelationshipDAO.save(new UserRelationship(follower, following));
-        return adaptUserRelationshipToSummary(response);
+        return userRelationshipDAO.save(new UserRelationship(follower, following));
     }
 
     /**
-     * Retrieve a list of {@link User}'s that match any of the given id, username or email address, first, middle or
-     * last name.
+     * Retrieve a list of {@link User}s that match any of the given id, username or email address, first, middle or
+     * last name. Null parameters are ignored.
      *
-     * Only non-null parameters are used in the query.
-     *
-     * @param userId The id of the user to use in the query.
+     * @param userId The id of the {@link User} to use in the query.
      * @param username An optional username to use in the query.
      * @param email An optional email to use in the query.
      * @param firstName An optional first name to use in the query.
      * @param middleName An optional middle name to use in the query.
      * @param lastName An optional last name to use in the query.
-     * @return A list of users found matching any of the request parameters.
+     * @return A list of {@link User}s matching any of the parameters..
      * */
-    public List<UserSummaryResponse> findUsers(@Nullable final Long userId,
-                                               @Nullable final String username,
-                                               @Nullable final String email,
-                                               @Nullable final String firstName,
-                                               @Nullable final String middleName,
-                                               @Nullable final String lastName) {
+    public List<User> findUsers(@Nullable final Long userId,
+                                @Nullable final String username,
+                                @Nullable final String email,
+                                @Nullable final String firstName,
+                                @Nullable final String middleName,
+                                @Nullable final String lastName) {
         User queryUser = new User();
         queryUser.setId(userId);
         queryUser.setUsername(username);
@@ -117,91 +113,99 @@ public class UserService {
         queryUser.setMiddleName(middleName);
         queryUser.setLastName(lastName);
 
-        List<User> queriedUsers = userDAO.findAll(Example.of(queryUser, ExampleMatcher.matchingAny()));
-
-        return queriedUsers.stream()
-                .map(this::adaptUserToSummary)
-                .collect(Collectors.toList());
+        return userDAO.findAll(Example.of(queryUser, ExampleMatcher.matchingAny()));
     }
 
     /**
-     * Retrieve a list of {@link User}'s with a username given in the query string.
+     * Retrieve a list of {@link User}s with a username or real name that partially matches the query string.
      *
      * @param queryString The username query string.
      * @param pageable Specify how the results should be paged.
-     * @return a list of {@link UserSummaryResponse}'s for users with a username that matches the query string.
+     * @return a list of {@link User}s whose username or real name fully or partially matches the query string.
+     * @see UserDAO#findAllByUsernameOrRealNameLike(String, Pageable)
      * */
-    public List<UserSummaryResponse> findUsersByUsernameOrRealName(final String queryString, final Pageable pageable) {
-        List<User> queriedUsers = userDAO.findAllByUsernameOrRealNameLike(queryString, pageable);
-
-        return queriedUsers.stream()
-                .map(this::adaptUserToSummary)
-                .collect(Collectors.toList());
+    public List<User> findUsersByUsernameOrRealName(final String queryString, final Pageable pageable) {
+        return userDAO.findAllByUsernameOrRealNameLike(queryString, pageable);
     }
 
     /**
      * Retrieve a specific {@link User} by id.
      *
-     * @param userId The id of the user.
-     * @return The user with the given id.
-     * @throws BadRequestException If a user with the given id cannot be found.
+     * @param userId The id of the {@link User}.
+     * @return The {@link User} with the given id.
+     * @throws BadRequestException If a {@link User} with the given id cannot be found.
      * */
-    public UserSummaryResponse findUserById(final Long userId) {
-        User user = userDAO.findById(userId)
-                .orElseThrow(() -> new BadRequestException("Unable to find user with id " + userId));
-
-        return adaptUserToSummary(user);
+    public User findUserById(final Long userId) {
+        return userDAO.findById(userId).orElseThrow(() ->
+                new BadRequestException("Unable to find user with id " + userId));
     }
 
     /**
-     * Retrieve a summary of users that are following the user with the given subject id.
+     * Retrieve a list of {@link User}s that are following a given user.
      *
-     * @param subjectId The id of the user to use in the query.
-     * @return A list of user summaries for users that are following a given user.
+     * @param userId The id of the {@link User} to use in the query.
+     * @return A list of {@link User}s that are following a given user.
      * */
-    public List<UserSummaryResponse> findFollowers(final Long subjectId) {
-        UserRelationship relationship = new UserRelationship(null, new User(subjectId));
-
+    public List<User> findFollowers(final Long userId) {
+        UserRelationship relationship = new UserRelationship(null, new User(userId));
         List<UserRelationship> relationships = userRelationshipDAO.findAll(Example.of(relationship));
 
         return relationships.stream()
                 .map(UserRelationship::getFollower)
-                .map(this::adaptUserToSummary)
                 .collect(Collectors.toList());
     }
 
     /**
-     * Retrieve a summary of users that are followed by the user with the given subject id.
+     * Retrieve a list of {@link User}s that are followed by a given user.
      *
-     * @param subjectId The id of the user to use in the query.
-     * @return A list of user summaries for users that are followed by a given user.
+     * @param userId The id of the {@link User} being followed.
+     * @return A list of {@link User}s that are followed by a given user.
      * */
-    public List<UserSummaryResponse> findFollowing(final Long subjectId) {
-        UserRelationship relationship = new UserRelationship(new User(subjectId), null);
-
+    public List<User> findFollowing(final Long userId) {
+        UserRelationship relationship = new UserRelationship(new User(userId), null);
         List<UserRelationship> relationships = userRelationshipDAO.findAll(Example.of(relationship));
 
         return relationships.stream()
                 .map(UserRelationship::getFollowing)
-                .map(this::adaptUserToSummary)
                 .collect(Collectors.toList());
     }
 
     /**
-     * Patch a {@link User}.
+     * Retrieve a list of {@link UserRelationship} between followers of a given {@link User} and other users.
      *
-     * Applies only non-null fields present in the partialUser to the persistent user, and then attempts to save the
-     * user to the database.
-     *
-     * @param partialUser A partial user.
-     * @param userId The id of the user that exists in the database that will be patched.
-     * @return The persisted user.
-     * @throws BadRequestException If a user with the given id cannot be found.
-     * @throws BadRequestException If the user cannot be saved because it does not meet validation constraints.
+     * @param pageable Specify how the results should be paged.
+     * @return A list of {@link UserRelationship} between followers of a given {@link User} and other users.
+     * @see UserRelationshipDAO#retrieveUsersFollowedByFollowedUsers(Long, Pageable)
      * */
-    public UserSummaryResponse patchUser(final User partialUser, final Long userId) {
-        User persistentUser = userDAO.findById(userId)
-                .orElseThrow(() -> new BadRequestException("Unable to find user with id " + userId));
+    public List<UserRelationship> findUsersRecentlyFollowedByFollowedUsers(final Long userId, final Pageable pageable) {
+        return userRelationshipDAO.retrieveUsersFollowedByFollowedUsers(userId, pageable);
+    }
+
+    /**
+     * Retrieve a list of {@link UserRelationship} between a given {@link User} and other users.
+     *
+     * @param pageable Specify how the results should be paged.
+     * @return A list of {@link UserRelationship} between a given {@link User} and other users.
+     * @see UserRelationshipDAO#retrieveUsersFollowedByUser(Long, Pageable)
+     * */
+    public List<UserRelationship> findUsersRecentlyFollowedByUser(final Long userId, final Pageable pageable) {
+        return userRelationshipDAO.retrieveUsersFollowedByUser(userId, pageable);
+    }
+
+    /**
+     * Patch the fields in the principal {@link User}.
+     *
+     * Applies only non-null fields present in the partialUser to the principal user.
+     *
+     * User role is ignored. If the password field is non-null, it is encrypted before updating the persisted user.
+     *
+     * @param partialUser A partial {@link User}.
+     * @return The persisted {@link User}.
+     * @see UserService#findPrincipalUser(Long)
+     * */
+    public User patchUser(final User partialUser) {
+        UserPrincipal currentUser = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        User persistentUser = findPrincipalUser(currentUser.getId());
 
         if(Objects.nonNull(partialUser.getEmail())) {
             persistentUser.setEmail(partialUser.getEmail());
@@ -228,7 +232,7 @@ public class UserService {
         }
 
         if(Objects.nonNull(partialUser.getPassword())) {
-            persistentUser.setPassword(partialUser.getPassword());
+            persistentUser.setPassword(passwordEncoder.encode(partialUser.getPassword()));
         }
 
         if(Objects.nonNull(partialUser.getUserAddress())) {
@@ -263,35 +267,35 @@ public class UserService {
             if(Objects.nonNull(userAddress.getPostalCode())) {
                 persistentUserAddress.setPostalCode(userAddress.getPostalCode());
             }
+
+            physicalAddressDAO.save(persistentUserAddress);
         }
 
-        User response = userDAO.save(persistentUser);
-        return adaptUserToSummary(response);
+        return userDAO.save(persistentUser);
     }
 
     /**
-     * Update (overwrite) a {@link User}.
+     * Completely overwrite fields in the principal {@link User}.
      *
-     * Applies all fields present in the partialUser to the persistent user, and then attempts to save the user to the
-     * database.
+     * The password field is encrypted before updating the persisted user.
      *
-     * @param partialUser A user.
-     * @param userId The id of the user that exists in the database that will be updated.
-     * @return The persisted user.
+     * @param partialUser A {@link User}.
+     * @return The persisted {@link User}.
+     * @see UserService#findPrincipalUser(Long)
      * */
-    public UserSummaryResponse updateUser(final User partialUser, final Long userId) {
-        partialUser.setId(userId);
+    public User updateUser(final User partialUser) {
+        UserPrincipal currentUser = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        User user = findPrincipalUser(currentUser.getId());
+        partialUser.setId(user.getId());
 
-        User response = saveUser(partialUser);
-        return adaptUserToSummary(response);
+        return saveUser(partialUser);
     }
 
 
     /**
-     * Update a user's profile image with a new image, and return a summary of the user with a presigned URL for
-     * retrieving their new profile picture.
+     * Update the principal {@link User}'s profile image with a new image, return the updated user.
      *
-     * Images are stored in the bucket under the following path:
+     * Images are stored Amazon S3 using the {@link AmazonS3ClientService} in the bucket under the following path:
      * s3://{bucket name}/{user id}/{file md5 hash}.{original filename}
      *
      * Images are uploaded to the bucket configured through the Spring environment. The key to the new object is stored
@@ -301,25 +305,24 @@ public class UserService {
      * - username: the name of the user
      * - original-filename: the original name of the file
      *
-     * @param userId The id of the user which will receive the new profile picture.
      * @param file The new profile picture.
-     * @return A summary of the updated user.
-     * @throws MissingS3BucketConfigurationException If the USER_PROFILE bucket could not be found in the spring configuration.
+     * @return The updated {@link User}, once persisted in the database.
      * @throws InternalServerErrorException If an unexpected exception occurred.
+     * @see AmazonS3ClientService#multipartFileUpload(MultipartFile, ObjectMetadata, AmazonS3Bucket, String)
+     * @see AmazonS3BucketConfiguration
      * */
-    public UserSummaryResponse updateProfilePicture(final Long userId, final MultipartFile file) {
-        User user = userDAO.findById(userId)
-                .orElseThrow(() -> new BadRequestException("Unable to find user with id " + userId));
-
-        AmazonS3Bucket bucket = bucketConfiguration.getBuckets().get(AmazonS3BucketConfiguration.userProfileImageBucket);
+    public User updateProfilePicture(final MultipartFile file) {
+        UserPrincipal currentUser = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        User persistentUser = findPrincipalUser(currentUser.getId());
+        AmazonS3Bucket bucket = awsBucketConfiguration.getBuckets().get(AmazonS3BucketConfiguration.userProfileImageBucket);
 
         ObjectMetadata imageMetadata = new ObjectMetadata();
-        imageMetadata.addUserMetadata("username", user.getUsername());
+        imageMetadata.addUserMetadata("username", persistentUser.getUsername());
         imageMetadata.addUserMetadata("original-filename", file.getOriginalFilename());
 
         try {
-            String objectId = s3ClientService.multipartFileUpload(file, imageMetadata, bucket, userId.toString());
-            user.setProfilePictureObjectKey(objectId);
+            String objectId = s3ClientService.multipartFileUpload(file, imageMetadata, bucket, currentUser.getId().toString());
+            persistentUser.setProfilePictureObjectKey(objectId);
         } catch (InterruptedException e) {
             throw new InternalServerErrorException("Image upload interrupted unexpectedly.", e);
         } catch (IOException e) {
@@ -328,35 +331,40 @@ public class UserService {
             throw new InternalServerErrorException("Could not compute MD5 checksum of uploaded file.", e);
         }
 
-        userDAO.save(user);
-
-        return adaptUserToSummary(user);
+        return userDAO.save(persistentUser);
     }
 
     /**
-     * Delete a {@link User}, along with its user relationships.
+     * Delete principal {@link User}, along with its user relationships.
      *
-     * @param userId The id of the persisted user that is to be deleted.
+     * @see BucketService#findBucketsByOwner(Long)
      * */
-    public void deleteUser(final Long userId) {
-        User persistentUser = userDAO.findById(userId)
-                .orElseThrow(() -> new BadRequestException("Unable to find user with id " + userId));
+    public void deleteUser() {
+        UserPrincipal currentUser = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        User persistentUser = findPrincipalUser(currentUser.getId());
+        List<Bucket> buckets = bucketService.findBucketsByOwner(currentUser.getId());
+        for(Bucket bucket : buckets) {
+            bucketService.deleteBucket(bucket);
+        }
 
         List<UserRelationship> relationships = userRelationshipDAO.findByFollower(persistentUser);
-
         userRelationshipDAO.deleteAll(relationships);
         userDAO.delete(persistentUser);
     }
 
     /**
-     * Delete a user relationship.
+     * Delete a {@link User}-{@link User} relationship.
      *
-     * @param initiatorId The user being followed.
-     * @param subjectId The user that is following a user.
+     * @param initiatorId The user that is following a user.
+     * @param subjectId The user being followed.
      * */
     public void deleteUserRelationship(final Long initiatorId, final long subjectId) {
-        UserRelationship relationship = userRelationshipDAO.findOne(Example.of(new UserRelationship(new User(initiatorId), new User(subjectId)))).
-                orElseThrow(() -> new BadRequestException("Unable to find relationship"));
+        User persistentUser = findPrincipalUser(initiatorId);
+        User subject = findUserById(subjectId);
+
+        UserRelationship example = new UserRelationship(persistentUser, subject);
+        UserRelationship relationship = userRelationshipDAO.findOne(Example.of(example)).orElseThrow(() ->
+                new BadRequestException("Unable to find relationship"));
 
         userRelationshipDAO.delete(relationship);
     }
@@ -365,10 +373,10 @@ public class UserService {
      * Save a {@link User}.
      *
      * Encrypts the user's password, sets the user's role to USER, performs validation, and saves the user to the
-     * database. The user's physically address is also saved.
+     * database. The user's {@link PhysicalAddress} is also saved.
      *
-     * @param user the user to save.
-     * @return The persisted user.
+     * @param user The {@link User} to save.
+     * @return The persisted {@link User}.
      * @throws BadRequestException If the user cannot be saved because it does not meet validation constraints.
      * */
     private User saveUser(final User user) {
@@ -383,11 +391,13 @@ public class UserService {
     }
 
     /**
-     * Adapt a registration request DTO to a {@link User}. Fields in the registration request are copied to the user
+     * Adapt a {@link UserRegistrationRequest} DTO to a {@link User}. Fields in the registration request are copied to the user
      * object and returned.
      *
-     * @param registrationRequest The registration request DTO.
-     * @return The new user object.
+     * The returned user will have the role USER.
+     *
+     * @param registrationRequest The {@link UserRegistrationRequest} DTO.
+     * @return The {@link User} object.
      * */
     public static User buildUserFromRegistrationRequest(final UserRegistrationRequest registrationRequest) {
         User user = new User();
@@ -413,16 +423,20 @@ public class UserService {
     }
 
     /**
-     * Build a UserSummaryResponse DTO of a {@link User}.
+     * Build a {@link UserSummaryResponse} DTO of a {@link User}.
      *
-     * @param user The user to be used to build a UserSummaryResponse.
-     * @return A summary of the user.
+     * Generates a pre-signed URL for the {@link User}'s profile picture using the {@link AmazonS3ClientService}.
+     *
+     * @param user The {@link User} to be used to build a {@link UserSummaryResponse}.
+     * @return A summary of the {@link User}.
+     * @see AmazonS3ClientService#generatePreSignedObjectURL(AmazonS3Bucket, String)
+     * @see AmazonS3BucketConfiguration
      * */
     public UserSummaryResponse adaptUserToSummary(final User user) {
         String url = null;
 
         if(Objects.nonNull(user.getProfilePictureObjectKey())) {
-            AmazonS3Bucket bucket = bucketConfiguration.getBucket(AmazonS3BucketConfiguration.userProfileImageBucket);
+            AmazonS3Bucket bucket = awsBucketConfiguration.getBucket(AmazonS3BucketConfiguration.userProfileImageBucket);
             Optional<URL> presignedUrl = s3ClientService.generatePreSignedObjectURL(bucket, user.getProfilePictureObjectKey());
             url = presignedUrl.map(URL::toString).orElse(null);
 
@@ -437,37 +451,46 @@ public class UserService {
     }
 
     /**
-     * Build a UserRelationshipSummaryResponse DTO of a {@link UserRelationship}.
+     * Build a {@link UserRelationshipSummaryResponse} DTO of a {@link UserRelationship}.
      *
-     * @param relationship The relationship to be used to build a UserRelationshipSummaryResponse.
-     * @return A summary of the user relationship.
+     * @param relationship The {@link UserRelationship} to be used to build a {@link UserRelationshipSummaryResponse}.
+     * @return A summary of the {@link UserRelationship}.
      * */
-    public static UserRelationshipSummaryResponse adaptUserRelationshipToSummary(final UserRelationship relationship) {
+    public UserRelationshipSummaryResponse adaptUserRelationshipToSummary(final UserRelationship relationship) {
         return new UserRelationshipSummaryResponse(relationship.getFollower().getId(), relationship.getFollowing().getId());
     }
 
     /**
-     * Build a UserProfileSummaryResponse DTO of a {@link User}.
+     * Build a {@link UserProfileSummaryResponse} DTO of a {@link User}.
      *
-     * @param userId The user id to be used to build a UserProfileSummaryResponse.
-     * @return The profile summary of the user.
-     * @throws BadRequestException if the user cannot be found with the specific id.
+     * @param userId The {@link User} id to be used to build a {@link UserProfileSummaryResponse}.
+     * @return The {@link UserProfileSummaryResponse} of the {@link User}.
+     * @throws BadRequestException If the {@link User} cannot be found with the specific id.
+     * @see UserService#findUserById(Long)
      * */
-    public UserProfileSummaryResponse constructProfileSummary(final Long userId, final Long initiatorId) {
-        User user = userDAO.findById(userId).orElseThrow(() ->
-                new BadRequestException("Unable to find user with id " + userId));
-
-        int bucketCount;
-        if(Objects.equals(userId, initiatorId)){
-            bucketCount = userBucketRelationshipDAO.findPublicBucketCount(user) +
-                    userBucketRelationshipDAO.findPrivateBucketCount(user);
-        } else{
-            bucketCount = userBucketRelationshipDAO.findPublicBucketCount(user);
-        }
-
-        UserSummaryResponse userSummary = adaptUserToSummary(user);
-        return new UserProfileSummaryResponse(userSummary, userRelationshipDAO.findFollowerCount(user),
+    public UserProfileSummaryResponse constructProfileSummary(final Long userId) {
+        User user = findUserById(userId);
+        int bucketCount = bucketService.getBucketCount(userId).intValue();
+        return new UserProfileSummaryResponse(adaptUserToSummary(user), userRelationshipDAO.findFollowerCount(user),
                 userRelationshipDAO.findFollowingCount(user), bucketCount, user.getCreatedAt());
     }
 
+    /**
+     * Get the principal user, and throw an {@link UnauthorizedException} if the {@link User} does not match the given id.
+     *
+     * @param userId The {@link User} id to verify.
+     * @return The principal user, if the {@link User} id matches the given id.
+     * @throws UnauthorizedException If the {@link User} does not match the given id.
+     * @see UserService#findUserById(Long)
+     * */
+    private User findPrincipalUser(final Long userId) {
+        UserPrincipal currentUser = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        User persistentUser = findUserById(userId);
+
+        if(!Objects.equals(currentUser.getId(), persistentUser.getId())) {
+            throw new UnauthorizedException("Insufficient permissions.");
+        }
+
+        return persistentUser;
+    }
 }

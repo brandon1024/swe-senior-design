@@ -1,234 +1,209 @@
 package ca.unb.ktb.core.svc;
 
-import ca.unb.ktb.api.BucketController;
-import ca.unb.ktb.api.ItemController;
 import ca.unb.ktb.api.dto.response.ItemSummaryResponse;
 import ca.unb.ktb.api.exception.client.BadRequestException;
 import ca.unb.ktb.api.exception.client.UnauthorizedException;
-import ca.unb.ktb.application.dao.BucketDAO;
 import ca.unb.ktb.application.dao.ItemDAO;
 import ca.unb.ktb.core.model.Bucket;
 import ca.unb.ktb.core.model.Item;
 import ca.unb.ktb.core.model.validation.EntityValidator;
+import ca.unb.ktb.infrastructure.security.UserPrincipal;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 @Service
 public class ItemService {
 
-    @Autowired private BucketDAO bucketDAO;
-
     @Autowired private ItemDAO itemDAO;
 
+    @Autowired private BucketService bucketService;
+
     /**
-     * Create a new {@link Item} that is associated to a given bucket.
+     * Create a new {@link Item} that is associated to a given {@link Bucket}.
      *
-     * The item provided must be valid. The {@link Item} parent field will be overwritten with the bucket found using the
-     * bucketId parameter. The {@link Item} id field is set to null to prevent this method from being used to
-     * overwrite an item already persisted.
-     *
-     * @param bucketId The id of the bucket that the item is in.
-     * @param item The item to create.
-     * @return A summary of the item once persisted in the database.
-     * @throws BadRequestException If a bucket with the given bucketId cannot be found.
+     * @param item The {@link Item} to create.
+     * @param bucketId The id of the parent {@link Bucket}.
+     * @return The {@link Item} once persisted in the database.
+     * @throws UnauthorizedException if the principal user does not own the bucket with the given bucketId.
+     * @see BucketService#findBucketById(Long)
      * */
-    public ItemSummaryResponse createItem(final Long bucketId, final Item item) {
-        Bucket itemParent = bucketDAO.findById(bucketId)
-                .orElseThrow(() ->
-                        new BadRequestException("Unable to find a bucket with id " + bucketId));
+    public Item createItem(final Item item, final Long bucketId) {
+        UserPrincipal currentUser = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Bucket itemParent = bucketService.findBucketById(bucketId);
+
+        if(!Objects.equals(currentUser.getId(), itemParent.getOwner().getId())) {
+            throw new UnauthorizedException("Insufficient permissions.");
+        }
 
         item.setParent(itemParent);
         item.setId(null);
 
-        Item savedItem = saveItem(item);
-        return adaptItemToItemSummary(savedItem);
+        return saveItem(item);
     }
 
     /**
-     * Create a new {@link Item} that is associated to a given bucket, that is duplicated from an existing item.
+     * Create a new {@link Item} that is duplicated from an existing item.
      *
-     * Duplicated items will inherit all fields from the parent item (except {@link Item#} parent).
+     * The item must belong to a public {@link Bucket} if the principal does not own the bucket from which the item will be
+     * duplicated. The principal user must own the destination bucket.
      *
-     * If the item parent with the id provided is private, the item will only be duplicated if the owner of the item
-     * matches the id of the childBucketOwnerId param. Conversely, if the childBucketOwnerId param matches the owner of
-     * the bucket, the bucket may be duplicated regardless of whether it is private or public.
-     *
-     * @param userId The id of the user that will own the duplicated item.
-     * @param itemId The id of the item that will be duplicated.
-     * @param fromBucket The id of the bucket that currently owns the bucket.
-     * @param toBucket The id of the bucket that will own the newly created items.
-     * @return A summary of the duplicated item once persisted in the database.
-     * @throws BadRequestException If a bucket or item cannot be found with the given ids.
-     * @throws UnauthorizedException If the user is not permitted to duplicate the item.
+     * @param itemId The id of the {@link Item} that will be duplicated.
+     * @param fromBucket The id of the {@link Bucket} that currently owns the {@link Item}.
+     * @param toBucket The id of the {@link Bucket} that will own the newly created {@link Item}.
+     * @return The newly created {@link Item}, once persisted in the database.
+     * @see BucketService#findBucketById(Long)
+     * @see ItemService#findItemById(Long)
      * */
-    public ItemSummaryResponse duplicateItem(final Long userId, final Long itemId, final Long fromBucket, final Long toBucket) {
-        Item item = itemDAO.findById(itemId)
-                .orElseThrow(() ->
-                        new BadRequestException("Unable to find a item with id " + itemId));
+    public Item duplicateItem(final Long itemId, final Long fromBucket, final Long toBucket) {
+        UserPrincipal currentUser = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Bucket sourceBucket = bucketService.findBucketById(fromBucket);
+        Bucket destinationBucket = bucketService.findBucketById(toBucket);
+        Item duplicatedItem = findItemById(itemId);
 
-        Bucket itemParent = item.getParent();
-        if(!Objects.equals(itemParent.getId(), fromBucket)) {
-            throw new BadRequestException("Item parent id mismatch.");
+        /* Verify that item belongs to bucket */
+        if(!Objects.equals(duplicatedItem.getParent().getId(), sourceBucket.getId())) {
+            throw new BadRequestException(String.format("Unable to find an item with id %d and parent bucket id %d.",
+                    itemId, fromBucket));
         }
 
-        if(!itemParent.getIsPublic() && !Objects.equals(itemParent.getOwner().getId(), userId)) {
-            throw new UnauthorizedException("Insufficient permissions.");
+        /* Verify that principal user owns the destination bucket */
+        if(!Objects.equals(currentUser.getId(), destinationBucket.getOwner().getId())) {
+            throw new UnauthorizedException(String.format("Unable to duplicate item into a bucket not owned by the user with id %d.",
+                    currentUser.getId()));
         }
 
-        Bucket newItemParent = bucketDAO.findById(toBucket)
-                .orElseThrow(() ->
-                        new BadRequestException("Unable to find a bucket with id " + toBucket));
-
-        item.setId(null);
-        item.setParent(newItemParent);
-
-        Item savedItem = saveItem(item);
-        return adaptItemToItemSummary(savedItem);
+        duplicatedItem.setId(null);
+        duplicatedItem.setParent(destinationBucket);
+        return itemDAO.save(duplicatedItem);
     }
 
     /**
-     * Duplicate all {@link Item}'s that is associated to a given bucket into another existing bucket.
+     * Duplicate all {@link Item}s that are associated to a given {@link Bucket} into another existing bucket.
      *
-     * @param userId The id of the user that will own the duplicated items.
-     * @param fromBucket The id of the bucket that currently owns the bucket.
-     * @param toBucket The id of the bucket that will own the newly created items.
-     * @return A summary of the duplicated item once persisted in the database.
-     * @throws BadRequestException If a bucket or item cannot be found with the given ids.
-     * @throws UnauthorizedException if the user is not permitted to duplicate the item.
+     * @param fromBucket The id of the {@link Bucket} that currently owns the {@link Item}s.
+     * @param toBucket The id of the {@link Bucket} that will own the newly created {@link Item}s.
+     * @return A list of the new {@link Item}s.
+     * @throws UnauthorizedException If the principal user does not own the destination bucket.
+     * @see BucketService#findBucketById(Long)
      * */
-    public List<ItemSummaryResponse> duplicateBucketItems(final Long userId, final Long fromBucket, final Long toBucket) {
-        Bucket itemParent = bucketDAO.findById(fromBucket)
-                .orElseThrow(() ->
-                        new BadRequestException("Unable to find a bucket with id " + fromBucket));
+    public List<Item> duplicateBucketItems(final Long fromBucket, final Long toBucket) {
+        UserPrincipal currentUser = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Bucket itemParent = bucketService.findBucketById(fromBucket);
+        Bucket newItemParent = bucketService.findBucketById(toBucket);
 
-        if(!itemParent.getIsPublic() && !Objects.equals(itemParent.getOwner().getId(), userId)) {
-            throw new UnauthorizedException("Insufficient permissions.");
+        if(!Objects.equals(currentUser.getId(), newItemParent.getOwner().getId())) {
+            throw new UnauthorizedException(String.format("Unable to duplicate item into a bucket not owned by the user with id %d.",
+                    currentUser.getId()));
         }
-
-        Bucket newItemParent = bucketDAO.findById(toBucket)
-                .orElseThrow(() ->
-                        new BadRequestException("Unable to find a bucket with id " + toBucket));
 
         List<Item> items = itemDAO.findAllByParent(itemParent);
         for(Item item : items) {
-            item.setParent(newItemParent);
             item.setId(null);
+            item.setParent(newItemParent);
         }
 
-        itemDAO.saveAll(items);
-        return items.stream()
-                .map(ItemService::adaptItemToItemSummary)
-                .collect(Collectors.toList());
+        return itemDAO.saveAll(items);
     }
 
     /**
-     * Retrieve a list of {@link Item}'s associated to a given bucket.
+     * Retrieve a list of {@link Item}s belonging to a given {@link Bucket}.
      *
-     * @param bucketId The id of the bucket that owns the items.
-     * @param publicOnly Returns only items from buckets that are public.
-     * @return A list of item summaries.
-     * @throws BadRequestException If a bucket with the given id cannot be found.
+     * @param bucketId The id of the {@link Bucket} that owns the {@link Item}s.
+     * @return A list of {@link Item}s belonging to the given {@link Bucket}.
+     * @see BucketService#findBucketById(Long)
+     * @see ItemDAO#findAllByParent(Bucket)
      * */
-    public List<ItemSummaryResponse> findItems(final Long bucketId, final boolean publicOnly) {
-        Bucket parent = bucketDAO.findById(bucketId)
-                .orElseThrow(() ->
-                        new BadRequestException("Unable to find a bucket with id " + bucketId));
-
-        if(publicOnly && !parent.getIsPublic()) {
-            return Collections.emptyList();
-        }
-
-        List<Item> items = itemDAO.findAllByParent(parent);
-
-        return items.stream()
-                .map(ItemService::adaptItemToItemSummary)
-                .collect(Collectors.toList());
+    public List<Item> findItems(final Long bucketId) {
+        Bucket itemParent = bucketService.findBucketById(bucketId);
+        return itemDAO.findAllByParent(itemParent);
     }
 
     /**
-     * Retrieve a specific {@link Item} by item id.
+     * Retrieve a specific {@link Item} by id.
      *
-     * If the bucket is private and the publicOnly parameter is true (i.e. the bucket with the given id is private),
-     * then an UnauthorizedException is thrown.
-     *
-     * @param bucketId The id of the bucket that the item belongs to.
-     * @param itemId The id of the item to retrieve.
-     * @param publicOnly Specify whether bucket is retrieved only if it is public.
-     * @return A summary of a bucket, if found.
-     * @throws BadRequestException If a bucket with the given id cannot be found.
-     * @throws UnauthorizedException If the bucket with the given id is private, but the publicOnly param is true.
+     * @param itemId The id of the {@link Item} to retrieve.
+     * @return The {@link Item}.
+     * @throws BadRequestException If an {@link Item} with the given id cannot be found.
+     * @throws UnauthorizedException If the item belongs to a {@link Bucket} that is private, and the principal user
+     * does not own the bucket.
      * */
-    public ItemSummaryResponse findItemById(final Long bucketId, final Long itemId, final boolean publicOnly) {
-        Bucket parent = bucketDAO.findById(bucketId)
-                .orElseThrow(() ->
-                        new BadRequestException("Unable to find a bucket with id " + bucketId));
+    public Item findItemById(final Long itemId) {
+        UserPrincipal currentUser = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Item item = itemDAO.findById(itemId).orElseThrow(() ->
+                new BadRequestException(String.format("Unable to find a record with id %d.", itemId)));
 
-        Item item = itemDAO.findById(itemId)
-                .orElseThrow(() ->
-                        new BadRequestException("Unable to find a item with id " + itemId));
-
-        if(!Objects.equals(parent.getId(), item.getParent().getId())){
-            throw new BadRequestException("Item parent with id " + item.getParent().getId() + " doesn't match bucket id");
-        }
-
-        if(publicOnly && !item.getParent().getIsPublic()) {
+        Bucket parentBucket = item.getParent();
+        if(!parentBucket.getIsPublic() && !Objects.equals(parentBucket.getOwner().getId(), currentUser.getId())) {
             throw new UnauthorizedException("Insufficient permissions.");
         }
 
-        return adaptItemToItemSummary(item);
+        return item;
     }
 
     /**
-     * Retrieve a list of {@link Item}'s with an item name given in the query string.
+     * Retrieve a list of {@link Item}s whose names partially match a query string.
      *
-     * @param queryString The item name query string.
+     * {@link Item}s that belong to private {@link Bucket}s will only be returned if owned by the principal user.
+     *
+     * @param queryString The {@link Item} name query string.
      * @param pageable Specify how the results should be paged.
-     * @return a list of {@link ItemSummaryResponse}'s for items with a item name that matches the query string.
+     * @return A list of {@link Item}s whose names partially match a query string.
+     * @see ItemDAO#findAllByNameLike(String, Long, Pageable)
      * */
-    public List<ItemSummaryResponse> findItemsByName(final String queryString, final Pageable pageable) {
-        List<Item> queriedItems = itemDAO.findAllByNameLike(queryString, pageable);
+    public List<Item> findItemsByName(final String queryString, final Pageable pageable) {
+        UserPrincipal currentUser = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        return queriedItems.stream()
-                .map(ItemService::adaptItemToItemSummary)
-                .collect(Collectors.toList());
+        return itemDAO.findAllByNameLike(queryString, currentUser.getId(), pageable);
     }
 
     /**
-     * Partially update a {@link Bucket} with a given id.
+     * Retrieve a list of {@link Item}s recently created by {@link ca.unb.ktb.core.model.User}s that are followed by a
+     * given user.
      *
-     * All non-null fields in the partialBucket are used to overwrite the same fields in the bucket currently persisted
+     * {@link Item}s that belong to private {@link Bucket}s will only be returned if owned by the user with the given id.
+     *
+     * @param userId The id of the {@link ca.unb.ktb.core.model.User}.
+     * @param pageable Specify how the results should be paged.
+     * @return A list of {@link Item}s recently created by {@link ca.unb.ktb.core.model.User}s that are followed by a
+     * given user.
+     * @see ItemDAO#retrieveItemsCreatedByFollowedUsers(Long, Pageable)
+     * */
+    public List<Item> findItemsRecentlyCreatedByFollowedUsers(final Long userId, final Pageable pageable) {
+        return itemDAO.retrieveItemsCreatedByFollowedUsers(userId, pageable);
+    }
+
+    /**
+     * Retrieve a list of {@link Item}s recently created by a {@link ca.unb.ktb.core.model.User} with the given user id.
+     *
+     * @param userId The id of the {@link ca.unb.ktb.core.model.User}.
+     * @param pageable Specify how the results should be paged.
+     * @return A list of {@link Item}s recently created by a {@link ca.unb.ktb.core.model.User} with the given user id.
+     * @see ItemDAO#retrieveItemsCreatedByUser(Long, Pageable)
+     * */
+    public List<Item> findItemsRecentlyCreatedByUser(final Long userId, final Pageable pageable) {
+        return itemDAO.retrieveItemsCreatedByUser(userId, pageable);
+    }
+
+    /**
+     * Partially update an {@link Item} with a given id.
+     *
+     * All non-null fields in the partial item are used to overwrite the same fields in the item currently persisted
      * in the database.
      *
-     * Partial bucket owner field is ignored, because the bucket ownership cannot be transferred to a new user.
+     * The item parent field is ignored, because a bucket cannot be transferred to another bucket without duplication.
      *
-     * The partial bucket provided must have the owner field specified. Although it is not used to update
-     * the persisted bucket, it is used to verify the user that owns the partial bucket matches the user that owns the
-     * bucket with the given id. Specifically, this is used by the {@link BucketController} to
-     * verify that the user id provided as a path variable matches the owner of the bucket with the id provided as a path
-     * variable.
-     *
-     * @param partialItem The partial item used to update the item.
-     * @param itemId The id of the item to patch.
-     * @param bucketId The id of the bucket that owns the item.
-     * @return A summary of the patched bucket, once persisted in the database.
-     * @throws BadRequestException If a bucket with the given bucketId cannot be found.
-     * @throws BadRequestException If the owner of the partial bucket does not match the owner of the bucket with the
-     * given id.
+     * @param partialItem The partial {@link Item} used to update the item.
+     * @param itemId The id of the {@link Item} to patch.
+     * @return The patched {@link Item}, once persisted in the database.
+     * @see ItemService#findItemByIdOwnedByPrincipal(Long)
      * */
-    public ItemSummaryResponse patchItem(final Item partialItem, final Long itemId, final Long bucketId) {
-        Item persistedItem = itemDAO.findById(itemId)
-                .orElseThrow(() -> new BadRequestException("Unable to find item with id " + itemId));
-
-        if(!Objects.equals(persistedItem.getParent().getId(), bucketId)) {
-            throw new BadRequestException("Parent of item with id " + itemId +
-                    " does not match partial item parent with bucket id " + bucketId + ".");
-        }
+    public Item patchItem(final Item partialItem, final Long itemId) {
+        Item persistedItem = findItemByIdOwnedByPrincipal(itemId);
 
         if(Objects.nonNull(partialItem.getName())) {
             persistedItem.setName(partialItem.getName());
@@ -246,81 +221,92 @@ public class ItemService {
             persistedItem.setIsComplete(partialItem.getIsComplete());
         }
 
-        Item childItem = saveItem(persistedItem);
-        return adaptItemToItemSummary(childItem);
+        return saveItem(persistedItem);
     }
 
     /**
      * Completely update a {@link Item} with a given id.
      *
-     * All fields in the bucket parameter are used to overwrite the fields in the bucket currently persisted
-     * in the database.
+     * All fields in the item are used to overwrite the fields in the {@link Bucket} currently persisted in the database.
      *
-     * The item provided must have the parent field specified, and it must match the item with the provided
-     * itemId. This is used to prevent the transfer of ownership of an item.
+     * The item parent field is ignored, because a bucket cannot be transferred to another bucket without duplication.
      *
-     * @param item The item used to update the persisted item.
-     * @param itemId The id of the item to update.
-     * @param bucketId The id of the bucket that owns the item.
-     * @return A summary of the updated item, once persisted in the database.
-     * @throws BadRequestException If an item with the given itemId cannot be found.
-     * @throws BadRequestException If the parent of the item does not match the parent of the item with the given id.
+     * @param item The {@link Item} used to update the persisted item.
+     * @param itemId The id of the {@link Item} to update.
+     * @return The updated {@link Item}, once persisted in the database.
+     * @see ItemService#findItemByIdOwnedByPrincipal(Long)
      * */
-    public ItemSummaryResponse updateItem(final Item item, final Long itemId, final Long bucketId) {
-        Item persistedItem = itemDAO.findById(itemId)
-                .orElseThrow(() -> new BadRequestException("Unable to find item with id " + itemId));
-
-        if(!Objects.equals(persistedItem.getParent().getId(), bucketId)) {
-            throw new BadRequestException("Parent of item with id " + itemId +
-                    " does not match url path variable for bucket id " + bucketId + ".");
-        }
-
+    public Item updateItem(final Item item, final Long itemId) {
+        Item persistedItem = findItemByIdOwnedByPrincipal(itemId);
         item.setId(persistedItem.getId());
         item.setParent(persistedItem.getParent());
 
-        Item childItem = saveItem(persistedItem);
-        return adaptItemToItemSummary(childItem);
+        return saveItem(persistedItem);
     }
 
     /**
-     * Delete a given item. The {@link Item} id field must be non-null.
+     * Delete an {@link Item}.
      *
-     * The item provided must have the parent field specified. It is used to verify the bucket that has the
-     * item provided matches the bucket that has the item with the given id. Specifically, this is used by the
-     * {@link ItemController} to verify that the bucket id provided as a path variable matches the
-     * parent of the item with the id provided as a path variable.
-     *
-     * @param ownerId The owner of the item.
-     * @param bucketId The parent bucket id.
-     * @param itemId The id of the item.
-     * @throws BadRequestException If the parent of the item does not match the parent of the item with the given id.
+     * @param itemId The id of the {@link Item}.
+     * @see ItemService#findItemByIdOwnedByPrincipal(Long)
      * */
-    public void deleteItem(final Long ownerId, final Long bucketId, final Long itemId) {
-        Item persistedItem = itemDAO.findById(itemId)
-                .orElseThrow(() -> new BadRequestException("Unable to find item with id " + itemId));
-
-        Bucket parent = bucketDAO.findById(persistedItem.getParent().getId())
-                .orElseThrow(() -> new BadRequestException("Unable to find bucket with id " + persistedItem.getParent().getId()));
-
-        if(!Objects.equals(parent.getId(), bucketId)) {
-            throw new BadRequestException("Item does not belong to the given bucket.");
-        }
-
-        if(!Objects.equals(parent.getOwner().getId(), ownerId)) {
-            throw new BadRequestException("Owner id does not match buckets owner id");
-        }
+    public void deleteItem(final Long itemId) {
+        Item persistedItem = findItemByIdOwnedByPrincipal(itemId);
 
         itemDAO.delete(persistedItem);
     }
 
     /**
-     * Save an item.
+     * Delete all {@link Item}s within a given {@link Bucket}. The principal user must be the owner of the bucket, or an
+     * {@link UnauthorizedException} is thrown.
+     *
+     * @param bucket The {@link Bucket} whose {@link Item}s are to be removed.
+     * @throws UnauthorizedException If the principal user does not own the {@link Bucket}.
+     * @see ItemDAO#findAllByParent(Bucket)
+     * */
+    public void deleteItems(final Bucket bucket) {
+        UserPrincipal currentUser = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if(!Objects.equals(currentUser.getId(), bucket.getOwner().getId())) {
+            throw new UnauthorizedException("Insufficient permissions.");
+        }
+
+        List<Item> items = itemDAO.findAllByParent(bucket);
+        itemDAO.deleteAll(items);
+    }
+
+    /**
+     * Find an {@link Item} owned by a given {@link ca.unb.ktb.core.model.User}.
+     *
+     * This method ensures that the principal user owns the item before returning it. This is primarily used by
+     * methods that modify items to ensure that a user is not modifying a item that does not belong to them.
+     *
+     * @param itemId The id of the {@link Item} to fetch.
+     * @return The {@link Item}.
+     * @throws BadRequestException If an {@link Item} with the given id does not exist, or the parent bucket is not
+     * owned by the given owner.
+     * @throws UnauthorizedException If the owner of the {@link Item} does not match the principal user.
+     * @see ItemService#findItemById(Long)
+     * */
+    private Item findItemByIdOwnedByPrincipal(final Long itemId) {
+        UserPrincipal currentUser = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Item persistedItem = findItemById(itemId);
+        Bucket parent = persistedItem.getParent();
+
+        if(!Objects.equals(parent.getOwner().getId(), currentUser.getId())) {
+            throw new UnauthorizedException("Cannot modify an item owned by another user.");
+        }
+
+        return persistedItem;
+    }
+
+    /**
+     * Save an {@link Item}.
+     *
      * Performs constraint validation.
      *
-     * @param item The item to save.
-     * @return The item once persisted in the database.
+     * @param item The {@link Item} to save.
+     * @return The {@link Item} once persisted in the database.
      * @throws BadRequestException If the item does not meet validation constraints.
-     * @see org.springframework.data.jpa.repository.JpaRepository#save(Object)
      * */
     private Item saveItem(final Item item) {
         EntityValidator.validateEntity(item, () ->
@@ -330,12 +316,12 @@ public class ItemService {
     }
 
     /**
-     * Build a ItemSummaryResponse DTO of an Item entity.
+     * Build a {@link ItemSummaryResponse} DTO of an {@link Item}.
      *
-     * @param item The item to be used to build a ItemSummaryResponse.
-     * @return A summary of the item.
+     * @param item The {@link Item} to be used to build a {@link ItemSummaryResponse}.
+     * @return A summary of the {@link Item}.
      * */
-    public static ItemSummaryResponse adaptItemToItemSummary(final Item item) {
+    public ItemSummaryResponse adaptItemToItemSummary(final Item item) {
         Long parentId = Objects.nonNull(item.getParent()) ? item.getParent().getId() : null;
         return new ItemSummaryResponse(item.getId(),
                 parentId,

@@ -52,16 +52,42 @@ public interface BucketDAO extends JpaRepository<Bucket, Long> {
     List<Bucket> findAllByOwnerAndIsPublicTrue(final User owner);
 
     /**
+     * Count the number of buckets owned by the given user.
+     *
+     * @param owner The creator and owner of the buckets to be found.
+     * @return the number of buckets owned by the user.
+     * */
+    Long countAllByOwner(final User owner);
+
+    /**
+     * Count the number of public buckets owned by the given user.
+     *
+     * @param owner The creator and owner of the buckets to be found.
+     * @return the number of public buckets owned by the user.
+     * */
+    Long countAllByOwnerAndIsPublicIsTrue(final User owner);
+
+    /**
      * Find all buckets that contain the partial bucket name. The search is case-insensitive.
      *
+     * All public buckets that partially match the query string will be returned. If the bucket is private and partially
+     * matches the query string, the bucket will only be returned if owner_id matches initiatorId.
+     *
      * @param partialBucketName The partial bucket name to search for.
+     * @param initiatorId The user that initiated the query.
      * @param pageable Specify how the results should be paged.
      * @return Buckets that contain with the given partial bucket name.
      * */
-    @Query(value = "SELECT * FROM buckets WHERE buckets.name ILIKE %:partialBucketName%",
-            countQuery = "SELECT COUNT(*) FROM buckets WHERE buckets.name ILIKE %:partialBucketName%",
+    @Query(value = "SELECT * FROM buckets " +
+            "WHERE (buckets.name ILIKE %:partialBucketName%) " +
+            "AND (buckets.is_public OR buckets.owner_id = :initiatorId)",
+            countQuery = "SELECT COUNT(*) FROM buckets " +
+                    "WHERE (buckets.name ILIKE %:partialBucketName%) " +
+                    "AND (buckets.is_public OR buckets.owner_id = :initiatorId)",
             nativeQuery = true)
-    List<Bucket> findAllByNameLike(@Param("partialBucketName") final String partialBucketName, final Pageable pageable);
+    List<Bucket> findAllByNameLike(@Param("partialBucketName") final String partialBucketName,
+                                   @Param("initiatorId") final Long initiatorId,
+                                   final Pageable pageable);
 
     /**
      * Retrieve a list of buckets which were recently created by users who are followed by a given user.
@@ -73,11 +99,11 @@ public interface BucketDAO extends JpaRepository<Bucket, Long> {
      * @return list of buckets, sorted by created_at, recently created by the followers of a given user.
      * */
     @Query(value = "SELECT buckets.* FROM users_relationships " +
-            "INNER JOIN buckets ON (users_relationships.following_id = buckets.owner_id) " +
+            "INNER JOIN buckets ON (users_relationships.following_id = buckets.owner_id AND buckets.is_public) " +
             "WHERE users_relationships.follower_id = :followerId " +
             "ORDER BY buckets.created_at DESC",
             countQuery = "SELECT COUNT(buckets.*) FROM users_relationships " +
-                    "INNER JOIN buckets ON (users_relationships.following_id = buckets.owner_id) " +
+                    "INNER JOIN buckets ON (users_relationships.following_id = buckets.owner_id AND buckets.is_public) " +
                     "WHERE users_relationships.follower_id = :followerId " +
                     "ORDER BY buckets.created_at DESC",
             nativeQuery = true)
@@ -86,6 +112,9 @@ public interface BucketDAO extends JpaRepository<Bucket, Long> {
 
     /**
      * Retrieve a list of buckets which were recently created by a given user.
+     *
+     * This method is similar to {@link BucketDAO#findAllByOwner(User)}, except that bucket's are sorted in reverse
+     * chronological order by created_at date.
      *
      * Results are sorted by the bucket created_at field. As such, the pageable should be unsorted.
      *

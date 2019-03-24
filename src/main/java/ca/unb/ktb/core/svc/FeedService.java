@@ -4,19 +4,15 @@ import ca.unb.ktb.api.dto.response.BucketSummaryResponse;
 import ca.unb.ktb.api.dto.response.ItemSummaryResponse;
 import ca.unb.ktb.api.dto.response.UserFeedResponse;
 import ca.unb.ktb.api.dto.response.UserSummaryResponse;
-import ca.unb.ktb.api.exception.client.BadRequestException;
-import ca.unb.ktb.application.dao.BucketDAO;
-import ca.unb.ktb.application.dao.ItemDAO;
-import ca.unb.ktb.application.dao.UserBucketRelationshipDAO;
-import ca.unb.ktb.application.dao.UserDAO;
-import ca.unb.ktb.application.dao.UserRelationshipDAO;
 import ca.unb.ktb.core.model.Bucket;
 import ca.unb.ktb.core.model.Item;
 import ca.unb.ktb.core.model.User;
 import ca.unb.ktb.core.model.UserBucketRelationship;
 import ca.unb.ktb.core.model.UserRelationship;
+import ca.unb.ktb.infrastructure.security.UserPrincipal;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -28,31 +24,25 @@ import java.util.stream.Collectors;
 @Service
 public class FeedService {
 
-    @Autowired private UserDAO userDAO;
-
-    @Autowired private BucketDAO bucketDAO;
-
-    @Autowired private ItemDAO itemDAO;
-
-    @Autowired private UserRelationshipDAO userRelationshipDAO;
-
-    @Autowired private UserBucketRelationshipDAO userBucketRelationshipDAO;
-
     @Autowired private UserService userService;
 
+    @Autowired private BucketService bucketService;
+
+    @Autowired private ItemService itemService;
+
+    @Autowired private UserBucketRelationshipService userBucketRelationshipService;
+
     /**
-     * Retrieve a map of {@link User}s who are followed by the user with the given user id and have recently created
+     * Retrieve a summary of {@link User}s who are followed by the principal user and have recently created
      * {@link Bucket}s.
      *
-     * @param userId The id of the current {@link User}.
      * @param pageable Pagination details.
      * @return A {@link UserFeedResponse}.
      * */
-    public UserFeedResponse retrieveBucketsCreatedByFollowedUsers(final Long userId, final Pageable pageable) {
-        userDAO.findById(userId).orElseThrow(() ->
-                new BadRequestException("Unable to find user with id " + userId));
+    public UserFeedResponse retrieveBucketsRecentlyCreatedByFollowedUsers(final Pageable pageable) {
+        UserPrincipal currentUser = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        List<Bucket> buckets = bucketDAO.retrieveBucketsRecentlyCreatedByFollowedUsers(userId, pageable);
+        List<Bucket> buckets = bucketService.findBucketsRecentlyCreatedByFollowedUsers(currentUser.getId(), pageable);
         Map<User, List<Bucket>> followedUserBuckets = new HashMap<>();
         for(Bucket bucket : buckets) {
             User bucketOwner = bucket.getOwner();
@@ -66,32 +56,21 @@ public class FeedService {
             }
         }
 
-        List<UserFeedResponse.UserBucketPair> response = new ArrayList<>();
-        for(Map.Entry<User, List<Bucket>> entry : followedUserBuckets.entrySet()) {
-            UserSummaryResponse userSummary = userService.adaptUserToSummary(entry.getKey());
-            List<BucketSummaryResponse> bucketSummaryResponses = entry.getValue().stream()
-                    .map(BucketService::adaptBucketToBucketSummary)
-                    .collect(Collectors.toList());
-
-            response.add(new UserFeedResponse.UserBucketPair(userSummary, bucketSummaryResponses));
-        }
-
+        List<UserFeedResponse.UserBucketPair> response = adaptToUserBucketPairList(followedUserBuckets);
         return new UserFeedResponse(null, null, null, null, response, null, null, null);
     }
 
     /**
-     * Retrieve a map of {@link User} who are followed by the user with the given user id and have recently created
+     * Retrieve a summary of {@link User}s who are followed by the principal user and have recently created
      * {@link Item}s.
      *
-     * @param userId the id of the current {@link User}.
      * @param pageable pagination details.
      * @return A {@link UserFeedResponse}.
      * */
-    public UserFeedResponse retrieveItemsCreatedByFollowedUsers(final Long userId, final Pageable pageable) {
-        userDAO.findById(userId)
-                .orElseThrow(() -> new BadRequestException("Unable to find user with id " + userId));
+    public UserFeedResponse retrieveItemsRecentlyCreatedByFollowedUsers(final Pageable pageable) {
+        UserPrincipal currentUser = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        List<Item> items = itemDAO.retrieveItemsCreatedByFollowedUsers(userId, pageable);
+        List<Item> items = itemService.findItemsRecentlyCreatedByFollowedUsers(currentUser.getId(), pageable);
         Map<User, List<Item>> followedUserItems = new HashMap<>();
         for(Item item : items) {
             User itemOwner = item.getParent().getOwner();
@@ -109,7 +88,7 @@ public class FeedService {
         for(Map.Entry<User, List<Item>> entry : followedUserItems.entrySet()) {
             UserSummaryResponse userSummary = userService.adaptUserToSummary(entry.getKey());
             List<ItemSummaryResponse> itemSummaryResponses = entry.getValue().stream()
-                    .map(ItemService::adaptItemToItemSummary)
+                    .map(itemService::adaptItemToItemSummary)
                     .collect(Collectors.toList());
 
             response.add(new UserFeedResponse.UserItemPair(userSummary, itemSummaryResponses));
@@ -119,18 +98,15 @@ public class FeedService {
     }
 
     /**
-     * Retrieve a map of {@link User}s who are followed by the user with the given user id and have recently followed
-     * other users.
+     * Retrieve a summary of {@link User}s who are followed by the principal user and have recently followed other users.
      *
-     * @param userId the id of the current {@link User}.
      * @param pageable pagination details.
      * @return A {@link UserFeedResponse}.
      * */
-    public UserFeedResponse retrieveUsersFollowedByFollowedUsers(final Long userId, final Pageable pageable) {
-        userDAO.findById(userId)
-                .orElseThrow(() -> new BadRequestException("Unable to find user with id " + userId));
+    public UserFeedResponse retrieveUsersRecentlyFollowedByFollowedUsers(final Pageable pageable) {
+        UserPrincipal currentUser = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        List<UserRelationship> relationships = userRelationshipDAO.retrieveUsersFollowedByFollowedUsers(userId, pageable);
+        List<UserRelationship> relationships = userService.findUsersRecentlyFollowedByFollowedUsers(currentUser.getId(), pageable);
         Map<User, List<User>> followedUserNewRelationships = new HashMap<>();
         for(UserRelationship relationship : relationships) {
             User follower = relationship.getFollower();
@@ -159,19 +135,17 @@ public class FeedService {
     }
 
     /**
-     * Retrieve a map of {@link User} who are followed by the user with the given user id and have recently followed
+     * Retrieve a summary of {@link User}s who are followed by the principal user and have recently followed
      * other {@link Bucket}s.
      *
-     * @param userId the id of the current {@link User}.
      * @param pageable pagination details.
      * @return A {@link UserFeedResponse}.
      * */
-    public UserFeedResponse retrieveBucketsFollowedByFollowedUsers(final Long userId, final Pageable pageable) {
-        userDAO.findById(userId)
-                .orElseThrow(() -> new BadRequestException("Unable to find user with id " + userId));
+    public UserFeedResponse retrieveBucketsRecentlyFollowedByFollowedUsers(final Pageable pageable) {
+        UserPrincipal currentUser = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         List<UserBucketRelationship> relationships =
-                userBucketRelationshipDAO.retrieveBucketsFollowedByFollowedUsers(userId, pageable);
+                userBucketRelationshipService.findBucketsRecentlyFollowedByFollowedUsers(currentUser.getId(), pageable);
         Map<User, List<Bucket>> followedUserNewBucketRelationships = new HashMap<>();
         for(UserBucketRelationship relationship : relationships) {
             User follower = relationship.getFollower();
@@ -186,69 +160,54 @@ public class FeedService {
             }
         }
 
-        List<UserFeedResponse.UserBucketPair> response = new ArrayList<>();
-        for(Map.Entry<User, List<Bucket>> entry : followedUserNewBucketRelationships.entrySet()) {
-            UserSummaryResponse followerSummary = userService.adaptUserToSummary(entry.getKey());
-            List<BucketSummaryResponse> followingSummaries = entry.getValue().stream()
-                    .map(BucketService::adaptBucketToBucketSummary)
-                    .collect(Collectors.toList());
-
-            response.add(new UserFeedResponse.UserBucketPair(followerSummary, followingSummaries));
-        }
-
+        List<UserFeedResponse.UserBucketPair> response = adaptToUserBucketPairList(followedUserNewBucketRelationships);
         return new UserFeedResponse(null, null, null, null, null, null, null, response);
     }
 
     /**
-     * Retrieve a list of {@link Bucket}s recently created by the {@link User} with the given user id.
+     * Retrieve a summary of {@link Bucket}s recently created by the principal user.
      *
-     * @param userId the id of the current {@link User}.
      * @param pageable pagination details.
      * @return A {@link UserFeedResponse}.
      * */
-    public UserFeedResponse retrieveBucketsCreatedByUser(final Long userId, final Pageable pageable) {
-        userDAO.findById(userId)
-                .orElseThrow(() -> new BadRequestException("Unable to find user with id " + userId));
+    public UserFeedResponse retrieveBucketsRecentlyCreatedByUser(final Pageable pageable) {
+        UserPrincipal currentUser = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        List<Bucket> buckets = bucketDAO.retrieveBucketsCreatedByUser(userId, pageable);
+        List<Bucket> buckets = bucketService.findBucketsRecentlyCreatedByUser(currentUser.getId(), pageable);
         List<BucketSummaryResponse> bucketSummaries = buckets.stream()
-                .map(BucketService::adaptBucketToBucketSummary)
+                .map(bucketService::adaptBucketToBucketSummary)
                 .collect(Collectors.toList());
 
         return new UserFeedResponse(bucketSummaries, null, null, null, null, null, null, null);
     }
 
     /**
-     * Retrieve a list of {@link Item}s recently created by the {@link User} with the given user id.
+     * Retrieve a summary of {@link Item}s recently created by the principal user.
      *
-     * @param userId the id of the current user.
      * @param pageable pagination details.
      * @return A {@link UserFeedResponse}.
      * */
-    public UserFeedResponse retrieveItemsCreatedByUser(final Long userId, final Pageable pageable) {
-        userDAO.findById(userId)
-                .orElseThrow(() -> new BadRequestException("Unable to find user with id " + userId));
+    public UserFeedResponse retrieveItemsRecentlyCreatedByUser(final Pageable pageable) {
+        UserPrincipal currentUser = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        List<Item> items = itemDAO.retrieveItemsCreatedByUser(userId, pageable);
+        List<Item> items = itemService.findItemsRecentlyCreatedByUser(currentUser.getId(), pageable);
         List<ItemSummaryResponse> itemSummaryResponses = items.stream()
-                .map(ItemService::adaptItemToItemSummary)
+                .map(itemService::adaptItemToItemSummary)
                 .collect(Collectors.toList());
 
         return new UserFeedResponse(null, itemSummaryResponses, null, null, null, null, null, null);
     }
 
     /**
-     * Retrieve a list of {@link User}s recently followed by the user with the given user id.
+     * Retrieve a summary of {@link User}s recently followed by the principal user.
      *
-     * @param userId the id of the current {@link User}.
      * @param pageable pagination details.
      * @return A {@link UserFeedResponse}.
      * */
-    public UserFeedResponse retrieveUsersFollowedByUser(final Long userId, final Pageable pageable) {
-        userDAO.findById(userId)
-                .orElseThrow(() -> new BadRequestException("Unable to find user with id " + userId));
+    public UserFeedResponse retrieveUsersRecentlyFollowedByUser(final Pageable pageable) {
+        UserPrincipal currentUser = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        List<UserRelationship> relationships = userRelationshipDAO.retrieveUsersFollowedByUser(userId, pageable);
+        List<UserRelationship> relationships = userService.findUsersRecentlyFollowedByUser(currentUser.getId(), pageable);
         List<UserSummaryResponse> userSummaryResponses = relationships.stream()
                 .map(r -> userService.adaptUserToSummary(r.getFollowing()))
                 .collect(Collectors.toList());
@@ -257,21 +216,39 @@ public class FeedService {
     }
 
     /**
-     * Retrieve a list of {@link Bucket}s recently followed by the {@link User} with the given user id.
+     * Retrieve a summary of {@link Bucket}s recently followed by the principal user.
      *
-     * @param userId the id of the current {@link User}.
      * @param pageable pagination details.
      * @return A {@link UserFeedResponse}.
      * */
-    public UserFeedResponse retrieveBucketsFollowedByUser(final Long userId, final Pageable pageable) {
-        userDAO.findById(userId)
-                .orElseThrow(() -> new BadRequestException("Unable to find user with id " + userId));
+    public UserFeedResponse retrieveBucketsRecentlyFollowedByUser(final Pageable pageable) {
+        UserPrincipal currentUser = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        List<UserBucketRelationship> relationships = userBucketRelationshipDAO.retrieveBucketsFollowedByUser(userId, pageable);
+        List<UserBucketRelationship> relationships = userBucketRelationshipService.findBucketsRecentlyFollowedByUser(currentUser.getId(), pageable);
         List<BucketSummaryResponse> bucketSummaryResponses = relationships.stream()
-                .map(r -> BucketService.adaptBucketToBucketSummary(r.getFollowing()))
+                .map(r -> bucketService.adaptBucketToBucketSummary(r.getFollowing()))
                 .collect(Collectors.toList());
 
         return new UserFeedResponse(null, null, null, bucketSummaryResponses, null, null, null, null);
+    }
+
+    /**
+     * Adapt the map of {@link User}-{@link List<Bucket>} entries into a list of {@link UserFeedResponse.UserBucketPair}s.
+     *
+     * @param userBucketsMap a {@link Map} of {@link User}-{@link List<Bucket>} entries
+     * @return a list of {@link UserFeedResponse.UserBucketPair}s.
+     * */
+    private List<UserFeedResponse.UserBucketPair> adaptToUserBucketPairList(final Map<User, List<Bucket>> userBucketsMap) {
+        List<UserFeedResponse.UserBucketPair> response = new ArrayList<>();
+        for(Map.Entry<User, List<Bucket>> entry : userBucketsMap.entrySet()) {
+            UserSummaryResponse followerSummary = userService.adaptUserToSummary(entry.getKey());
+            List<BucketSummaryResponse> followingSummaries = entry.getValue().stream()
+                    .map(bucketService::adaptBucketToBucketSummary)
+                    .collect(Collectors.toList());
+
+            response.add(new UserFeedResponse.UserBucketPair(followerSummary, followingSummaries));
+        }
+
+        return response;
     }
 }

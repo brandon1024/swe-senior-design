@@ -4,6 +4,9 @@ import ca.unb.ktb.api.dto.response.BucketSummaryResponse;
 import ca.unb.ktb.api.dto.response.ItemSummaryResponse;
 import ca.unb.ktb.api.dto.response.SearchQueryResponse;
 import ca.unb.ktb.api.dto.response.UserSummaryResponse;
+import ca.unb.ktb.core.model.Bucket;
+import ca.unb.ktb.core.model.Item;
+import ca.unb.ktb.core.model.User;
 import ca.unb.ktb.core.svc.BucketService;
 import ca.unb.ktb.core.svc.ItemService;
 import ca.unb.ktb.core.svc.UserService;
@@ -19,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.constraints.Size;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.springframework.data.domain.Sort.Direction;
 
@@ -44,8 +48,14 @@ public class SearchController {
      * @param itemSort What value to sort the {@link ca.unb.ktb.core.model.Item} results by.
      * @return A {@link SearchQueryResponse} containing the search results.
      * */
-    @ApiOperation(value = "Search for users, buckets, and items by query string.", response = SearchQueryResponse.class)
-    @RequestMapping(value = "/search", method = RequestMethod.GET)
+    @ApiOperation(
+            value = "Search for users, buckets, and items by query string.",
+            response = SearchQueryResponse.class
+    )
+    @RequestMapping(
+            value = "/search",
+            method = RequestMethod.GET
+    )
     public ResponseEntity<SearchQueryResponse> search(
             @Size(min = 3, message = "Search query must be at least 3 characters in length")
             @RequestParam(name = "query") final String query,
@@ -54,13 +64,26 @@ public class SearchController {
             @RequestParam(name = "userSort", defaultValue = "username", required = false) final String userSort,
             @RequestParam(name = "bucketSort", defaultValue = "name", required = false) final String bucketSort,
             @RequestParam(name = "itemSort", defaultValue = "name", required = false) final String itemSort) {
-        List<UserSummaryResponse> users =
+        List<User> users =
                 userService.findUsersByUsernameOrRealName(query, PageRequest.of(page, size, Direction.ASC, userSort));
-        List<BucketSummaryResponse> buckets =
+        List<Bucket> buckets =
                 bucketService.findBucketsByName(query, PageRequest.of(page, size, Direction.ASC, bucketSort));
-        List<ItemSummaryResponse> items =
+        List<Item> items =
                 itemService.findItemsByName(query, PageRequest.of(page, size, Direction.ASC, itemSort));
 
-        return new ResponseEntity<>(new SearchQueryResponse(users, buckets, items), HttpStatus.OK);
+        /* Adapt to DTOs */
+        List<UserSummaryResponse> usersResponse = users.parallelStream()
+                .map(userService::adaptUserToSummary)
+                .collect(Collectors.toList());
+
+        List<BucketSummaryResponse> bucketsResponse = buckets.parallelStream()
+                .map(bucketService::adaptBucketToBucketSummary)
+                .collect(Collectors.toList());
+
+        List<ItemSummaryResponse> itemsResponse = items.parallelStream()
+                .map(itemService::adaptItemToItemSummary)
+                .collect(Collectors.toList());
+
+        return new ResponseEntity<>(new SearchQueryResponse(usersResponse, bucketsResponse, itemsResponse), HttpStatus.OK);
     }
 }

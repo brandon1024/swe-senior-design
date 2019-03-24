@@ -3,8 +3,12 @@ package ca.unb.ktb.api;
 import ca.unb.ktb.api.dto.response.BucketSummaryResponse;
 import ca.unb.ktb.api.dto.response.UserBucketRelationshipSummaryResponse;
 import ca.unb.ktb.api.exception.client.UnauthorizedException;
+import ca.unb.ktb.core.model.Bucket;
+import ca.unb.ktb.core.model.UserBucketRelationship;
+import ca.unb.ktb.core.svc.BucketService;
 import ca.unb.ktb.core.svc.UserBucketRelationshipService;
 import ca.unb.ktb.infrastructure.security.UserPrincipal;
+import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,12 +22,15 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/")
 public class UserBucketRelationshipController {
 
     @Autowired private UserBucketRelationshipService userBucketRelationshipService;
+
+    @Autowired private BucketService bucketService;
 
     /**
      *  Create a {@link ca.unb.ktb.core.model.User}-{@link ca.unb.ktb.core.model.Bucket} relationship. Once persisted,
@@ -34,10 +41,17 @@ public class UserBucketRelationshipController {
      * @param bucketId The id of the {@link ca.unb.ktb.core.model.Bucket} that the {@link ca.unb.ktb.core.model.User}
      * is following.
      * @param auth The authentication token.
-     * @return A summary of the relationship. HTTP CREATED.
+     * @return A summary of the relationship.
      * @throws UnauthorizedException If the principal user does not match the initiator.
      * */
-    @RequestMapping(value = "/users/{id}/following_bucket", method = RequestMethod.POST)
+    @ApiOperation(
+            value = "",
+            response = UserBucketRelationshipSummaryResponse.class
+    )
+    @RequestMapping(
+            value = "/users/{id}/following_bucket",
+            method = RequestMethod.POST
+    )
     public ResponseEntity<UserBucketRelationshipSummaryResponse> createUserBucketRelationship(
             @PathVariable(name = "id") final Long initiatorId,
             @RequestParam(name = "id") final Long bucketId,
@@ -47,8 +61,9 @@ public class UserBucketRelationshipController {
             throw new UnauthorizedException("Insufficient permissions.");
         }
 
-        UserBucketRelationshipSummaryResponse relationship = userBucketRelationshipService.createUserBucketRelationship(initiatorId, bucketId);
-        return new ResponseEntity<>(relationship, HttpStatus.CREATED);
+        UserBucketRelationship relationship = userBucketRelationshipService.createUserBucketRelationship(bucketId);
+        UserBucketRelationshipSummaryResponse response = userBucketRelationshipService.adaptUserBucketRelationshipToSummary(relationship);
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
     /**
@@ -56,12 +71,24 @@ public class UserBucketRelationshipController {
      *
      * @param subjectId The id of the {@link ca.unb.ktb.core.model.User}.
      * @return A list of {@link BucketSummaryResponse} representing all the {@link ca.unb.ktb.core.model.Bucket} the
-     * {@link ca.unb.ktb.core.model.User} is following. HTTP OK.
+     * {@link ca.unb.ktb.core.model.User} is following.
      * */
-    @RequestMapping(value = "/users/{id}/following_bucket", method = RequestMethod.GET)
+    @ApiOperation(
+            value = "",
+            response = BucketSummaryResponse.class,
+            responseContainer = "List"
+    )
+    @RequestMapping(
+            value = "/users/{id}/following_bucket",
+            method = RequestMethod.GET
+    )
     public ResponseEntity<List<BucketSummaryResponse>> findUsersFollowingBucket(
             @PathVariable(name = "id") final Long subjectId) {
-        List<BucketSummaryResponse> response = userBucketRelationshipService.findBucketsFollowedByUser(subjectId);
+        List<Bucket> buckets = userBucketRelationshipService.findBucketsFollowedByUser(subjectId);
+        List<BucketSummaryResponse> response = buckets.parallelStream()
+                .map(bucketService::adaptBucketToBucketSummary)
+                .collect(Collectors.toList());
+
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
@@ -72,11 +99,15 @@ public class UserBucketRelationshipController {
      * {@link ca.unb.ktb.core.model.Bucket}.
      * @param subjectId The id of the {@link ca.unb.ktb.core.model.Bucket} that the{@link ca.unb.ktb.core.model.User}
      * is following.
-     * @param auth The authentication token.
-     * @return HTTP OK.
+     * @param auth Authentication principal.
+     * @return Empty Response.
      * @throws UnauthorizedException If the principal user does not match the initiator.
      * */
-    @RequestMapping(value = "/users/{id}/following_bucket", method = RequestMethod.DELETE)
+    @ApiOperation(value = "")
+    @RequestMapping(
+            value = "/users/{id}/following_bucket",
+            method = RequestMethod.DELETE
+    )
     public ResponseEntity<?> deleteUserBucketRelationship(
             @PathVariable(value = "id") final Long initiatorId,
             @RequestParam(value = "id") final Long subjectId,
@@ -86,7 +117,7 @@ public class UserBucketRelationshipController {
             throw new UnauthorizedException("Insufficient permissions.");
         }
 
-        userBucketRelationshipService.deleteUserBucketRelationship(initiatorId, subjectId);
+        userBucketRelationshipService.deleteUserBucketRelationship(subjectId);
         return new ResponseEntity<>(HttpStatus.OK);
     }
 }

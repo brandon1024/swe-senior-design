@@ -48,11 +48,17 @@ public class UserAuthenticationController {
      * Issue token to {@link User}.
      *
      * @param request A valid authentication request.
-     * @return The token. HTTP CREATED.
+     * @return The token.
      * @throws AuthenticationException If authentication fails.
      * */
-    @ApiOperation(value = "Issue a new token to a user.", response = UserAuthenticationResponse.class)
-    @RequestMapping(value = "/signin", method = RequestMethod.POST)
+    @ApiOperation(
+            value = "Issue a new token to a user.",
+            response = UserAuthenticationResponse.class
+    )
+    @RequestMapping(
+            value = "/signin",
+            method = RequestMethod.POST
+    )
     public ResponseEntity<UserAuthenticationResponse> issueToken(@Valid @RequestBody final UserAuthenticationRequest request)
             throws AuthenticationException {
         final UserPrincipal userPrincipal;
@@ -79,12 +85,18 @@ public class UserAuthenticationController {
      * Register a new {@link User} and issue a new token.
      *
      * @param registrationRequest A valid authentication request.
-     * @return The token. HTTP OK.
+     * @return The token.
      * @throws AuthenticationException If authentication fails.
      * @throws BadRequestException If the new {@link User} does not meet validation constraints.
      * */
-    @ApiOperation(value = "Register a new user and issue a new token.", response = UserAuthenticationResponse.class)
-    @RequestMapping(value = "/signup", method = RequestMethod.POST)
+    @ApiOperation(
+            value = "Register a new user and issue a new token.",
+            response = UserAuthenticationResponse.class
+    )
+    @RequestMapping(
+            value = "/signup",
+            method = RequestMethod.POST
+    )
     public ResponseEntity<UserAuthenticationResponse> registerAndIssueToken(
             @Valid @RequestBody final UserRegistrationRequest registrationRequest) {
         if(!Objects.equals(registrationRequest.getPassword(), registrationRequest.getPasswordConfirm())) {
@@ -113,11 +125,17 @@ public class UserAuthenticationController {
      * Refresh token.
      *
      * @param auth The authentication token.
-     * @return The token. HTTP OK.
+     * @return The token.
      * @throws UnauthorizedException If the user is not authenticated.
      * */
-    @ApiOperation(value = "Refresh a token.", response = UserAuthenticationResponse.class)
-    @RequestMapping(value = "/token_refresh", method = RequestMethod.POST)
+    @ApiOperation(
+            value = "Refresh a token.",
+            response = UserAuthenticationResponse.class
+    )
+    @RequestMapping(
+            value = "/token_refresh",
+            method = RequestMethod.POST
+    )
     public ResponseEntity<UserAuthenticationResponse> refreshToken(@AuthenticationPrincipal final Authentication auth) {
         if(Objects.isNull(auth)) {
             throw new UnauthorizedException("User is not authenticated, and therefore cannot be granted a new token.");
@@ -137,10 +155,16 @@ public class UserAuthenticationController {
      *
      * @param username Optional request parameter for the email address.
      * @param email Optional request parameter for the username.
-     * @return {@link UserIdentityAvailabilityResponse}. HTTP OK.
+     * @return {@link UserIdentityAvailabilityResponse}.
      * */
-    @ApiOperation(value = "Check if a given identity is available.", response = UserAuthenticationResponse.class)
-    @RequestMapping(value = "/identity_available", method = RequestMethod.GET)
+    @ApiOperation(
+            value = "Check if a given identity is available.",
+            response = UserAuthenticationResponse.class
+    )
+    @RequestMapping(
+            value = "/identity_available",
+            method = RequestMethod.GET
+    )
     public ResponseEntity<UserIdentityAvailabilityResponse> checkIdentityAvailability(
             @RequestParam(name = "username", required = false) final String username,
             @RequestParam(name = "email", required = false) final String email) {

@@ -17,9 +17,15 @@ public class KickTheBucketController {
      *
      * @return The String "Success".
      * */
-    @ApiOperation(value = "Endpoint used to test that the server is live.", response = String.class)
-    @RequestMapping(value = "/", method = RequestMethod.GET)
-    public String createBucket() {
+    @ApiOperation(
+            value = "Endpoint used to test that the server is live.",
+            response = String.class
+    )
+    @RequestMapping(
+            value = "/",
+            method = RequestMethod.GET
+    )
+    public String healthCheck() {
         return "Success";
     }
 
@@ -29,8 +35,13 @@ public class KickTheBucketController {
      * @param response The HTTP response
      * @throws IOException if IO exception occurs
      * */
-    @ApiOperation(value = "Alternate endpoint for swagger API documentation.")
-    @RequestMapping(value = "/api-docs", method = RequestMethod.GET)
+    @ApiOperation(
+            value = "Alternate endpoint for swagger API documentation."
+    )
+    @RequestMapping(
+            value = "/api-docs",
+            method = RequestMethod.GET
+    )
     public void apiDocumentation(final HttpServletResponse response) throws IOException {
         response.sendRedirect("/swagger-ui.html");
     }

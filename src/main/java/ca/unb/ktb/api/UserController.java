@@ -25,6 +25,7 @@ import javax.validation.Valid;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/")
@@ -55,12 +56,17 @@ public class UserController {
      * @param firstName An optional first name to use in the query.
      * @param middleName An optional middle name to use in the query.
      * @param lastName An optional last name to use in the query.
-     * @return A list of {@link User}s found matching any of the request parameters. HTTP OK.
+     * @return A list of {@link User}s found matching any of the request parameters.
      * */
-    @ApiOperation(value = "Retrieve a list of users by various fields.",
+    @ApiOperation(
+            value = "Retrieve a list of users by various fields.",
             response = UserSummaryResponse.class,
-            responseContainer = "List")
-    @RequestMapping(value = "/users", method = RequestMethod.GET)
+            responseContainer = "List"
+    )
+    @RequestMapping(
+            value = "/users",
+            method = RequestMethod.GET
+    )
     public ResponseEntity<List<UserSummaryResponse>> findUsers(
             @RequestParam(name = "id", required = false) final Long userId,
             @RequestParam(name = "username", required = false) final String username,
@@ -68,21 +74,31 @@ public class UserController {
             @RequestParam(name = "firstname", required = false) final String firstName,
             @RequestParam(name = "middlename", required = false) final String middleName,
             @RequestParam(name = "lastname", required = false) final String lastName) {
-        List<UserSummaryResponse> users = userService.findUsers(userId, username, email, firstName, middleName, lastName);
-        return new ResponseEntity<>(users, HttpStatus.OK);
+        List<User> users = userService.findUsers(userId, username, email, firstName, middleName, lastName);
+        List<UserSummaryResponse> response = users.parallelStream()
+                .map(userService::adaptUserToSummary)
+                .collect(Collectors.toList());
+
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     /**
      * Retrieve a specific {@link User} by id.
      *
      * @param userId The id of the {@link User}.
-     * @return The {@link User} with the given id. HTTP OK.
+     * @return The {@link User} with the given id.
      * */
-    @ApiOperation(value = "Retrieve a specific user by id.", response = UserSummaryResponse.class)
-    @RequestMapping(value = "/users/{id}", method = RequestMethod.GET)
+    @ApiOperation(
+            value = "Retrieve a specific user by id.",
+            response = UserSummaryResponse.class
+    )
+    @RequestMapping(
+            value = "/users/{id}",
+            method = RequestMethod.GET
+    )
     public ResponseEntity<UserSummaryResponse> findUserById(@PathVariable(name = "id") final Long userId) {
-        UserSummaryResponse user = userService.findUserById(userId);
-        return new ResponseEntity<>(user, HttpStatus.OK);
+        User user = userService.findUserById(userId);
+        return new ResponseEntity<>(userService.adaptUserToSummary(user), HttpStatus.OK);
     }
 
     /**
@@ -93,12 +109,18 @@ public class UserController {
      * @param userId The id of the {@link User} to update.
      * @param user The {@link User} to update.
      * @param auth The authentication token.
-     * @return The updated {@link User}. HTTP OK.
+     * @return The updated {@link User}.
      * @throws UnauthorizedException If the id of the {@link User} currently authenticated does not match the path variable id.
      * */
-    @ApiOperation(value = "Update fields in a user that is currently persisted in the database.",
-            response = UserSummaryResponse.class)
-    @RequestMapping(value = "/users/{id}", method = RequestMethod.PATCH, consumes = "application/json")
+    @ApiOperation(
+            value = "Update fields in a user that is currently persisted in the database.",
+            response = UserSummaryResponse.class
+    )
+    @RequestMapping(
+            value = "/users/{id}",
+            method = RequestMethod.PATCH,
+            consumes = "application/json"
+    )
     public ResponseEntity<UserSummaryResponse> patchUser(@PathVariable(name = "id") final Long userId,
                                                          @RequestBody final User user,
                                                          @AuthenticationPrincipal final Authentication auth) {
@@ -107,8 +129,8 @@ public class UserController {
             throw new UnauthorizedException("Insufficient permissions.");
         }
 
-        UserSummaryResponse patchedUser = userService.patchUser(user, userId);
-        return new ResponseEntity<>(patchedUser, HttpStatus.OK);
+        User patchedUser = userService.patchUser(user);
+        return new ResponseEntity<>(userService.adaptUserToSummary(patchedUser), HttpStatus.OK);
     }
 
     /**
@@ -119,12 +141,18 @@ public class UserController {
      * @param userId The id of the {@link User} to update.
      * @param user The {@link User} to update.
      * @param auth The authentication token.
-     * @return The updated user. HTTP OK.
+     * @return The updated user.
      * @throws UnauthorizedException If the id of the {@link User} currently authenticated does not match the path variable id.
      * */
-    @ApiOperation(value = "Completely update a user that is currently persisted in the database.",
-            response = UserSummaryResponse.class)
-    @RequestMapping(value = "/users/{id}", method = RequestMethod.PUT, consumes = "application/json")
+    @ApiOperation(
+            value = "Completely update a user that is currently persisted in the database.",
+            response = UserSummaryResponse.class
+    )
+    @RequestMapping(
+            value = "/users/{id}",
+            method = RequestMethod.PUT,
+            consumes = "application/json"
+    )
     public ResponseEntity<UserSummaryResponse> updateUser(@PathVariable(name = "id") final Long userId,
                                                           @Valid @RequestBody final User user,
                                                           @AuthenticationPrincipal final Authentication auth) {
@@ -133,8 +161,8 @@ public class UserController {
             throw new UnauthorizedException("Insufficient permissions.");
         }
 
-        UserSummaryResponse updatedUser = userService.updateUser(user, userId);
-        return new ResponseEntity<>(updatedUser, HttpStatus.OK);
+        User updatedUser = userService.updateUser(user);
+        return new ResponseEntity<>(userService.adaptUserToSummary(updatedUser), HttpStatus.OK);
     }
 
     /**
@@ -144,11 +172,14 @@ public class UserController {
      *
      * @param userId The id of the {@link User} to be deleted.
      * @param auth The authentication token.
-     * @return HTTP OK.
+     * @return Empty response.
      * @throws UnauthorizedException If the id of the {@link User} currently authenticated does not match the path variable id.
      * */
     @ApiOperation(value = "Delete a user.")
-    @RequestMapping(value = "/users/{id}", method = RequestMethod.DELETE)
+    @RequestMapping(
+            value = "/users/{id}",
+            method = RequestMethod.DELETE
+    )
     public ResponseEntity<?> deleteUser(@PathVariable(name = "id") final Long userId,
                                         @AuthenticationPrincipal final Authentication auth) {
         UserPrincipal currentUser = (UserPrincipal) auth.getPrincipal();
@@ -156,7 +187,7 @@ public class UserController {
             throw new UnauthorizedException("Insufficient permissions.");
         }
 
-        userService.deleteUser(userId);
+        userService.deleteUser();
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
@@ -164,18 +195,19 @@ public class UserController {
      * Get a {@link User}'s profile information.
      *
      * @param userId The id of the {@link User} whose profile you wish to obtain.
-     * @return User profile response data. HTTP OK.
+     * @return User profile response data.
      * @throws UnauthorizedException If the id of the {@link User} currently authenticated does not match the path variable id.
      * */
-    @ApiOperation(value = "Get a user's profile.")
-    @RequestMapping(value = "/users/{id}/profile", method = RequestMethod.GET)
-    public ResponseEntity<UserProfileSummaryResponse> getUserProfile(@PathVariable(name = "id") final Long userId,
-                                                                     @AuthenticationPrincipal final Authentication auth) {
-
-        UserPrincipal currentUser = (UserPrincipal) auth.getPrincipal();
-        Long initiatorId = currentUser.getId();
-
-        UserProfileSummaryResponse userProfile = userService.constructProfileSummary(userId, initiatorId);
+    @ApiOperation(
+            value = "Get a user's profile.",
+            response = UserProfileSummaryResponse.class
+    )
+    @RequestMapping(
+            value = "/users/{id}/profile",
+            method = RequestMethod.GET
+    )
+    public ResponseEntity<UserProfileSummaryResponse> getUserProfile(@PathVariable(name = "id") final Long userId) {
+        UserProfileSummaryResponse userProfile = userService.constructProfileSummary(userId);
         return new ResponseEntity<>(userProfile, HttpStatus.OK);
     }
 
@@ -184,12 +216,18 @@ public class UserController {
      *
      * @param userId The id of the {@link User} whose profile picture will be changed.
      * @param file The name of the file uploaded.
-     * @return A summary of the user. HTTP OK.
+     * @return A summary of the user.
      * @throws UnauthorizedException If the id of the {@link User} currently authenticated does not match the path variable id.
      * @throws BadRequestException If the uploaded file is empty, or the file type is unsupported.
      * */
-    @ApiOperation(value = "Upload a profile picture.")
-    @RequestMapping(value = "/users/{id}/profile/imageupload", method = RequestMethod.POST)
+    @ApiOperation(
+            value = "Upload a profile picture.",
+            response = UserSummaryResponse.class
+    )
+    @RequestMapping(
+            value = "/users/{id}/profile/imageupload",
+            method = RequestMethod.POST
+    )
     public ResponseEntity<UserSummaryResponse> profilePictureUpload(@PathVariable(name = "id") final Long userId,
                                                                     @RequestParam(name = "file") final MultipartFile file,
                                                                     @AuthenticationPrincipal final Authentication auth) {
@@ -206,7 +244,7 @@ public class UserController {
             throw new BadRequestException(String.format("unsupported content type '%s", file.getContentType()));
         }
 
-        UserSummaryResponse updatedUser = userService.updateProfilePicture(userId, file);
-        return new ResponseEntity<>(updatedUser, HttpStatus.OK);
+        User updatedUser = userService.updateProfilePicture(file);
+        return new ResponseEntity<>(userService.adaptUserToSummary(updatedUser), HttpStatus.OK);
     }
 }
