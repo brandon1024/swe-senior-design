@@ -372,7 +372,7 @@ public class UserService {
     /**
      * Save a {@link User}.
      *
-     * Encrypts the user's password, sets the user's role to USER, performs validation, and saves the user to the
+     * Encrypts the user's password, sets the user's role to ROLE_USER, performs validation, and saves the user to the
      * database. The user's {@link PhysicalAddress} is also saved.
      *
      * @param user The {@link User} to save.
@@ -381,7 +381,7 @@ public class UserService {
      * */
     private User saveUser(final User user) {
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-        user.setRole(User.Role.USER);
+        user.setRole(User.Role.ROLE_USER);
 
         EntityValidator.validateEntity(user, () ->
                 new BadRequestException("cannot save user that does not meet validation constraints"));
@@ -394,7 +394,7 @@ public class UserService {
      * Adapt a {@link UserRegistrationRequest} DTO to a {@link User}. Fields in the registration request are copied to the user
      * object and returned.
      *
-     * The returned user will have the role USER.
+     * The returned user will have the role ROLE_USER.
      *
      * @param registrationRequest The {@link UserRegistrationRequest} DTO.
      * @return The {@link User} object.
@@ -407,7 +407,7 @@ public class UserService {
         user.setFirstName(registrationRequest.getFirstName());
         user.setMiddleName(registrationRequest.getMiddleName());
         user.setLastName(registrationRequest.getLastName());
-        user.setRole(User.Role.USER);
+        user.setRole(User.Role.ROLE_USER);
 
         PhysicalAddress userAddress = new PhysicalAddress();
         userAddress.setPrimaryStreetAddress(registrationRequest.getPrimaryStreetAddress());

@@ -19,7 +19,7 @@ class JSONWebTokenUtilTest {
 
     @BeforeEach void setup() {
         userPrincipal = new UserPrincipal(1L, "testUsername", "test@email.com",
-                "password", Collections.singletonList(new SimpleGrantedAuthority("USER")));
+                "password", Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER")));
     }
 
     @Nested
@@ -50,7 +50,7 @@ class JSONWebTokenUtilTest {
     @Test void validateTokenTest() {
         String token = JSONWebTokenUtil.generateToken(userPrincipal);
         userPrincipal = new UserPrincipal(2L, "testUser", "test1@email.com",
-                "password", Collections.singletonList(new SimpleGrantedAuthority("USER")));
+                "password", Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER")));
 
         Assertions.assertFalse(JSONWebTokenUtil.validateToken(token, userPrincipal));
         Assertions.assertThrows(RuntimeException.class, () ->

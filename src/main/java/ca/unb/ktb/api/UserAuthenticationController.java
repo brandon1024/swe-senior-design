@@ -49,7 +49,6 @@ public class UserAuthenticationController {
      *
      * @param request A valid authentication request.
      * @return The token.
-     * @throws AuthenticationException If authentication fails.
      * */
     @ApiOperation(
             value = "Issue a new token to a user.",
@@ -80,6 +79,41 @@ public class UserAuthenticationController {
         UserSummaryResponse response = UserPrincipalService.adaptPrincipalToSummary(userPrincipal);
         return new ResponseEntity<>(new UserAuthenticationResponse(token, response), HttpStatus.CREATED);
     }
+
+    /**
+     * This endpoint is functionally identical to the `/auth/signin` endpoint, but simpler.
+     *
+     * This endpoint is used by health check scripts, where administrator authentication has to be easily scriptable.
+     *
+     * @param username The username of the user that is being authenticated.
+     * @param password The body of the request, which is used as the password.
+     * @return The bearer token as a plain text response.
+     * */
+    @ApiOperation(
+            value = "Issue a new token to a user.",
+            response = String.class
+    )
+    @RequestMapping(
+            value = "/authenticate",
+            method = RequestMethod.POST,
+            consumes = "text/plain"
+    )
+    public ResponseEntity<String> issueToken(
+            @RequestParam(name = "username") final String username,
+            @RequestBody final String password) throws AuthenticationException {
+        final UserPrincipal userPrincipal = userPrincipalService.loadUserByUsername(username);
+
+        //Attempt to authenticate the user
+        final Authentication auth = new UsernamePasswordAuthenticationToken(userPrincipal.getUsername(), password);
+        authenticationManager.authenticate(auth);
+
+        //Generate JWT token
+        final String token = JSONWebTokenUtil.generateToken(userPrincipal);
+        userPrincipal.eraseCredentials();
+
+        return new ResponseEntity<>(token, HttpStatus.CREATED);
+    }
+
 
     /**
      * Register a new {@link User} and issue a new token.

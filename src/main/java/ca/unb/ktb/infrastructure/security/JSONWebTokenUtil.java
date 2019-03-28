@@ -114,7 +114,7 @@ public final class JSONWebTokenUtil {
         try {
             return JWTParser.parse(token).getJWTClaimsSet();
         } catch(ParseException e) {
-            throw new MalformedAuthTokenException("Unable to parse token", e);
+            throw new MalformedAuthTokenException(String.format("Unable to parse token '%s'.", token), e);
         }
     }
 

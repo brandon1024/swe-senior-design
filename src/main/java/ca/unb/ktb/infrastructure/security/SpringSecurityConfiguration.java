@@ -1,6 +1,7 @@
 package ca.unb.ktb.infrastructure.security;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -61,6 +62,10 @@ public class SpringSecurityConfiguration extends WebSecurityConfigurerAdapter {
                         .permitAll()
                 .anyRequest()
                     .authenticated()
+                .and()
+                    .requestMatcher(EndpointRequest.toAnyEndpoint())
+                        .authorizeRequests()
+                            .anyRequest().hasRole("ADMIN")
                 .and()
                     .addFilter(new AuthorizationProcessingFilter(authenticationManagerBean(), userPrincipalService));
     }

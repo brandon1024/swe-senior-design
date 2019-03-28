@@ -30,5 +30,10 @@ password=$(aws ssm get-parameters --region us-east-1 --names KTBJWTSecretKey --w
 JWT_SECRET=$(echo $password | sed -e 's/^"//' -e 's/"$//')
 
 # Run Server
+if [ -d /home/ec2-user/server/bin ] && [ -f /home/ec2-user/server/bin/pid.file ]; then
+    echo "It appears that the server is already running..."
+    exit 1
+fi
+
 SERVER_LOGS_PATH=/home/ec2-user/logs
 ./kick-the-bucket --spring.datasource.password=$DB_PASS --jwt.secret=$JWT_SECRET --logging.path=$SERVER_LOGS_PATH & echo $! > ./pid.file &

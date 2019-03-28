@@ -84,7 +84,7 @@ X-XSS-Protection: 1; mode=block
         "username": "TestUser",
         "email": "test@test.com",
         "authorities": [{
-            "authority": "USER"
+            "authority": "ROLE_USER"
         }],
         "accountNonExpired": true,
         "accountNonLocked": true,
@@ -92,6 +92,36 @@ X-XSS-Protection: 1; mode=block
         "enabled": true
     }
 }
+```
+
+### `/auth/authenticate`
+Identical to `/auth/signin`, except simplified to easily retrieve the JWT in deployment scripts. This endpoint should not be used for client-facing authentication.
+
+#### Request
+```
+POST /auth/authenticate?username=codedeployadmin HTTP/1.1
+Host: localhost:8080
+Content-Type: application/json
+Cache-Control: no-cache
+Postman-Token: 4a7ae31d-7c75-28b8-e18f-640b7abd4451
+
+password
+```
+
+#### Response
+```
+HTTP/1.1 200 OK
+Cache-Control: no-cache, no-store, max-age=0, must-revalidate
+Content-Type: application/json;charset=UTF-8
+Date: Fri, 19 Oct 2018 21:10:38 GMT
+Expires: 0
+Pragma: no-cache
+Transfer-Encoding: chunked
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
+X-XSS-Protection: 1; mode=block
+
+eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJUZXN0VXNlciIsInVpZCI6MSwiZXhwIjoxNTQwMDY5ODM4LCJpYXQiOjE1Mzk5ODM0Mzh9.QlKIMghftzvbtGcb2zTppB5vkyAzTxEN1POUqApmq7Y
 ```
 
 ### `/auth/signup`
@@ -134,7 +164,7 @@ X-XSS-Protection: 1; mode=block
         "username": "TestUser1",
         "email": "test1@test.com",
         "authorities": [{
-            "authority": "USER"
+            "authority": "ROLE_USER"
         }],
         "accountNonExpired": true,
         "accountNonLocked": true,
@@ -176,7 +206,7 @@ X-XSS-Protection: 1; mode=block
         "username": "TestUser1",
         "email": "test1@test.com",
         "authorities": [{
-            "authority": "USER"
+            "authority": "ROLE_USER"
         }],
         "accountNonExpired": true,
         "accountNonLocked": true,
@@ -254,7 +284,7 @@ JWT tokens are manipulated using the `JSONWebTokenUtil` utility class. Example u
 ### Example Usage
 ```
 //Generate Token
-final UserPrincipal user = new UserPrincipal(12L, "testUser", "test@test.ca", "password", Collections.singletonList(new SimpleGrantedAuthority(User.Role.USER.name())));
+final UserPrincipal user = new UserPrincipal(12L, "testUser", "test@test.ca", "password", Collections.singletonList(new SimpleGrantedAuthority(User.Role.ROLE_USER.name())));
 final String token = JSONWebTokenUtil.generateToken(userPrincipal);
 
 ...

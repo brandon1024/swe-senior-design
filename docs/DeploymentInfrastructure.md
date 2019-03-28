@@ -37,6 +37,9 @@ Continuous Integration (CI) and Continuous Deployment (CD) is provided through [
 * [AWS ACM Certificate Management](#aws-acm-certificate-management)
 * [AWS Simple Storage Service (S3)](#aws-simple-storage-service-s3)
     * [S3 Bucket Configuration](#s3-bucket-configuration)
+* [KTB Server Administration](#ktb-server-administration)
+    * [Administrative Users](#administrative-users)
+    * [Actuator Endpoints](#actuator-endpoints)
 * [Appendix](#appendix)
     * [Manually Deploy Build Artifacts](#manually-deploy-build-artifacts)
     * [Updating Parameter Store Secured Strings Using AWS CLI](#updating-parameter-store-secured-strings-using-aws-cli)
@@ -172,8 +175,8 @@ The executable JAR is located in `lib/`. This is executed by the executables in 
 The `scripts/` directory is where the scripts are located for executing the server on the EC2 instance. They are simply wrapper scripts for the executables in `bin/` which configure the server correctly to run in the production environment. They are used by CodeDeploy to install and run in the EC2 instance.
 - `server-start.sh` configures the server to run with the production configuration profile, and runs the `bin/kick-the-bucket` executable. The server PID is written to `pid.file`, which is used by `server-stop.sh` to stop the server. It also fetches from Parameter Store the password for the PostgreSQL database and the JWT secret, and provides it to the server as a command line argument.
 - `server-start-silent.sh` runs `server-start.sh` but redirects stdout and stderr to `server.out` and `server.err`, runs the script in the background, and immediately exits. This script is used to ensure that CodeDeploy doesn't timeout while starting the server.
-- `server-stop.sh` stops the server by killing the process with the PID found in `pid.file`.
-- `server-validate.sh` is used by CodeDeploy to very that the server started correctly. It simply polls `http://localhost:80/` until it receives `Success`, and exits with status 0. If the script can't reach the server after 3 minutes, the script exits with status 1.
+- `server-stop.sh` attempts to stop the server gracefully using the `/shutdown` actuator endpoint, falling back on a more forceful termination of the server if the server could not be stopped.
+- `server-validate.sh` is used by CodeDeploy to very that the server started correctly. The script polls the `/health` actuator endpoint to verify that the server started correctly. If the script can't reach the server after 3 minutes, the script exits with status 1.
 - `change-permissions.sh` gives execution permissions to all scripts and executables in this artifact.
 - `server-restart.sh` can be used by administrators to restart the server manually.
 
@@ -315,11 +318,11 @@ $ aws deploy create-deployment \
 A complete example on manually packaging and deploying new artifacts is provided in the appendix.
 
 ### Parameter Store
-AWS parameter store is used to store secured resources, such as passwords or credentials, that must be accessed by the deployment scripts to properly configure the server. The two values stored in Parameter Store are the PostgreSQL root user password and the secret key used for JWT. These values are fetched using the AWS CLI by the `scripts/server-start.sh` script, and the values are injected into the Spring environment by command line arguments passed to the Spring executable.
+AWS parameter store is used to store secured resources, such as passwords or credentials, that must be accessed by the deployment scripts to properly configure the server. Some of the values stored in Parameter Store include the PostgreSQL root user password and the secret key used for JWT. These values are fetched using the AWS CLI by the deployment scripts.
 
-To access these values, a user or service must have the IAM `ParameterStorePolicy` policy. A JSON representation of this policy can be found in the appendix.
+To access these values, a user or service must be assigned the IAM `ParameterStorePolicy` policy. A JSON representation of this policy can be found in the appendix.
 
-To create a new parameter:
+New parameters may be created through the AWS console, or usinng the AWS CLI:
 ```
 $ aws ssm put-parameter --name <name> --value "<new value>" --type SecureString --region us-east-1
 ```
@@ -404,6 +407,29 @@ For more details on configuring Spring to communicate with AWS S3 for developmen
 - prod.s3.ktb.brandonrichardson.ca
     - Region: us-east-1
     - Description: User profile picture storage for production.
+
+## KTB Server Administration
+### Administrative Users
+Default administrative users are created automatically through the database initialization script `data.sql`, which can be found in `src/main/resources`. The initialization script is configured to be run only in the production environment.
+
+At the moment, only a single administrative user exists and is used exclusively by the Code Deploy Agent to gracefully stop the server during deployment, and to verify that the server is running as expected.
+
+Administrative users should be created sparingly for security purposes. To create a new administrative user in production:
+- generate a secure password (preferably 16-32 characters in length), and encrypt using bcrypt using the same scheme used by the server.
+    - a valid approach to encrypt the password is to create a new user with the admin password, and query from the database the `password` field for that user.
+- update the `src/main/data.sql` with the new user.
+    - be sure to pick an admin username that is not taken.
+    - be sure to update the script to delete any users that have a username matching the new admin username.
+- restart the server.
+
+Read more about [Database Initialization in Spring Boot](https://docs.spring.io/spring-boot/docs/current/reference/html/howto-database-initialization.html).
+
+### Actuator Endpoints
+Actuator endpoints let you monitor and interact with the server. Spring Boot includes a number of built-in endpoints and lets you add your own. For example, the health endpoint provides basic application health information.
+
+By default, all actuator endpoints are disabled, with the exception of the `/health` and `/shutdown` endpoints. To use the endpoints, only an authorized administrative user (with ROLE_ADMIN) is permitted to use the actuator endpoints.
+
+Read more about [Actuator Endpoints](https://docs.spring.io/spring-boot/docs/current/reference/html/production-ready-endpoints.html).
 
 ## Appendix
 ### Manually Deploy Build Artifacts

@@ -36,10 +36,10 @@ import javax.validation.constraints.Size;
 public class User extends PersistentObject {
 
     public enum Role {
-        ADMIN,
-        DEV,
-        USER,
-        VISITOR
+        ROLE_ADMIN,
+        ROLE_DEV,
+        ROLE_USER,
+        ROLE_VISITOR
     }
 
     public User(final Long id) {
