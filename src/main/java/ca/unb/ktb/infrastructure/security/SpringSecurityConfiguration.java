@@ -49,6 +49,8 @@ public class SpringSecurityConfiguration extends WebSecurityConfigurerAdapter {
                     .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                     .and()
                 .authorizeRequests()
+                    .requestMatchers(EndpointRequest.toAnyEndpoint())
+                        .hasRole("ADMIN")
                     .antMatchers("/auth/**")
                         .permitAll()
                     .antMatchers("/api-docs",
@@ -62,10 +64,6 @@ public class SpringSecurityConfiguration extends WebSecurityConfigurerAdapter {
                         .permitAll()
                 .anyRequest()
                     .authenticated()
-                .and()
-                    .requestMatcher(EndpointRequest.toAnyEndpoint())
-                        .authorizeRequests()
-                            .anyRequest().hasRole("ADMIN")
                 .and()
                     .addFilter(new AuthorizationProcessingFilter(authenticationManagerBean(), userPrincipalService));
     }

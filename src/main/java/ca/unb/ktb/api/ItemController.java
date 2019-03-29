@@ -2,7 +2,6 @@ package ca.unb.ktb.api;
 
 import ca.unb.ktb.api.dto.response.ItemSummaryResponse;
 import ca.unb.ktb.api.exception.client.BadRequestException;
-import ca.unb.ktb.api.exception.client.UnauthorizedException;
 import ca.unb.ktb.core.model.Bucket;
 import ca.unb.ktb.core.model.Item;
 import ca.unb.ktb.core.svc.BucketService;

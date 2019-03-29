@@ -75,7 +75,6 @@ public class User extends PersistentObject {
     @NotBlank
     @Size(max = 255)
     @JsonIgnore
-    @ToString.Exclude
     private String password;
 
     @Enumerated(EnumType.STRING)
