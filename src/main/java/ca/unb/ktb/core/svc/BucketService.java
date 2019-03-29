@@ -10,6 +10,7 @@ import ca.unb.ktb.core.model.User;
 import ca.unb.ktb.core.model.UserBucketRelationship;
 import ca.unb.ktb.core.model.validation.EntityValidator;
 import ca.unb.ktb.infrastructure.security.UserPrincipal;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -19,6 +20,7 @@ import java.util.List;
 import java.util.Objects;
 
 @Service
+@Slf4j
 public class BucketService {
 
     @Autowired private BucketDAO bucketDAO;
@@ -37,6 +39,9 @@ public class BucketService {
         UserPrincipal currentUser = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         bucket.setOwner(new User(currentUser.getId()));
         bucket.setId(null);
+
+        LOG.info("User {} creating new bucket with name {}", currentUser.getId(), bucket.getName());
+        LOG.debug("Bucket details: {}", bucket.toString());
 
         return saveBucket(bucket);
     }
@@ -61,6 +66,8 @@ public class BucketService {
     public Bucket duplicateBucket(final Long bucketId) {
         UserPrincipal currentUser = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         Bucket originalBucket = findBucketById(bucketId);
+
+        LOG.info("User {} duplicating bucket {}", currentUser.getId(), originalBucket.getId());
 
         originalBucket.setOwner(new User(currentUser.getId()));
         originalBucket.setId(null);
@@ -219,6 +226,8 @@ public class BucketService {
             persistedBucket.setDescription(partialBucket.getDescription());
         }
 
+        LOG.info("User {} patching bucket {}", persistedBucket.getOwner().getId(), persistedBucket.getId());
+
         return saveBucket(persistedBucket);
     }
 
@@ -237,6 +246,8 @@ public class BucketService {
 
         bucket.setId(persistedBucket.getId());
         bucket.setOwner(persistedBucket.getOwner());
+
+        LOG.info("User {} updating bucket {}", bucket.getOwner().getId(), bucket.getId());
 
         return saveBucket(persistedBucket);
     }
@@ -257,6 +268,8 @@ public class BucketService {
         if(!Objects.equals(currentUser.getId(), bucket.getOwner().getId())) {
             throw new UnauthorizedException("Insufficient permissions.");
         }
+
+        LOG.info("User {} deleting bucket {}", currentUser.getId(), bucket.getId());
 
         userBucketRelationshipService.deleteUserBucketRelationships(bucket);
         itemService.deleteItems(bucket);

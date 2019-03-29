@@ -9,6 +9,7 @@ import ca.unb.ktb.core.model.User;
 import ca.unb.ktb.core.model.UserBucketRelationship;
 import ca.unb.ktb.core.model.validation.EntityValidator;
 import ca.unb.ktb.infrastructure.security.UserPrincipal;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -19,6 +20,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class UserBucketRelationshipService {
 
     @Autowired private UserBucketRelationshipDAO userBucketRelationshipDAO;
@@ -46,6 +48,8 @@ public class UserBucketRelationshipService {
         if(Objects.equals(following.getOwner().getId(), currentUser.getId())) {
             throw new BadRequestException("Users may not follow their own bucket.");
         }
+
+        LOG.info("Creating new user-bucket relationship between user {} and bucket {}", follower.getId(), following.getId());
 
         return saveUserBucketRelationship(new UserBucketRelationship(follower, following));
     }
@@ -117,6 +121,8 @@ public class UserBucketRelationshipService {
         User follower = userService.findUserById(currentUser.getId());
         Bucket following = bucketService.findBucketById(bucketId);
 
+        LOG.info("User {} unfollowing bucket {}", currentUser.getId(), following.getId());
+
         UserBucketRelationship relationship = userBucketRelationshipDAO.findByFollowerAndFollowing(follower, following).orElseThrow(() ->
                 new BadRequestException("Unable to find a relationship with the given information."));
 
@@ -136,6 +142,8 @@ public class UserBucketRelationshipService {
         if(!Objects.equals(currentUser.getId(), bucket.getOwner().getId())) {
             throw new UnauthorizedException("Insufficient permissions.");
         }
+
+        LOG.info("User {} deleting all user-bucket relationships with bucket {}", currentUser.getId(), bucket.getId());
 
         List<UserBucketRelationship> relationships = userBucketRelationshipDAO.findAllByFollowing(bucket);
         userBucketRelationshipDAO.deleteAll(relationships);

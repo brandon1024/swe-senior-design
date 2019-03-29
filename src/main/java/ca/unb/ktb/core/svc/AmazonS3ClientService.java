@@ -68,6 +68,7 @@ public class AmazonS3ClientService {
         String hashString = new BigInteger(1, digest).toString(16);
         String objectKey = String.format("%s/%s.%s", objectPath, hashString, file.getOriginalFilename());
 
+        LOG.info("Uploading multipart file {} to AWS S3 with key {}", file.getOriginalFilename(), objectKey);
         PutObjectRequest objectRequest = new PutObjectRequest(bucket.getName(), objectKey, file.getInputStream(),
                 fileMetadata);
         tm.upload(objectRequest).waitForCompletion();
@@ -96,6 +97,7 @@ public class AmazonS3ClientService {
                 .build();
 
         if(!s3Client.doesObjectExist(bucket.getName(), objectKey)) {
+            LOG.info("No object exists in AWS S3 with key {}", objectKey);
             return Optional.empty();
         }
 
@@ -104,6 +106,7 @@ public class AmazonS3ClientService {
         cal.setTime(expiration);
         cal.add(Calendar.MINUTE, 30);
 
+        LOG.info("Generating pre-signed URL for object {} in bucket {}", objectKey, bucket.getName());
         GeneratePresignedUrlRequest generatePresignedUrlRequest =
                 new GeneratePresignedUrlRequest(bucket.getName(), objectKey)
                         .withMethod(HttpMethod.GET)

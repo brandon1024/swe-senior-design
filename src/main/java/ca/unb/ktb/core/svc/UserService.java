@@ -66,6 +66,8 @@ public class UserService {
     public User createUser(final User user) {
         user.setId(null);
 
+        LOG.info("Creating new user", user.getUsername());
+
         return saveUser(user);
     }
 
@@ -83,6 +85,8 @@ public class UserService {
         UserPrincipal currentUser = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         User follower = findPrincipalUser(currentUser.getId());
         User following = findUserById(userId);
+
+        LOG.info("User {} following user {}", currentUser.getId(), following.getId());
 
         return userRelationshipDAO.save(new UserRelationship(follower, following));
     }
@@ -207,6 +211,8 @@ public class UserService {
         UserPrincipal currentUser = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         User persistentUser = findPrincipalUser(currentUser.getId());
 
+        LOG.info("User {} patching their user details", currentUser.getId());
+
         if(Objects.nonNull(partialUser.getEmail())) {
             persistentUser.setEmail(partialUser.getEmail());
         }
@@ -288,6 +294,8 @@ public class UserService {
         User user = findPrincipalUser(currentUser.getId());
         partialUser.setId(user.getId());
 
+        LOG.info("User {} updating their user details", currentUser.getId());
+
         return saveUser(partialUser);
     }
 
@@ -314,7 +322,11 @@ public class UserService {
     public User updateProfilePicture(final MultipartFile file) {
         UserPrincipal currentUser = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         User persistentUser = findPrincipalUser(currentUser.getId());
+
+        LOG.info("User {} updating their profile picture with file {}", currentUser.getId(), file.getOriginalFilename());
+
         AmazonS3Bucket bucket = awsBucketConfiguration.getBuckets().get(AmazonS3BucketConfiguration.userProfileImageBucket);
+        LOG.debug("Uploading file to AWS S3 bucket {} in region {}", bucket.getName(), bucket.getRegion());
 
         ObjectMetadata imageMetadata = new ObjectMetadata();
         imageMetadata.addUserMetadata("username", persistentUser.getUsername());
@@ -342,12 +354,19 @@ public class UserService {
     public void deleteUser() {
         UserPrincipal currentUser = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         User persistentUser = findPrincipalUser(currentUser.getId());
+
+        LOG.info("User {} deleting their user account", currentUser.getId());
+
         List<Bucket> buckets = bucketService.findBucketsByOwner(currentUser.getId());
+        LOG.debug("User {} deleting {} buckets", buckets.size());
+
         for(Bucket bucket : buckets) {
             bucketService.deleteBucket(bucket);
         }
 
         List<UserRelationship> relationships = userRelationshipDAO.findByFollower(persistentUser);
+        LOG.debug("User {} deleting {} user relationships", relationships.size());
+
         userRelationshipDAO.deleteAll(relationships);
         userDAO.delete(persistentUser);
     }
@@ -355,12 +374,14 @@ public class UserService {
     /**
      * Delete a {@link User}-{@link User} relationship.
      *
-     * @param initiatorId The user that is following a user.
      * @param subjectId The user being followed.
      * */
-    public void deleteUserRelationship(final Long initiatorId, final long subjectId) {
-        User persistentUser = findPrincipalUser(initiatorId);
+    public void deleteUserRelationship(final Long subjectId) {
+        UserPrincipal currentUser = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        User persistentUser = findPrincipalUser(currentUser.getId());
         User subject = findUserById(subjectId);
+
+        LOG.debug("User {} deleting user relationship with user {}", currentUser.getId(), subject);
 
         UserRelationship example = new UserRelationship(persistentUser, subject);
         UserRelationship relationship = userRelationshipDAO.findOne(Example.of(example)).orElseThrow(() ->

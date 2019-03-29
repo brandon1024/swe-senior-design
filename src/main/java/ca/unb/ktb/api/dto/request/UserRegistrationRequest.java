@@ -3,6 +3,7 @@ package ca.unb.ktb.api.dto.request;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.io.Serializable;
 
@@ -15,8 +16,10 @@ public class UserRegistrationRequest implements Serializable {
 
     private String email;
 
+    @ToString.Exclude
     private String password;
 
+    @ToString.Exclude
     private String passwordConfirm;
 
     private String firstName;

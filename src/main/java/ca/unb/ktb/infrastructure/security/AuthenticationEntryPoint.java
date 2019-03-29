@@ -23,7 +23,7 @@ public class AuthenticationEntryPoint implements org.springframework.security.we
     @Override
     public void commence(final HttpServletRequest request, final HttpServletResponse response,
                          final AuthenticationException authException) throws IOException {
-        LOG.warn("User attempted to access secured resource without supplying credentials: {}", request.getRequestURI());
+        LOG.info("User attempted to access secured resource {} without supplying credentials", request.getRequestURI());
         response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
     }
 }

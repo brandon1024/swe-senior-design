@@ -147,7 +147,7 @@ public class UserRelationshipController {
             throw new UnauthorizedException("Insufficient permissions.");
         }
 
-        userService.deleteUserRelationship(initiatorId, subjectId);
+        userService.deleteUserRelationship(subjectId);
         return new ResponseEntity<>(HttpStatus.OK);
     }
 }

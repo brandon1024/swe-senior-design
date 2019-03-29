@@ -55,6 +55,7 @@ class AuthorizationProcessingFilter extends BasicAuthenticationFilter {
         final Optional<String> authToken = getTokenFromAuthorizationHeader(request.getHeader(HttpHeaders.AUTHORIZATION));
         if(authToken.isPresent()) {
             final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            LOG.trace("Authentication token: {}", authToken.get());
 
             if(Objects.nonNull(authentication)) {
                 //If principal is authenticated, verify token validity

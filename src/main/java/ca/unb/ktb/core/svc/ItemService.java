@@ -8,6 +8,7 @@ import ca.unb.ktb.core.model.Bucket;
 import ca.unb.ktb.core.model.Item;
 import ca.unb.ktb.core.model.validation.EntityValidator;
 import ca.unb.ktb.infrastructure.security.UserPrincipal;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -17,6 +18,7 @@ import java.util.List;
 import java.util.Objects;
 
 @Service
+@Slf4j
 public class ItemService {
 
     @Autowired private ItemDAO itemDAO;
@@ -43,6 +45,9 @@ public class ItemService {
         item.setParent(itemParent);
         item.setId(null);
 
+        LOG.info("User {} creating new item with name {}", currentUser.getUsername(), item.getName());
+        LOG.debug("Item details: {}", item.toString());
+
         return saveItem(item);
     }
 
@@ -64,6 +69,9 @@ public class ItemService {
         Bucket sourceBucket = bucketService.findBucketById(fromBucket);
         Bucket destinationBucket = bucketService.findBucketById(toBucket);
         Item duplicatedItem = findItemById(itemId);
+
+        LOG.info("User {} duplicating item {} from bucket {} into bucket {}", currentUser.getUsername(),
+                duplicatedItem.getId(), sourceBucket.getId(), destinationBucket.getId());
 
         /* Verify that item belongs to bucket */
         if(!Objects.equals(duplicatedItem.getParent().getId(), sourceBucket.getId())) {
@@ -95,6 +103,9 @@ public class ItemService {
         UserPrincipal currentUser = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         Bucket itemParent = bucketService.findBucketById(fromBucket);
         Bucket newItemParent = bucketService.findBucketById(toBucket);
+
+        LOG.info("User {} duplicating all items from bucket {} into bucket {}", currentUser.getUsername(),
+                itemParent, newItemParent);
 
         if(!Objects.equals(currentUser.getId(), newItemParent.getOwner().getId())) {
             throw new UnauthorizedException(String.format("Unable to duplicate item into a bucket not owned by the user with id %d.",
@@ -221,6 +232,8 @@ public class ItemService {
             persistedItem.setIsComplete(partialItem.getIsComplete());
         }
 
+        LOG.info("User {} patching item {}", persistedItem.getParent().getOwner().getId(), persistedItem.getId());
+
         return saveItem(persistedItem);
     }
 
@@ -241,6 +254,8 @@ public class ItemService {
         item.setId(persistedItem.getId());
         item.setParent(persistedItem.getParent());
 
+        LOG.info("User {} updating item {}", persistedItem.getParent().getOwner().getId(), persistedItem.getId());
+
         return saveItem(persistedItem);
     }
 
@@ -252,6 +267,8 @@ public class ItemService {
      * */
     public void deleteItem(final Long itemId) {
         Item persistedItem = findItemByIdOwnedByPrincipal(itemId);
+
+        LOG.info("User {} deleting item {}", persistedItem.getParent().getOwner().getId(), persistedItem.getId());
 
         itemDAO.delete(persistedItem);
     }
@@ -269,6 +286,8 @@ public class ItemService {
         if(!Objects.equals(currentUser.getId(), bucket.getOwner().getId())) {
             throw new UnauthorizedException("Insufficient permissions.");
         }
+
+        LOG.info("User {} deleting items from bucket {}", currentUser.getId(), bucket.getId());
 
         List<Item> items = itemDAO.findAllByParent(bucket);
         itemDAO.deleteAll(items);

@@ -10,6 +10,7 @@ import ca.unb.ktb.core.model.User;
 import ca.unb.ktb.core.model.UserBucketRelationship;
 import ca.unb.ktb.core.model.UserRelationship;
 import ca.unb.ktb.infrastructure.security.UserPrincipal;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -22,6 +23,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class FeedService {
 
     @Autowired private UserService userService;
@@ -41,6 +43,8 @@ public class FeedService {
      * */
     public UserFeedResponse retrieveBucketsRecentlyCreatedByFollowedUsers(final Pageable pageable) {
         UserPrincipal currentUser = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        LOG.info("Fetching 'BucketsRecentlyCreatedByFollowedUsers' feed data for user {}", currentUser.getId());
 
         List<Bucket> buckets = bucketService.findBucketsRecentlyCreatedByFollowedUsers(currentUser.getId(), pageable);
         Map<User, List<Bucket>> followedUserBuckets = new HashMap<>();
@@ -69,6 +73,8 @@ public class FeedService {
      * */
     public UserFeedResponse retrieveItemsRecentlyCreatedByFollowedUsers(final Pageable pageable) {
         UserPrincipal currentUser = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        LOG.info("Fetching 'ItemsRecentlyCreatedByFollowedUsers' feed data for user {}", currentUser.getId());
 
         List<Item> items = itemService.findItemsRecentlyCreatedByFollowedUsers(currentUser.getId(), pageable);
         Map<User, List<Item>> followedUserItems = new HashMap<>();
@@ -105,6 +111,8 @@ public class FeedService {
      * */
     public UserFeedResponse retrieveUsersRecentlyFollowedByFollowedUsers(final Pageable pageable) {
         UserPrincipal currentUser = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        LOG.info("Fetching 'UsersRecentlyFollowedByFollowedUsers' feed data for user {}", currentUser.getId());
 
         List<UserRelationship> relationships = userService.findUsersRecentlyFollowedByFollowedUsers(currentUser.getId(), pageable);
         Map<User, List<User>> followedUserNewRelationships = new HashMap<>();
@@ -144,6 +152,8 @@ public class FeedService {
     public UserFeedResponse retrieveBucketsRecentlyFollowedByFollowedUsers(final Pageable pageable) {
         UserPrincipal currentUser = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
+        LOG.info("Fetching 'BucketsRecentlyFollowedByFollowedUsers' feed data for user {}", currentUser.getId());
+
         List<UserBucketRelationship> relationships =
                 userBucketRelationshipService.findBucketsRecentlyFollowedByFollowedUsers(currentUser.getId(), pageable);
         Map<User, List<Bucket>> followedUserNewBucketRelationships = new HashMap<>();
@@ -173,6 +183,8 @@ public class FeedService {
     public UserFeedResponse retrieveBucketsRecentlyCreatedByUser(final Pageable pageable) {
         UserPrincipal currentUser = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
+        LOG.info("Fetching 'BucketsRecentlyCreatedByUser' feed data for user {}", currentUser.getId());
+
         List<Bucket> buckets = bucketService.findBucketsRecentlyCreatedByUser(currentUser.getId(), pageable);
         List<BucketSummaryResponse> bucketSummaries = buckets.stream()
                 .map(bucketService::adaptBucketToBucketSummary)
@@ -189,6 +201,8 @@ public class FeedService {
      * */
     public UserFeedResponse retrieveItemsRecentlyCreatedByUser(final Pageable pageable) {
         UserPrincipal currentUser = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        LOG.info("Fetching 'ItemsRecentlyCreatedByUser' feed data for user {}", currentUser.getId());
 
         List<Item> items = itemService.findItemsRecentlyCreatedByUser(currentUser.getId(), pageable);
         List<ItemSummaryResponse> itemSummaryResponses = items.stream()
@@ -207,6 +221,8 @@ public class FeedService {
     public UserFeedResponse retrieveUsersRecentlyFollowedByUser(final Pageable pageable) {
         UserPrincipal currentUser = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
+        LOG.info("Fetching 'UsersRecentlyFollowedByUser' feed data for user {}", currentUser.getId());
+
         List<UserRelationship> relationships = userService.findUsersRecentlyFollowedByUser(currentUser.getId(), pageable);
         List<UserSummaryResponse> userSummaryResponses = relationships.stream()
                 .map(r -> userService.adaptUserToSummary(r.getFollowing()))
@@ -223,6 +239,8 @@ public class FeedService {
      * */
     public UserFeedResponse retrieveBucketsRecentlyFollowedByUser(final Pageable pageable) {
         UserPrincipal currentUser = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        LOG.info("Fetching 'BucketsRecentlyFollowedByUser' feed data for user {}", currentUser.getId());
 
         List<UserBucketRelationship> relationships = userBucketRelationshipService.findBucketsRecentlyFollowedByUser(currentUser.getId(), pageable);
         List<BucketSummaryResponse> bucketSummaryResponses = relationships.stream()
