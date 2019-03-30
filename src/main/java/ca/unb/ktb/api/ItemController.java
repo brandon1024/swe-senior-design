@@ -111,7 +111,7 @@ public class ItemController {
     )
     public ResponseEntity<List<ItemSummaryResponse>> findItems(@PathVariable(name = "userId") final Long ownerId,
                                                                @PathVariable(name = "bucketId") final Long bucketId) {
-        Bucket existingBucket = bucketService.findBucketById(ownerId);
+        Bucket existingBucket = bucketService.findBucketById(bucketId);
         if(Objects.equals(ownerId, existingBucket.getOwner().getId())) {
             throw new BadRequestException(String.format("Unable to find bucket with id %d and owner %d.", bucketId, ownerId));
         }

@@ -79,6 +79,7 @@ public class SpringSecurityConfiguration extends WebSecurityConfigurerAdapter {
         final CorsConfiguration configuration = new CorsConfiguration();
         configuration.applyPermitDefaultValues();
         configuration.setAllowedMethods(List.of("*"));
+        configuration.setAllowedOrigins(List.of("https://kickthebucket.net", "http://localhost:3000"));
 
         final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

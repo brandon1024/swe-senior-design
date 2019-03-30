@@ -23,4 +23,4 @@ fi
 
 cd /home/ec2-user/server/scripts
 mkdir -p /home/ec2-user/server/logs
-nohup ./server-start.sh > /home/ec2-user/server/logs/server.out 2> /home/ec2-user/server/logs/server.err < /dev/null &
+nohup ./server-start.sh > /dev/null 2> /dev/null < /dev/null &

@@ -46,6 +46,7 @@ Continuous Integration (CI) and Continuous Deployment (CD) is provided through [
     * [IAM ParameterStorePolicy for CodeDeploy Service Role](#iam-parameterstorepolicy-for-codedeploy-service-role)
     * [IAM S3DevAccessPolicy for S3 Access During Development](#iam-s3devaccesspolicy-for-s3-access-during-development)
     * [Update PostgreSQL Root User Password](#update-postgresql-root-user-password)
+    * [Configuring iptables on New Instance](#configuring-iptables-on-new-instance)
 
 Shown below is a high-level diagram which describes how each service in the production infrastructure interact.
 ```
@@ -514,4 +515,12 @@ $ psql --host=kick-the-bucket-db.cfmacruxeb8i.us-east-1.rds.amazonaws.com --port
 
 from psql console:
 ALTER USER root PASSWORD '<new password>';
+```
+
+### Configuring iptables on New Instance
+```
+sudo iptables -A PREROUTING -t nat -i eth0 -p tcp --dport 80 -j REDIRECT --to-port 8080
+
+# view changes
+sudo iptables --table nat --list
 ```

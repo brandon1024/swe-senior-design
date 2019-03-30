@@ -39,7 +39,7 @@ do
         else
             echo "Health actuator reported that a service failed to start. Details:"
             echo $STATUS
-            break
+            exit 1
         fi
     fi
 
