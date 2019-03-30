@@ -361,10 +361,10 @@ $ psql --host=kick-the-bucket-db.cfmacruxeb8i.us-east-1.rds.amazonaws.com --port
 Amazon EC2 (Amazon Elastic Compute Cloud) is a web service that provides secure, resizable compute capacity in the cloud. It is designed to make web-scale cloud computing easier for developers. The Kick the Bucket project utilizes EC2 for hosting the Spring Boot backend server and making it available to the public.
 
 ### Instance Details
-- AMI ID: `amzn2-ami-hvm-2.0.20190115-x86_64-gp2 (ami-035be7bafff33b6b6)`
+- AMI ID: `KTB Prod Image (ami-066168041d5155b9e)`
 - Availability Zone: `us-east-1a`
-- Instance Type: `t2.micro`
-- Public IP: `34.229.100.171`
+- Instance Type: `t2.small`
+- Public IP: `3.85.174.85`
 - IAM Role: kick-the-bucket-role
 
 ### SSH into EC2 Instance
@@ -373,7 +373,7 @@ Amazon EC2 (Amazon Elastic Compute Cloud) is a web service that provides secure,
 3. Must ensure that the EC2 instance is configured to use the correct key pair.
 
 ```
-ssh ec2-user@34.229.100.171
+ssh ec2-user@<ec2 public ip>
 ```
 
 ### Start SSH Session Through Systems Manager
