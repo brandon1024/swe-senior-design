@@ -16,7 +16,7 @@
 . /home/ec2-user/configure_shell.sh
 
 # Retrieve CodeDeployAdmin user password
-password=$(aws ssm get-parameters --region us-east-1 --names KTBCodeDeployAdminUserPass --with-decryption --query Parameters[0].Value)
+password=$(aws ssm get-parameter --region us-east-1 --name KTBCodeDeployAdminUserPass --with-decryption --query Parameter.Value)
 CD_ADMIN_PASS=$(echo $password | sed -e 's/^"//' -e 's/"$//')
 
 AUTH_TOKEN=

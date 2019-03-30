@@ -32,7 +32,7 @@ for arg in "$@"; do
 done
 
 # Gracefully stop the server
-password=$(aws ssm get-parameters --region us-east-1 --names KTBCodeDeployAdminUserPass --with-decryption --query Parameters[0].Value)
+password=$(aws ssm get-parameter --region us-east-1 --name KTBCodeDeployAdminUserPass --with-decryption --query Parameter.Value)
 CD_ADMIN_PASS=$(echo $password | sed -e 's/^"//' -e 's/"$//')
 
 AUTH_TOKEN=$(curl -sf \
@@ -46,8 +46,8 @@ if [ "$?" -eq "0" ]; then
     STATUS=$(curl -sf -H "Authorization: Bearer $AUTH_TOKEN" http://localhost:8080/actuator/shutdown)
 
     if [ "$?" -ne "0" ]; then
-        if [ -d /home/ec2-user/server/bin ] && [ -f /home/ec2-user/server/bin/pid.file ]; then
-            rm /home/ec2-user/server/bin/pid.file
+        if [ -d /home/ec2-user/server/bin ] && [ -f /home/ec2-user/server/bin/application.pid ]; then
+            rm /home/ec2-user/server/bin/application.pid
         fi
 
         # Remove server installation
@@ -64,11 +64,11 @@ else
 fi
 
 # Force stop server if running
-if [ -d /home/ec2-user/server/bin ] && [ -f /home/ec2-user/server/bin/pid.file ]; then
-    kill $(cat /home/ec2-user/server/bin/pid.file)
-    rm /home/ec2-user/server/bin/pid.file
+if [ -d /home/ec2-user/server/bin ] && [ -f /home/ec2-user/server/bin/application.pid ]; then
+    kill $(cat /home/ec2-user/server/bin/application.pid)
+    rm /home/ec2-user/server/bin/application.pid
 else
-    echo "No pid.file found. Assuming server is not running."
+    echo "No application.pid found. Assuming server is not running."
 fi
 
 # Remove server installation

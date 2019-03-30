@@ -22,18 +22,18 @@ cd /home/ec2-user/server/bin
 export SPRING_PROFILES_ACTIVE=prod
 
 # Retrieve DB Password
-password=$(aws ssm get-parameters --region us-east-1 --names KTBPostgreSQLDBPASS --with-decryption --query Parameters[0].Value)
+password=$(aws ssm get-parameter --region us-east-1 --name KTBPostgreSQLDBPASS --with-decryption --query Parameter.Value)
 DB_PASS=$(echo $password | sed -e 's/^"//' -e 's/"$//')
 
 # Retrieve JWT Secret
-password=$(aws ssm get-parameters --region us-east-1 --names KTBJWTSecretKey --with-decryption --query Parameters[0].Value)
+password=$(aws ssm get-parameter --region us-east-1 --name KTBJWTSecretKey --with-decryption --query Parameter.Value)
 JWT_SECRET=$(echo $password | sed -e 's/^"//' -e 's/"$//')
 
 # Run Server
-if [ -d /home/ec2-user/server/bin ] && [ -f /home/ec2-user/server/bin/pid.file ]; then
+if [ -d /home/ec2-user/server/bin ] && [ -f /home/ec2-user/server/bin/application.pid ]; then
     echo "It appears that the server is already running..."
     exit 1
 fi
 
 SERVER_LOGS_PATH=/home/ec2-user/logs
-./kick-the-bucket --spring.datasource.password=$DB_PASS --jwt.secret=$JWT_SECRET --logging.path=$SERVER_LOGS_PATH & echo $! > ./pid.file &
+./kick-the-bucket --spring.datasource.password=$DB_PASS --jwt.secret=$JWT_SECRET --logging.path=$SERVER_LOGS_PATH &
