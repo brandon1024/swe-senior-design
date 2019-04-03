@@ -130,14 +130,13 @@ public class BucketService {
      * - the principal user owns the bucket.
      *
      * @param queryString The {@link Bucket} name query string.
-     * @param pageable Specify how the results should be paged.
      * @return List of {@link Bucket}s with a bucket name that partially matches a given query string.
-     * @see BucketDAO#findAllByNameLike(String, Long, Pageable)
+     * @see BucketDAO#findAllByNameLike(String, Long)
      * */
-    public List<Bucket> findBucketsByName(final String queryString, final Pageable pageable) {
+    public List<Bucket> findBucketsByName(final String queryString) {
         UserPrincipal currentUser = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        return bucketDAO.findAllByNameLike(queryString, currentUser.getId(), pageable);
+        return bucketDAO.findAllByNameLike(queryString, currentUser.getId());
     }
 
     /**

@@ -64,12 +64,9 @@ public class SearchController {
             @RequestParam(name = "userSort", defaultValue = "username", required = false) final String userSort,
             @RequestParam(name = "bucketSort", defaultValue = "name", required = false) final String bucketSort,
             @RequestParam(name = "itemSort", defaultValue = "name", required = false) final String itemSort) {
-        List<User> users =
-                userService.findUsersByUsernameOrRealName(query, PageRequest.of(page, size, Direction.ASC, userSort));
-        List<Bucket> buckets =
-                bucketService.findBucketsByName(query, PageRequest.of(page, size, Direction.ASC, bucketSort));
-        List<Item> items =
-                itemService.findItemsByName(query, PageRequest.of(page, size, Direction.ASC, itemSort));
+        List<User> users = userService.findUsersByUsernameOrRealName(query);
+        List<Bucket> buckets = bucketService.findBucketsByName(query);
+        List<Item> items = itemService.findItemsByName(query);
 
         /* Adapt to DTOs */
         List<UserSummaryResponse> usersResponse = users.parallelStream()

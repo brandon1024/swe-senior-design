@@ -363,7 +363,7 @@ Amazon EC2 (Amazon Elastic Compute Cloud) is a web service that provides secure,
 ### Instance Details
 - AMI ID: `KTB Prod Image (ami-066168041d5155b9e)`
 - Availability Zone: `us-east-1a`
-- Instance Type: `t2.small`
+- Instance Type: `t3.small`
 - Public IP: `3.85.174.85`
 - IAM Role: kick-the-bucket-role
 

@@ -75,7 +75,6 @@ public interface BucketDAO extends JpaRepository<Bucket, Long> {
      *
      * @param partialBucketName The partial bucket name to search for.
      * @param initiatorId The user that initiated the query.
-     * @param pageable Specify how the results should be paged.
      * @return Buckets that contain with the given partial bucket name.
      * */
     @Query(value = "SELECT * FROM buckets " +
@@ -86,8 +85,7 @@ public interface BucketDAO extends JpaRepository<Bucket, Long> {
                     "AND (buckets.is_public OR buckets.owner_id = :initiatorId)",
             nativeQuery = true)
     List<Bucket> findAllByNameLike(@Param("partialBucketName") final String partialBucketName,
-                                   @Param("initiatorId") final Long initiatorId,
-                                   final Pageable pageable);
+                                   @Param("initiatorId") final Long initiatorId);
 
     /**
      * Retrieve a list of buckets which were recently created by users who are followed by a given user.

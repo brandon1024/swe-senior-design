@@ -63,11 +63,10 @@ public interface UserDAO extends JpaRepository<User, Long> {
      * Find all users that contain the partial username. The search is case-insensitive.
      *
      * @param partialUsername The partial username to search for
-     * @param pageable Specify how the results should be paged.
      * @return Users that contain the given partial username.
      * */
     @Query(value = "SELECT * FROM users WHERE users.username ILIKE %:partialUsername% OR users.first_name ILIKE %:partialUsername% OR users.last_name ILIKE %:partialUsername%",
             countQuery = "SELECT COUNT(*) FROM users WHERE users.username ILIKE %:partialUsername% OR users.first_name ILIKE %:partialUsername% OR users.last_name ILIKE %:partialUsername%",
             nativeQuery = true)
-    List<User> findAllByUsernameOrRealNameLike(@Param("partialUsername") final String partialUsername, final Pageable pageable);
+    List<User> findAllByUsernameOrRealNameLike(@Param("partialUsername") final String partialUsername);
 }

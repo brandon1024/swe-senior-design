@@ -28,7 +28,6 @@ public interface ItemDAO extends JpaRepository<Item, Long> {
      * Find all items that contain the partial item name. The search is case-insensitive.
      *
      * @param partialItemName The partial item name to search for.
-     * @param pageable Specify how the results should be paged.
      * @return Items that contain with the given partial item name.
      * */
     @Query(value = "SELECT * FROM items " +
@@ -41,8 +40,7 @@ public interface ItemDAO extends JpaRepository<Item, Long> {
                     "AND (buckets.is_public OR buckets.owner_id = :initiatorId)",
             nativeQuery = true)
     List<Item> findAllByNameLike(@Param("partialItemName") final String partialItemName,
-                                 @Param("initiatorId") final Long initiatorId,
-                                 final Pageable pageable);
+                                 @Param("initiatorId") final Long initiatorId);
 
     /**
      * Retrieve a list of items which were recently created by users who are follwed by a given user.

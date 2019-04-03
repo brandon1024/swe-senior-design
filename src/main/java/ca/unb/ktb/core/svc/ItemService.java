@@ -162,14 +162,13 @@ public class ItemService {
      * {@link Item}s that belong to private {@link Bucket}s will only be returned if owned by the principal user.
      *
      * @param queryString The {@link Item} name query string.
-     * @param pageable Specify how the results should be paged.
      * @return A list of {@link Item}s whose names partially match a query string.
-     * @see ItemDAO#findAllByNameLike(String, Long, Pageable)
+     * @see ItemDAO#findAllByNameLike(String, Long)
      * */
-    public List<Item> findItemsByName(final String queryString, final Pageable pageable) {
+    public List<Item> findItemsByName(final String queryString) {
         UserPrincipal currentUser = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        return itemDAO.findAllByNameLike(queryString, currentUser.getId(), pageable);
+        return itemDAO.findAllByNameLike(queryString, currentUser.getId());
     }
 
     /**

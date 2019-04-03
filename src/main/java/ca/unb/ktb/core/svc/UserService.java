@@ -66,7 +66,7 @@ public class UserService {
     public User createUser(final User user) {
         user.setId(null);
 
-        LOG.info("Creating new user", user.getUsername());
+        LOG.info("Creating new user {}", user.getUsername());
 
         return saveUser(user);
     }
@@ -124,12 +124,11 @@ public class UserService {
      * Retrieve a list of {@link User}s with a username or real name that partially matches the query string.
      *
      * @param queryString The username query string.
-     * @param pageable Specify how the results should be paged.
      * @return a list of {@link User}s whose username or real name fully or partially matches the query string.
-     * @see UserDAO#findAllByUsernameOrRealNameLike(String, Pageable)
+     * @see UserDAO#findAllByUsernameOrRealNameLike(String)
      * */
-    public List<User> findUsersByUsernameOrRealName(final String queryString, final Pageable pageable) {
-        return userDAO.findAllByUsernameOrRealNameLike(queryString, pageable);
+    public List<User> findUsersByUsernameOrRealName(final String queryString) {
+        return userDAO.findAllByUsernameOrRealNameLike(queryString);
     }
 
     /**
