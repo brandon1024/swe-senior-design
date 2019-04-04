@@ -51,8 +51,8 @@ public class ItemController {
     public ResponseEntity<ItemSummaryResponse> createItem(@PathVariable(name = "ownerId") final Long ownerId,
                                                           @PathVariable(name = "bucketId") final Long bucketId,
                                                           @RequestBody final Item item) {
-        Bucket existingBucket = bucketService.findBucketById(ownerId);
-        if(Objects.equals(ownerId, existingBucket.getOwner().getId())) {
+        Bucket existingBucket = bucketService.findBucketById(bucketId);
+        if(!Objects.equals(ownerId, existingBucket.getOwner().getId())) {
             throw new BadRequestException(String.format("Unable to find bucket with id %d and owner %d.", bucketId, ownerId));
         }
 
@@ -112,7 +112,7 @@ public class ItemController {
     public ResponseEntity<List<ItemSummaryResponse>> findItems(@PathVariable(name = "userId") final Long ownerId,
                                                                @PathVariable(name = "bucketId") final Long bucketId) {
         Bucket existingBucket = bucketService.findBucketById(bucketId);
-        if(Objects.equals(ownerId, existingBucket.getOwner().getId())) {
+        if(!Objects.equals(ownerId, existingBucket.getOwner().getId())) {
             throw new BadRequestException(String.format("Unable to find bucket with id %d and owner %d.", bucketId, ownerId));
         }
 
@@ -234,7 +234,7 @@ public class ItemController {
                                         @PathVariable(name = "itemId") final Long itemId) {
         validateItemURIPath(ownerId, bucketId, itemId);
 
-        itemService.deleteItem(ownerId);
+        itemService.deleteItem(itemId);
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
@@ -249,13 +249,13 @@ public class ItemController {
      * @throws BadRequestException If no such {@link Item} could be found.
      * */
     private Item validateItemURIPath(final Long ownerId, final Long bucketId, final Long itemId) {
-        Bucket existingBucket = bucketService.findBucketById(ownerId);
-        if(Objects.equals(ownerId, existingBucket.getOwner().getId())) {
+        Bucket existingBucket = bucketService.findBucketById(bucketId);
+        if(!Objects.equals(ownerId, existingBucket.getOwner().getId())) {
             throw new BadRequestException(String.format("Unable to find bucket with id %d and owner %d.", bucketId, ownerId));
         }
 
         Item item = itemService.findItemById(itemId);
-        if(Objects.equals(item.getParent().getId(), existingBucket.getId())) {
+        if(!Objects.equals(item.getParent().getId(), existingBucket.getId())) {
             throw new BadRequestException(String.format("Unable to find item with id %d and parent %d.", itemId, bucketId));
         }
 

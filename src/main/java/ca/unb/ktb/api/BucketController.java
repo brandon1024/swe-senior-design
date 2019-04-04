@@ -272,7 +272,7 @@ public class BucketController {
      * */
     private Bucket validateBucketURI(final Long ownerId, final Long bucketId) {
         Bucket bucket = bucketService.findBucketById(ownerId);
-        if(Objects.equals(ownerId, bucket.getOwner().getId())) {
+        if(!Objects.equals(ownerId, bucket.getOwner().getId())) {
             throw new BadRequestException(String.format("Unable to find bucket with id %d and owner %d.", bucketId, ownerId));
         }
 
